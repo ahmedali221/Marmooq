@@ -143,4 +143,20 @@ class ValidationUtils {
   static String getPasswordValidationMessage(String password) {
     return getPasswordStrengthMessage(password);
   }
+
+  /// Validates phone number format (international E.164).
+  static bool isValidPhone(String phone) {
+    if (phone.isEmpty) return true; // Optional field
+    final RegExp phoneRegex = RegExp(r'^\+?[1-9]\d{1,14}$');
+    return phoneRegex.hasMatch(phone.trim());
+  }
+
+  /// Gets phone validation message.
+  static String getPhoneValidationMessage(String phone) {
+    if (phone.isEmpty) return 'Phone is optional';
+    if (!isValidPhone(phone)) {
+      return 'Please enter a valid international phone number';
+    }
+    return 'Phone is valid';
+  }
 }

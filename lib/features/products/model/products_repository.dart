@@ -1,76 +1,69 @@
+import 'dart:developer';
+
 import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
-import 'package:traincode/core/network/dio_client.dart';
+import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:traincode/features/products/model/product_failure.dart';
-import 'package:traincode/features/products/model/product_model.dart';
 
 class ProductsRepository {
   // USD to KWD conversion rate (approximate)
   static const double _usdToKwdRate = 0.31;
 
-  Future<Either<ProductFailure, List<Product>>> getProducts() async {
+  Future<Either<ProductFailure, List<Map<String, dynamic>>>>
+  getProducts() async {
     try {
-      const String query = '''
-        query {
-          products(first: 10) {
-            nodes {
-              id
-              title
-              description
-              variants(first:1) {
-                nodes {
-                  price {
-                    amount
-                    currencyCode
-                  }
-                }
-              }
-              images(first: 10) {
-                nodes {
-                  url
-                }
-              }
-            }
-          }
-        }
-      ''';
-      final response = await DioClient.instance.storefrontGraphQL(query);
-      if (response.statusCode == 200) {
-        final data =
-            response.data['data']['products']['nodes'] as List<dynamic>;
-        if (data.isEmpty) {
-          return left(NoProductsFailure());
-        }
-        final products = data.map((json) {
-          final gid = json['id'] as String;
-          final id =
-              int.tryParse(gid.split('/').last) ??
-              0; // Extract numeric ID from GID
-          final priceStr =
-              json['variants']['nodes'][0]['price']['amount'] as String;
-          final usdPrice = double.tryParse(priceStr) ?? 0.0;
-          // Convert USD to KWD
-          final kwdPrice = usdPrice * _usdToKwdRate;
-          final imageNodes = json['images']['nodes'] as List<dynamic>;
-          final images = imageNodes
-              .map((node) => node['url'] as String)
-              .toList();
-          return Product(
-            id: id,
-            name: json['title'] as String,
-            description: json['description'] as String,
-            price: kwdPrice,
-            images: images,
-          );
-        }).toList();
-        return right(products);
-      } else {
-        return left(
-          ServerFailure('Failed to fetch products: ${response.statusCode}'),
-        );
+      final shopifyStore = ShopifyStore.instance;
+      final collections = await shopifyStore.getAllCollections();
+
+      if (collections.isEmpty) {
+        return left(NoProductsFailure());
       }
-    } on DioException catch (e) {
-      return left(ServerFailure(e.message ?? 'Unknown error'));
+      log(
+        "Fetched Collections are : "
+        "$collections",
+      );
+      final productFutures = collections.map(
+        (collection) => shopifyStore
+            .getAllProductsFromCollectionById(collection.id)
+            .then((products) {
+              final productList = products.map((product) {
+                final gid = product.id;
+                final id = int.tryParse(gid.split('/').last) ?? 0;
+                final usdPrice = product.price;
+                // Convert USD to KWD
+                final kwdPrice = usdPrice * _usdToKwdRate;
+
+                final images = product.images
+                    .map((image) => image.originalSrc)
+                    .toList();
+
+                return {
+                  'id': id,
+                  'name': product.title,
+                  'description': product.description,
+                  'price': kwdPrice,
+                  'images': images,
+                };
+              }).toList();
+
+              return {
+                'collectionId': collection.id.split('/').last,
+                'collectionName': collection.title,
+                'products': productList,
+              };
+            }),
+      );
+
+      final collectionResults = await Future.wait(productFutures);
+
+      final collectionsWithProducts = collectionResults
+          .where((result) => (result['products'] as List).isNotEmpty)
+          .toList();
+
+      if (collectionsWithProducts.isEmpty) {
+        return left(NoProductsFailure());
+      }
+
+      return right(collectionsWithProducts);
     } catch (e) {
       return left(ServerFailure(e.toString()));
     }

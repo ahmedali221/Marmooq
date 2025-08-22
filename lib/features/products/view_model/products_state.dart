@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:traincode/features/products/model/product_model.dart';
 import 'package:traincode/features/products/model/product_failure.dart';
 
 abstract class ProductsState extends Equatable {
@@ -12,12 +11,12 @@ class ProductsInitial extends ProductsState {}
 class ProductsLoading extends ProductsState {}
 
 class ProductsLoaded extends ProductsState {
-  final List<Product> products;
+  final List<Map<String, dynamic>> collections;
 
-  ProductsLoaded(this.products);
+  ProductsLoaded(this.collections);
 
   @override
-  List<Object> get props => [products];
+  List<Object> get props => [collections];
 }
 
 class ProductsError extends ProductsState {

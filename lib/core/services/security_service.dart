@@ -140,4 +140,47 @@ class SecurityService {
     // This would need to be enhanced with actual token expiration logic
     return false; // Placeholder - implement based on your token structure
   }
+  
+  /// Stores token expiration date.
+  static Future<void> storeTokenExpirationDate(DateTime expirationDate) async {
+    final timestamp = expirationDate.millisecondsSinceEpoch.toString();
+    await _secureStorage.write(key: 'token_expiration_date', value: timestamp);
+  }
+  
+  /// Gets token expiration date.
+  static Future<DateTime?> getTokenExpirationDate() async {
+    final timestamp = await _secureStorage.read(key: 'token_expiration_date');
+    if (timestamp == null) return null;
+    
+    try {
+      final milliseconds = int.parse(timestamp);
+      return DateTime.fromMillisecondsSinceEpoch(milliseconds);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Checks if token is expired based on stored expiration date.
+  static Future<bool> isTokenExpired() async {
+    final expirationDate = await getTokenExpirationDate();
+    if (expirationDate == null) return true;
+    
+    return DateTime.now().isAfter(expirationDate);
+  }
+  
+  /// Synchronizes user data with Shopify user.
+  static Future<void> syncUserDataWithShopify(Map<String, dynamic> userData) async {
+    await storeUserData(userData);
+    
+    // Store a simplified version in SharedPreferences for non-sensitive data
+    // This can be used for quick access to user display information
+    final prefs = await SharedPreferences.getInstance();
+    final displayData = <String, dynamic>{
+      'email': userData['email'],
+      'firstName': userData['firstName'],
+      'lastName': userData['lastName'],
+      'lastSync': DateTime.now().toIso8601String(),
+    };
+    await prefs.setString('user_display_data', jsonEncode(displayData));
+  }
 }

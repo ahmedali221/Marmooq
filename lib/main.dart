@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:traincode/features/auth/screens/register_screen.dart';
 
 import 'package:traincode/features/products/model/products_repository.dart';
 import 'package:traincode/features/products/view/products_view.dart';
 import 'package:traincode/features/products/view_model/products_bloc.dart';
 import 'package:traincode/splash_screen.dart';
+import 'package:traincode/features/auth/screens/login_screen.dart';
+import 'package:traincode/features/auth/bloc/auth_bloc.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
@@ -31,13 +34,20 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final GoRouter router = GoRouter(
-      initialLocation: '/products', // Changed to products as initial view
+      initialLocation: '/products',
       routes: [
         GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
-
         GoRoute(
           path: '/products',
           builder: (context, state) => const ProductsView(),
+        ),
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/signup',
+          builder: (context, state) => const RegisterScreen(),
         ),
         // Add more routes for other features later
       ],
@@ -53,6 +63,7 @@ class MyApp extends StatelessWidget {
             create: (context) =>
                 ProductsBloc(context.read<ProductsRepository>()),
           ),
+          BlocProvider(create: (context) => AuthBloc()),
         ],
         child: MaterialApp.router(
           title: 'متجر مستحضرات التجميل', // Cosmetic Store in Arabic
