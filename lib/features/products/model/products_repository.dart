@@ -42,6 +42,7 @@ class ProductsRepository {
                   'description': product.description,
                   'price': kwdPrice,
                   'images': images,
+                  'variantId': product.productVariants.first.id,
                 };
               }).toList();
 

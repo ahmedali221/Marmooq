@@ -4,6 +4,7 @@ class Product {
   final String description;
   final double price;
   final List<String> images;
+  final String variantId;
 
   Product({
     required this.id,
@@ -11,6 +12,7 @@ class Product {
     required this.description,
     required this.price,
     required this.images,
+    required this.variantId,
   });
 
   /// Get the first image URL or empty string if no images
@@ -23,6 +25,7 @@ class Product {
       description: json['description'],
       price: json['price'].toDouble(),
       images: List<String>.from(json['images'] ?? []),
+      variantId: json['variantId'] ?? '',
     );
   }
 
@@ -33,6 +36,7 @@ class Product {
       'description': description,
       'price': price,
       'images': images,
+      'variantId': variantId,
     };
   }
 }

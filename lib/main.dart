@@ -9,6 +9,8 @@ import 'package:traincode/features/products/view_model/products_bloc.dart';
 import 'package:traincode/splash_screen.dart';
 import 'package:traincode/features/auth/screens/login_screen.dart';
 import 'package:traincode/features/auth/bloc/auth_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_bloc.dart';
+import 'package:traincode/features/cart/repository/cart_repository.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
@@ -64,6 +66,9 @@ class MyApp extends StatelessWidget {
                 ProductsBloc(context.read<ProductsRepository>()),
           ),
           BlocProvider(create: (context) => AuthBloc()),
+          BlocProvider(
+            create: (context) => CartBloc(cartRepository: CartRepository()),
+          ),
         ],
         child: MaterialApp.router(
           title: 'متجر مستحضرات التجميل', // Cosmetic Store in Arabic

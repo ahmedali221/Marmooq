@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:traincode/features/products/model/product_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_events.dart';
 
 class ProductDetailsView extends StatefulWidget {
   final Product product;
@@ -14,6 +17,7 @@ class ProductDetailsView extends StatefulWidget {
 class _ProductDetailsViewState extends State<ProductDetailsView> {
   late CarouselSliderController _carouselController;
   int _currentImageIndex = 0;
+  int _quantity = 1;
 
   @override
   void initState() {
@@ -575,6 +579,22 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Widget _buildActionButtons() {
     return Column(
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(Icons.remove),
+              onPressed: () {
+                if (_quantity > 1) setState(() => _quantity--);
+              },
+            ),
+            Text('$_quantity', style: TextStyle(fontSize: 18)),
+            IconButton(
+              icon: Icon(Icons.add),
+              onPressed: () => setState(() => _quantity++),
+            ),
+          ],
+        ),
         // Add to Cart Button
         Container(
           width: double.infinity,

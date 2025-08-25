@@ -6,6 +6,9 @@ import 'package:traincode/features/products/view/product_details_view.dart';
 import 'package:traincode/features/products/view_model/products_bloc.dart';
 import 'package:traincode/features/products/view_model/products_event.dart';
 import 'package:traincode/features/products/view_model/products_state.dart';
+import 'package:traincode/features/cart/view/cart_screen.dart';
+import 'package:traincode/features/cart/view_model/cart_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_states.dart';
 
 class ProductsView extends StatefulWidget {
   const ProductsView({super.key});
@@ -62,43 +65,57 @@ class _ProductsViewState extends State<ProductsView> {
               },
               tooltip: 'البحث',
             ),
-            Stack(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.shopping_cart_outlined,
-                    color: Colors.teal[700],
-                  ),
-                  onPressed: () {
-                    // TODO: Navigate to cart
-                  },
-                  tooltip: 'السلة',
-                ),
-                Positioned(
-                  left: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red[400],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 14,
-                      minHeight: 14,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+            BlocBuilder<CartBloc, CartState>(
+              builder: (context, state) {
+                int itemCount = 0;
+                if (state is CartLoaded) {
+                  itemCount = state.cartItems.length;
+                }
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.teal[700],
                       ),
-                      textAlign: TextAlign.center,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CartScreen(),
+                          ),
+                        );
+                      },
+                      tooltip: 'السلة',
                     ),
-                  ),
-                ),
-              ],
+                    if (itemCount > 0)
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red[400],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 14,
+                            minHeight: 14,
+                          ),
+                          child: Text(
+                            '$itemCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(width: 8),
           ],
@@ -218,7 +235,7 @@ class _ProductsViewState extends State<ProductsView> {
                                   );
                                 },
                                 child: const Text(
-                                  'عرض المزيد',
+                                  'عرض الكل',
                                   style: TextStyle(color: Colors.teal),
                                 ),
                               ),
