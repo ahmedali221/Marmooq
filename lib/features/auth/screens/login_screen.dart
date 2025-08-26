@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:traincode/features/auth/bloc/auth_bloc.dart';
 import 'package:traincode/features/auth/bloc/auth_state.dart';
 import 'package:traincode/core/utils/validation_utils.dart';
@@ -54,11 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToRegister() {
-    Navigator.pushNamed(context, '/register');
+    context.go('/register');
   }
 
   void _navigateToForgotPassword() {
-    Navigator.pushNamed(context, '/forgot-password');
+    context.go('/forgot-password');
   }
 
   @override
@@ -69,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
         listener: (context, state) {
           if (state.isAuthenticated) {
             // Navigate to products view after successful authentication
-            Navigator.pushReplacementNamed(context, '/products');
+            context.go('/products');
           } else if (state.hasError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

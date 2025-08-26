@@ -6,9 +6,7 @@ import 'package:crypto/crypto.dart';
 /// Service for handling security-related operations.
 class SecurityService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
@@ -18,6 +16,7 @@ class SecurityService {
   static const String _refreshTokenKey = 'shopify_refresh_token';
   static const String _userDataKey = 'encrypted_user_data';
   static const String _sessionIdKey = 'session_id';
+  static const String _cartIdKey = 'shopify_cart_id';
 
   /// Stores access token securely using Flutter Secure Storage.
   static Future<void> storeAccessToken(String token) async {
@@ -50,7 +49,7 @@ class SecurityService {
   static Future<Map<String, dynamic>?> getUserData() async {
     final encryptedData = await _secureStorage.read(key: _userDataKey);
     if (encryptedData == null) return null;
-    
+
     try {
       final decryptedData = _decryptData(encryptedData);
       return jsonDecode(decryptedData) as Map<String, dynamic>;
@@ -79,7 +78,7 @@ class SecurityService {
     await _secureStorage.delete(key: _refreshTokenKey);
     await _secureStorage.delete(key: _userDataKey);
     await _secureStorage.delete(key: _sessionIdKey);
-    
+
     // Also clear any non-secure preferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('shopify_access_token');
@@ -111,7 +110,7 @@ class SecurityService {
     final salt = 'traincode_salt_2024';
     final bytes = base64.decode(encryptedData);
     final saltedData = utf8.decode(bytes);
-    
+
     // Remove salt from both ends
     if (saltedData.startsWith(salt) && saltedData.endsWith(salt)) {
       return saltedData.substring(salt.length, saltedData.length - salt.length);
@@ -140,18 +139,18 @@ class SecurityService {
     // This would need to be enhanced with actual token expiration logic
     return false; // Placeholder - implement based on your token structure
   }
-  
+
   /// Stores token expiration date.
   static Future<void> storeTokenExpirationDate(DateTime expirationDate) async {
     final timestamp = expirationDate.millisecondsSinceEpoch.toString();
     await _secureStorage.write(key: 'token_expiration_date', value: timestamp);
   }
-  
+
   /// Gets token expiration date.
   static Future<DateTime?> getTokenExpirationDate() async {
     final timestamp = await _secureStorage.read(key: 'token_expiration_date');
     if (timestamp == null) return null;
-    
+
     try {
       final milliseconds = int.parse(timestamp);
       return DateTime.fromMillisecondsSinceEpoch(milliseconds);
@@ -159,19 +158,21 @@ class SecurityService {
       return null;
     }
   }
-  
+
   /// Checks if token is expired based on stored expiration date.
   static Future<bool> isTokenExpired() async {
     final expirationDate = await getTokenExpirationDate();
     if (expirationDate == null) return true;
-    
+
     return DateTime.now().isAfter(expirationDate);
   }
-  
+
   /// Synchronizes user data with Shopify user.
-  static Future<void> syncUserDataWithShopify(Map<String, dynamic> userData) async {
+  static Future<void> syncUserDataWithShopify(
+    Map<String, dynamic> userData,
+  ) async {
     await storeUserData(userData);
-    
+
     // Store a simplified version in SharedPreferences for non-sensitive data
     // This can be used for quick access to user display information
     final prefs = await SharedPreferences.getInstance();
@@ -180,7 +181,25 @@ class SecurityService {
       'firstName': userData['firstName'],
       'lastName': userData['lastName'],
       'lastSync': DateTime.now().toIso8601String(),
+      'phone': userData['phone'],
     };
     await prefs.setString('user_display_data', jsonEncode(displayData));
+  }
+
+  /// Stores cart ID securely.
+  static Future<void> storeCartId(String cartId) async {
+    await _secureStorage.write(key: _cartIdKey, value: cartId);
+    print('DEBUG: Cart ID stored securely: $cartId');
+  }
+
+  /// Retrieves stored cart ID.
+  static Future<String?> getCartId() async {
+    return await _secureStorage.read(key: _cartIdKey);
+  }
+
+  /// Clears stored cart ID.
+  static Future<void> clearCartId() async {
+    await _secureStorage.delete(key: _cartIdKey);
+    print('DEBUG: Cart ID cleared from secure storage');
   }
 }

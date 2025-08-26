@@ -1,35 +1,45 @@
-import 'package:shopify_flutter/shopify_flutter.dart';
-import 'package:traincode/features/cart/model/cart_Item.dart';
-import '../repository/cart_repository.dart';
+import 'package:equatable/equatable.dart';
+import 'package:shopify_flutter/models/src/cart/cart.dart';
 
-abstract class CartState {}
+abstract class CartState extends Equatable {
+  const CartState();
 
-class CartInitial extends CartState {}
+  @override
+  List<Object?> get props => [];
+}
 
-class CartLoading extends CartState {}
+class CartInitial extends CartState {
+  const CartInitial();
+}
 
-class CartLoaded extends CartState {
+class CartLoading extends CartState {
+  const CartLoading();
+}
+
+class CartSuccess extends CartState {
   final Cart cart;
-  final List<CartItem> cartItems;
-  final CartTotals totals;
 
-  CartLoaded({
-    required this.cart,
-    required this.cartItems,
-    required this.totals,
-  });
+  const CartSuccess(this.cart);
+
+  @override
+  List<Object?> get props => [cart];
 }
 
-class CartReadyForCheckout extends CartLoaded {
-  CartReadyForCheckout({
-    required Cart cart,
-    required List<CartItem> cartItems,
-    required CartTotals totals,
-  }) : super(cart: cart, cartItems: cartItems, totals: totals);
+class CartFailure extends CartState {
+  final String error;
+
+  const CartFailure(this.error);
+
+  @override
+  List<Object?> get props => [error];
 }
 
-class CartError extends CartState {
-  final String message;
+class CartInitialized extends CartState {
+  final Cart cart;
+  final bool isNewCart;
 
-  CartError({required this.message});
+  const CartInitialized(this.cart, {this.isNewCart = false});
+
+  @override
+  List<Object?> get props => [cart, isNewCart];
 }

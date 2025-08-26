@@ -4,6 +4,9 @@ import 'package:traincode/features/products/model/product_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:traincode/features/cart/view_model/cart_bloc.dart';
 import 'package:traincode/features/cart/view_model/cart_events.dart';
+import 'package:traincode/features/cart/view_model/cart_states.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
 
 class ProductDetailsView extends StatefulWidget {
   final Product product;
@@ -19,6 +22,8 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   int _currentImageIndex = 0;
   int _quantity = 1;
 
+  bool _isAddingToCart = false;
+
   @override
   void initState() {
     super.initState();
@@ -33,83 +38,111 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          title: Text(
-            widget.product.name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: Colors.black87,
+    return BlocListener<CartBloc, CartState>(
+      listener: (context, state) {
+        if (state is CartFailure) {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('حدث خطأ: ${state.error}'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-          ),
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.share_outlined, color: Colors.black87),
-              onPressed: () {
-                // TODO: Implement share functionality
-              },
+          );
+
+          // Reset loading state
+          setState(() {
+            _isAddingToCart = false;
+          });
+        }
+      },
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: AppBar(
+            title: Text(
+              widget.product.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.black87,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.favorite_border, color: Colors.black87),
-              onPressed: () {
-                // TODO: Add to wishlist
-              },
+            backgroundColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Enhanced Image Carousel
-              _buildImageCarousel(),
-
-              const SizedBox(height: 20),
-
-              // Product Details Container
-              Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Product Name and Price
-                      _buildProductHeader(),
-
-                      const SizedBox(height: 24),
-
-                      // Product Description
-                      _buildProductDescription(),
-
-                      const SizedBox(height: 32),
-
-                      // Action Buttons
-                      _buildActionButtons(),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.share_outlined, color: Colors.black87),
+                onPressed: () {
+                  // TODO: Implement share functionality
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.favorite_border, color: Colors.black87),
+                onPressed: () {
+                  // TODO: Add to wishlist
+                },
               ),
             ],
+          ),
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Enhanced Image Carousel
+                _buildImageCarousel(),
+
+                const SizedBox(height: 20),
+
+                // Product Details Container
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Product Name and Price
+                        _buildProductHeader(),
+
+                        const SizedBox(height: 24),
+
+                        // Product Description
+                        _buildProductDescription(),
+
+                        const SizedBox(height: 32),
+
+                        // Action Buttons
+                        _buildActionButtons(),
+
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -185,63 +218,48 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     tag: 'product-image-${widget.product.id}-$index',
                     child: Container(
                       width: double.infinity,
-                      child: Image.network(
-                        widget.product.images[index],
+                      child: CachedNetworkImage(
+                        imageUrl: widget.product.images[index],
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey[100],
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    color: Colors.teal,
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                        : null,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[100],
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(color: Colors.teal),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'جاري تحميل الصورة...',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'جاري تحميل الصورة...',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[100],
-                            child: const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 60,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'خطأ في تحميل الصورة',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ],
-                              ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[100],
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 60,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'خطأ في تحميل الصورة',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -567,7 +585,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             )
           else
             const Text(
-              'لا يوجد وصف متاح لهذا المنتج حالياً. يرجى التواصل معنا للحصول على مزيد من التفاصيل.',
+              'لا يوجد وصف متاح لهذا المنتج حالياً. يرجى التواصل معنا للصور متاحة.',
               style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.7),
               textAlign: TextAlign.right,
             ),
@@ -615,28 +633,215 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             ],
           ),
           child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('تم إضافة المنتج إلى السلة بنجاح'),
-                    ],
-                  ),
-                  backgroundColor: Colors.teal,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.shopping_cart_outlined, size: 22),
-            label: const Text(
-              'إضافة إلى السلة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            onPressed: _isAddingToCart
+                ? null
+                : () async {
+                    setState(() {
+                      _isAddingToCart = true;
+                    });
+
+                    try {
+                      // Check if product is available (has a valid variant ID)
+                      if (widget.product.variantId == null ||
+                          widget.product.variantId.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(Icons.error, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('المنتج غير متوفر حالياً'),
+                              ],
+                            ),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+
+                        setState(() {
+                          _isAddingToCart = false;
+                        });
+                        return;
+                      }
+
+                      // Get the current cart state
+                      final cartState = context.read<CartBloc>().state;
+                      String cartId;
+
+                      if (cartState is CartInitialized) {
+                        cartId = cartState.cart.id!;
+                      } else if (cartState is CartSuccess) {
+                        cartId = cartState.cart.id!;
+                      } else {
+                        // Create a new cart if none exists
+                        context.read<CartBloc>().add(const CreateCartEvent());
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(Icons.info, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text('جاري إنشاء سلة جديدة...'),
+                              ],
+                            ),
+                            backgroundColor: Colors.blue,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Check if the product is already in the cart
+                      bool isDuplicate = false;
+                      int existingQuantity = 0;
+                      final int maxQuantityAllowed =
+                          10; // Maximum quantity allowed per product
+
+                      if (cartState is CartInitialized) {
+                        for (final line in cartState.cart.lines) {
+                          if (line.merchandise?.id ==
+                              widget.product.variantId) {
+                            isDuplicate = true;
+                            existingQuantity = line.quantity!;
+                            break;
+                          }
+                        }
+                      } else if (cartState is CartSuccess) {
+                        for (final line in cartState.cart.lines) {
+                          if (line.merchandise?.id ==
+                              widget.product.variantId) {
+                            isDuplicate = true;
+                            existingQuantity = line.quantity!;
+                            break;
+                          }
+                        }
+                      }
+
+                      // Check if adding the new quantity would exceed the maximum allowed
+                      if (isDuplicate &&
+                          existingQuantity + _quantity > maxQuantityAllowed) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.warning, color: Colors.white),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'لا يمكن إضافة أكثر من $maxQuantityAllowed قطع من هذا المنتج',
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Colors.orange,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+
+                        setState(() {
+                          _isAddingToCart = false;
+                        });
+                        return;
+                      }
+
+                      // Create cart line input with product variant ID and quantity
+                      final cartLineInput = CartLineUpdateInput(
+                        merchandiseId: widget.product.variantId,
+                        quantity: isDuplicate
+                            ? existingQuantity + _quantity
+                            : _quantity,
+                      );
+
+                      // Dispatch add items to cart event
+                      context.read<CartBloc>().add(
+                        AddItemsToCartEvent(
+                          cartId: cartId,
+                          cartLineInputs: [cartLineInput],
+                        ),
+                      );
+
+                      // Show success message based on whether item was added or updated
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                isDuplicate
+                                    ? 'تم تحديث كمية المنتج في السلة'
+                                    : 'تم إضافة المنتج إلى السلة بنجاح',
+                              ),
+                            ],
+                          ),
+                          backgroundColor: Colors.teal,
+                          duration: const Duration(seconds: 3),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          action: SnackBarAction(
+                            label: 'عرض السلة',
+                            textColor: Colors.white,
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/cart');
+                            },
+                          ),
+                        ),
+                      );
+
+                      // Reset loading state
+                      setState(() {
+                        _isAddingToCart = false;
+                      });
+                    } catch (e) {
+                      // Show error message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(Icons.error, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text('حدث خطأ: ${e.toString()}'),
+                            ],
+                          ),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      );
+
+                      // Reset loading state on error
+                      setState(() {
+                        _isAddingToCart = false;
+                      });
+                    }
+                  },
+            icon: _isAddingToCart
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.shopping_cart_outlined, size: 22),
+            label: Text(
+              _isAddingToCart ? 'جاري الإضافة...' : 'إضافة إلى السلة',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,

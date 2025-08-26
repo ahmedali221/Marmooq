@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:traincode/features/auth/bloc/auth_bloc.dart';
 import 'package:traincode/features/auth/bloc/auth_state.dart';
 import 'package:traincode/core/utils/validation_utils.dart';
@@ -18,15 +19,16 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _firstNameController = TextEditingController(text: 'DemoFirst');
+  final _lastNameController = TextEditingController(text: 'DemoLast');
+  final _emailController = TextEditingController(text: 'demo@example.com');
+  final _passwordController = TextEditingController(text: 'DemoPass123');
+  final _confirmPasswordController = TextEditingController(text: 'DemoPass123');
+  final _phoneController = TextEditingController(text: '+1234567890');
+  bool _acceptsMarketing = false;
+  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _acceptsMarketing = false;
 
   @override
   void initState() {
@@ -73,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _navigateToLogin() {
-    Navigator.pop(context);
+    context.pop();
   }
 
   @override
@@ -84,7 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         listener: (context, state) {
           if (state.isAuthenticated) {
             // Navigate to products view after successful registration
-            Navigator.pushReplacementNamed(context, '/products');
+            context.go('/products');
           } else if (state.hasError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

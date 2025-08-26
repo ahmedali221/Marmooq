@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:traincode/features/products/model/product_model.dart';
 import 'package:traincode/features/products/view/collection_details_view.dart';
 import 'package:traincode/features/products/view/product_details_view.dart';
@@ -9,6 +10,7 @@ import 'package:traincode/features/products/view_model/products_state.dart';
 import 'package:traincode/features/cart/view/cart_screen.dart';
 import 'package:traincode/features/cart/view_model/cart_bloc.dart';
 import 'package:traincode/features/cart/view_model/cart_states.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProductsView extends StatefulWidget {
   const ProductsView({super.key});
@@ -57,6 +59,31 @@ class _ProductsViewState extends State<ProductsView> {
               ),
             ),
           ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'البحث عن المنتجات...',
+                  prefixIcon: Icon(Icons.search, color: Colors.teal[600]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                onChanged: (value) {
+                  // TODO: Implement search functionality
+                },
+              ),
+            ),
+          ),
           actions: [
             IconButton(
               icon: Icon(Icons.search, color: Colors.teal[700]),
@@ -65,59 +92,13 @@ class _ProductsViewState extends State<ProductsView> {
               },
               tooltip: 'البحث',
             ),
-            BlocBuilder<CartBloc, CartState>(
-              builder: (context, state) {
-                int itemCount = 0;
-                if (state is CartLoaded) {
-                  itemCount = state.cartItems.length;
-                }
-                return Stack(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.shopping_cart_outlined,
-                        color: Colors.teal[700],
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CartScreen(),
-                          ),
-                        );
-                      },
-                      tooltip: 'السلة',
-                    ),
-                    if (itemCount > 0)
-                      Positioned(
-                        left: 8,
-                        top: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.red[400],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 14,
-                            minHeight: 14,
-                          ),
-                          child: Text(
-                            '$itemCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                );
+
+            IconButton(
+              onPressed: () {
+                context.go('/cart');
               },
+              icon: Icon(Icons.shopping_bag),
             ),
-            const SizedBox(width: 8),
           ],
         ),
         body: BlocBuilder<ProductsBloc, ProductsState>(
@@ -243,7 +224,7 @@ class _ProductsViewState extends State<ProductsView> {
                           ),
                         ),
                         SizedBox(
-                          height: 200,
+                          height: 280,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -257,7 +238,7 @@ class _ProductsViewState extends State<ProductsView> {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: SizedBox(
-                                  width: 140,
+                                  width: 180,
                                   child: _buildProductCard(product),
                                 ),
                               );
@@ -274,86 +255,6 @@ class _ProductsViewState extends State<ProductsView> {
                       ],
                     );
                   },
-                ),
-              );
-            } else if (state is ProductsError) {
-              return Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: Colors.red[400],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'حدث خطأ في تحميل المنتجات',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        state.failure.message,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          height: 1.4,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          context.read<ProductsBloc>().add(
-                            FetchProductsEvent(),
-                          );
-                        },
-                        icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text(
-                          'إعادة المحاولة',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               );
             } else if (state is ProductsError) {
@@ -457,65 +358,85 @@ class _ProductsViewState extends State<ProductsView> {
       },
       child: Card(
         elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        shadowColor: Colors.teal.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Stack(
           children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: Image.network(
-                  product.images.isNotEmpty
-                      ? product.images.first
-                      : 'https://via.placeholder.com/150',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      Icon(Icons.image_not_supported, size: 100),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${product.price.toStringAsFixed(2)} د.ك',
-                    style: TextStyle(
-                      color: Colors.teal[700],
-                      fontWeight: FontWeight.bold,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    child: CachedNetworkImage(
+                      imageUrl: product.images.isNotEmpty
+                          ? product.images.first
+                          : 'https://via.placeholder.com/150',
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[100],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.teal,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[100],
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 60,
+                          color: Colors.grey[400],
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.red : Colors.grey,
                 ),
-                onPressed: () {
-                  setState(() {
-                    if (isFavorite) {
-                      _favorites.remove(product.id.toString());
-                    } else {
-                      _favorites.add(product.id.toString());
-                    }
-                  });
-                },
-              ),
+                Expanded(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          product.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.teal[50],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${product.price.toStringAsFixed(2)} د.ك',
+                            style: TextStyle(
+                              color: Colors.teal[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

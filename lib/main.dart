@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shopify_flutter/shopify_flutter.dart';
+import 'package:traincode/features/auth/bloc/auth_bloc.dart';
+import 'package:traincode/features/auth/screens/forgot_password_screen.dart';
+import 'package:traincode/features/auth/screens/login_screen.dart';
 import 'package:traincode/features/auth/screens/register_screen.dart';
-
+import 'package:traincode/features/cart/repository/cart_repository.dart';
+import 'package:traincode/features/cart/view/cart_screen.dart';
+import 'package:traincode/features/cart/view_model/cart_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:traincode/features/products/model/products_repository.dart';
 import 'package:traincode/features/products/view/products_view.dart';
 import 'package:traincode/features/products/view_model/products_bloc.dart';
-import 'package:traincode/splash_screen.dart';
-import 'package:traincode/features/auth/screens/login_screen.dart';
-import 'package:traincode/features/auth/bloc/auth_bloc.dart';
-import 'package:traincode/features/cart/view_model/cart_bloc.dart';
-import 'package:traincode/features/cart/repository/cart_repository.dart';
+import 'package:traincode/features/shipment/repository/shipment_repository.dart';
+import 'package:traincode/features/shipment/view/orderConfirmationPage.dart';
+import 'package:traincode/features/shipment/view/shipmentPage.dart';
+import 'package:traincode/features/shipment/view_model/shipment_bloc.dart';
 
+import 'package:traincode/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shopify_flutter/shopify_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +32,9 @@ Future<void> main() async {
     storefrontApiVersion: '2024-07',
     language: 'ar',
   );
-
-  runApp(MyApp());
+  final shopifyLocalization = ShopifyLocalization.instance;
+  shopifyLocalization.setCountryCode('KW');
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -35,8 +42,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cartRepository = CartRepository();
+    final shipmentRepository = ShipmentRepository();
+
     final GoRouter router = GoRouter(
-      initialLocation: '/products',
+      initialLocation: '/login',
       routes: [
         GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
         GoRoute(
@@ -48,16 +58,45 @@ class MyApp extends StatelessWidget {
           builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
-          path: '/signup',
+          path: '/register',
           builder: (context, state) => const RegisterScreen(),
         ),
-        // Add more routes for other features later
+        GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
+        GoRoute(
+          path: '/shipment',
+          builder: (context, state) {
+            final Map<String, dynamic> extra =
+                state.extra as Map<String, dynamic>;
+            return ShippingDetailsScreen(
+              customerAccessToken: extra['customerAccessToken'] as String,
+              cartId: extra['cartId'] as String,
+              email: extra['email'] as String,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/order-confirmation',
+          builder: (context, state) {
+            final Map<String, dynamic> extra =
+                state.extra as Map<String, dynamic>;
+            return OrderConfirmationScreen(
+              message: extra['message'] as String,
+              checkoutId: extra['checkoutId'] as String?,
+            );
+          },
+        ),
       ],
     );
 
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider(create: (context) => ProductsRepository()),
+        RepositoryProvider(create: (context) => cartRepository),
+        RepositoryProvider(create: (context) => shipmentRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -67,28 +106,31 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(create: (context) => AuthBloc()),
           BlocProvider(
-            create: (context) => CartBloc(cartRepository: CartRepository()),
+            create: (context) {
+              final cartBloc = CartBloc(cartRepository: cartRepository);
+              cartBloc.add(LoadCartEvent());
+              return cartBloc;
+            },
+          ),
+          BlocProvider(
+            create: (context) =>
+                ShippingBloc(context.read<ShipmentRepository>()),
           ),
         ],
         child: MaterialApp.router(
-          title: 'متجر مستحضرات التجميل', // Cosmetic Store in Arabic
+          title: 'TrainCode',
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-            useMaterial3: true,
-            fontFamily: 'Arial',
-            // Force RTL text direction
+            primarySwatch:
+                Colors.teal, // Updated to match ShippingDetailsScreen
             visualDensity: VisualDensity.adaptivePlatformDensity,
+            textTheme: const TextTheme(
+              bodyMedium: TextStyle(
+                fontFamily: 'Tajawal',
+              ), // Arabic-friendly font
+            ),
           ),
-          // Remove localization delegates - Arabic only
-          locale: const Locale('ar', 'KW'),
-          // Force RTL layout direction
-          builder: (context, child) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: child!,
-            );
-          },
           routerConfig: router,
+          debugShowCheckedModeBanner: false,
         ),
       ),
     );

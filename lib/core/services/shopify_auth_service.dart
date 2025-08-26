@@ -36,14 +36,18 @@ class ShopifyAuthService {
       final accessToken = await _shopifyAuth.currentCustomerAccessToken;
       if (accessToken != null) {
         await SecurityService.storeAccessToken(accessToken);
-        
+
         // Store token expiration date if available
         final tokenWithExpDate = await _shopifyAuth.accessTokenWithExpDate;
         if (tokenWithExpDate?.expiresAt != null) {
-          await SecurityService.storeTokenExpirationDate(tokenWithExpDate!.expiresAt!);
+          await SecurityService.storeTokenExpirationDate(
+            tokenWithExpDate!.expiresAt!,
+          );
         } else {
           // Set default expiration to 24 hours if not provided
-          final defaultExpiration = DateTime.now().add(const Duration(hours: 24));
+          final defaultExpiration = DateTime.now().add(
+            const Duration(hours: 24),
+          );
           await SecurityService.storeTokenExpirationDate(defaultExpiration);
         }
       }
@@ -86,11 +90,18 @@ class ShopifyAuthService {
       final user = await _shopifyAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
-        phone: phone,
-        firstName: firstName,
-        lastName: lastName,
-        acceptsMarketing: acceptsMarketing,
       );
+
+      // Update additional fields if provided
+      if (firstName != null || lastName != null || phone != null || acceptsMarketing != null) {
+        final customer = ShopifyCustomer.instance;
+        await customer.customerUpdate(
+          firstName: firstName,
+          lastName: lastName,
+          phoneNumber: phone,
+          acceptsMarketing: acceptsMarketing,
+        );
+      }
 
       // Store the access token securely
       final accessToken = await _shopifyAuth.currentCustomerAccessToken;
@@ -100,10 +111,14 @@ class ShopifyAuthService {
         // Store token expiration date if available
         final tokenWithExpDate = await _shopifyAuth.accessTokenWithExpDate;
         if (tokenWithExpDate?.expiresAt != null) {
-          await SecurityService.storeTokenExpirationDate(tokenWithExpDate!.expiresAt!);
+          await SecurityService.storeTokenExpirationDate(
+            tokenWithExpDate!.expiresAt!,
+          );
         } else {
           // Set default expiration to 24 hours if not provided
-          final defaultExpiration = DateTime.now().add(const Duration(hours: 24));
+          final defaultExpiration = DateTime.now().add(
+            const Duration(hours: 24),
+          );
           await SecurityService.storeTokenExpirationDate(defaultExpiration);
         }
       }
@@ -112,9 +127,9 @@ class ShopifyAuthService {
       if (user != null) {
         final userData = <String, dynamic>{
           'email': user.email,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'phone': user.phone,
+          'firstName': user.firstName ?? firstName,
+          'lastName': user.lastName ?? lastName,
+          'phone': user.phone ?? phone,
           'id': user.id,
         };
         await SecurityService.syncUserDataWithShopify(userData);
@@ -211,11 +226,11 @@ class ShopifyAuthService {
       // Check if we have stored credentials
       final storedToken = await SecurityService.getAccessToken();
       final sessionId = await SecurityService.getSessionId();
-      
+
       if (storedToken == null || sessionId == null) {
         return false;
       }
-      
+
       // Check if token is expired based on stored expiration date
       final isExpired = await SecurityService.isTokenExpired();
       if (isExpired) {
@@ -223,23 +238,23 @@ class ShopifyAuthService {
         await SecurityService.clearAllAuthData();
         return false;
       }
-      
+
       // Verify with Shopify service
       final user = await currentUser();
       final currentToken = await currentCustomerAccessToken;
-      
+
       // Double-check token validity
       if (currentToken == null || currentToken.isEmpty) {
         await SecurityService.clearAllAuthData();
         return false;
       }
-      
+
       // Verify token format
       if (!SecurityService.isValidTokenFormat(currentToken)) {
         await SecurityService.clearAllAuthData();
         return false;
       }
-      
+
       return user != null;
     } catch (e) {
       debugPrint('Authentication check error: $e');
@@ -248,7 +263,7 @@ class ShopifyAuthService {
       return false;
     }
   }
-  
+
   /// Get user display name for UI
   Future<String> getUserDisplayName() async {
     try {
@@ -257,19 +272,19 @@ class ShopifyAuthService {
         final firstName = userData['firstName'] as String?;
         final lastName = userData['lastName'] as String?;
         final email = userData['email'] as String?;
-        
+
         if (firstName != null && firstName.isNotEmpty) {
           if (lastName != null && lastName.isNotEmpty) {
             return '$firstName $lastName';
           }
           return firstName;
         }
-        
+
         if (email != null && email.isNotEmpty) {
           return email.split('@').first;
         }
       }
-      
+
       // Fallback to current user from Shopify
       final user = await currentUser();
       if (user != null) {
@@ -279,12 +294,12 @@ class ShopifyAuthService {
           }
           return user.firstName!;
         }
-        
+
         if (user.email != null && user.email!.isNotEmpty) {
           return user.email!.split('@').first;
         }
       }
-      
+
       return 'المستخدم';
     } catch (e) {
       debugPrint('Error getting user display name: $e');
