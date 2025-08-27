@@ -112,10 +112,10 @@ class MyApp extends StatelessWidget {
               return cartBloc;
             },
           ),
-          BlocProvider(
-            create: (context) =>
-                ShippingBloc(context.read<ShipmentRepository>()),
-          ),
+          // BlocProvider(
+          //   create: (context) =>
+          //       ShippingBloc(context.read<ShipmentRepository>()),
+          // ),
         ],
         child: MaterialApp.router(
           title: 'TrainCode',
