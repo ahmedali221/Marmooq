@@ -32,45 +32,114 @@ class CartScreen extends StatelessWidget {
         const SizedBox(height: 16),
         if (cart.lines.isEmpty)
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.shopping_cart_outlined,
-                  size: 80,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Your cart is empty',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Add items to get started',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    child: const Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 60,
+                      color: Colors.white,
                     ),
                   ),
-                  child: const Text('Continue Shopping'),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  const Text(
+                    'سلتك فارغة',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00695C),
+                      fontFamily: 'Tajawal',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'أضف منتجات للبدء في التسوق',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                      fontFamily: 'Tajawal',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.teal.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.go('/products');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'تصفح المنتجات',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
@@ -78,33 +147,74 @@ class CartScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Row(
                   children: [
-                    const Icon(Icons.shopping_bag_outlined, color: Colors.teal),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     const Text(
-                      'Your Items',
+                      'عناصر السلة',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'Tajawal',
+                        color: Color(0xFF00695C),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.teal,
-                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.teal.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Text(
                         '${cart.lines.length}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -186,7 +296,7 @@ class CartScreen extends StatelessWidget {
                         ),
                         // Price
                         Text(
-                          '\$${line.cost?.amountPerQuantity?.amount ?? 0.0}',
+                          '${(line.cost?.amountPerQuantity?.amount ?? 0.0).toStringAsFixed(3)} د.ك',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -225,7 +335,7 @@ class CartScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '\$${cart.cost?.totalAmount?.amount ?? "0.00"}',
+                          '${double.tryParse((cart.cost?.totalAmount.amount ?? "0.00").toString())?.toStringAsFixed(3) ?? "0.000"} د.ك',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -294,95 +404,140 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Shopping Cart',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.go('/products');
-            },
-            icon: Icon(Icons.arrow_left),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'سلة التسوق',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: Colors.white,
+              fontFamily: 'Tajawal',
+            ),
           ),
-        ],
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        centerTitle: true,
-      ),
-      body: BlocConsumer<CartBloc, CartState>(
-        listener: (context, state) {
-          print('DEBUG: CartScreen state changed to: $state');
-          if (state is CartSuccess) {
-            print(
-              'DEBUG: Showing success SnackBar for cart ID: ${state.cart.id}',
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Cart created successfully! ID: ${state.cart.id}',
-                ),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 3),
+          actions: [
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-          } else if (state is CartInitialized) {
-            print(
-              'DEBUG: Cart initialized with ID: ${state.cart.id}, isNewCart: ${state.isNewCart}',
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.isNewCart
-                      ? 'New cart created! ID: ${state.cart.id}'
-                      : 'Existing cart loaded! ID: ${state.cart.id}',
-                ),
-                backgroundColor: Colors.blue,
-                duration: const Duration(seconds: 3),
+              child: IconButton(
+                onPressed: () {
+                  context.go('/products');
+                },
+                icon: const Icon(Icons.arrow_forward, color: Colors.white),
               ),
-            );
-          } else if (state is CartFailure) {
-            print('DEBUG: Showing error SnackBar with message: ${state.error}');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${state.error}'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
+            ),
+          ],
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is CartInitial) {
-            print('DEBUG: CartInitial state, triggering LoadCartEvent');
-            // Instead of creating a new cart, we now load an existing cart or create a new one if needed
-            context.read<CartBloc>().add(LoadCartEvent());
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is CartLoading) {
-            print('DEBUG: Rendering CartLoading state');
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is CartSuccess) {
-            print('DEBUG: Rendering CartSuccess state');
-            return _buildCartContent(context, state.cart);
-          }
-          if (state is CartInitialized) {
-            print(
-              'DEBUG: Rendering CartInitialized state, isNewCart: ${state.isNewCart}',
-            );
-            return _buildCartContent(context, state.cart);
-          }
-          if (state is CartFailure) {
-            print('DEBUG: Rendering CartFailure state');
-            return Center(child: Text('Error: ${state.error}'));
-          }
-          print('DEBUG: Rendering default state');
-          return const Center(child: Text('Initialize cart Failed'));
-        },
+            ),
+          ),
+          elevation: 8,
+          shadowColor: Colors.teal.withOpacity(0.3),
+          centerTitle: true,
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF5F5F5), Color(0xFFE8F5E8)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: BlocConsumer<CartBloc, CartState>(
+            listener: (context, state) {
+              print('DEBUG: CartScreen state changed to: $state');
+              if (state is CartSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text(
+                      'تم إنشاء السلة بنجاح!',
+                      style: TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              } else if (state is CartInitialized) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      state.isNewCart
+                          ? 'تم إنشاء سلة جديدة!'
+                          : 'تم تحميل السلة الموجودة!',
+                      style: const TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                    backgroundColor: Colors.blue,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              } else if (state is CartFailure) {
+                print(
+                  'DEBUG: Showing error SnackBar with message: ${state.error}',
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'خطأ: ${state.error}',
+                      style: const TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              }
+            },
+            builder: (context, state) {
+              if (state is CartInitial) {
+                print('DEBUG: CartInitial state, triggering LoadCartEvent');
+                // Instead of creating a new cart, we now load an existing cart or create a new one if needed
+                context.read<CartBloc>().add(LoadCartEvent());
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is CartLoading) {
+                print('DEBUG: Rendering CartLoading state');
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is CartSuccess) {
+                print('DEBUG: Rendering CartSuccess state');
+                return _buildCartContent(context, state.cart);
+              }
+              if (state is CartInitialized) {
+                print(
+                  'DEBUG: Rendering CartInitialized state, isNewCart: ${state.isNewCart}',
+                );
+                return _buildCartContent(context, state.cart);
+              }
+              if (state is CartFailure) {
+                print('DEBUG: Rendering CartFailure state');
+                return Center(child: Text('Error: ${state.error}'));
+              }
+              print('DEBUG: Rendering default state');
+              return const Center(child: Text('Initialize cart Failed'));
+            },
+          ),
+        ),
       ),
     );
   }

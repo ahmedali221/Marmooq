@@ -74,74 +74,101 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               widget.product.name,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.black87,
+                fontSize: 20,
+                color: Colors.white,
+                fontFamily: 'Tajawal',
               ),
             ),
-            backgroundColor: Colors.white,
-            elevation: 0,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+            elevation: 8,
+            shadowColor: Colors.teal.withOpacity(0.3),
             centerTitle: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-              onPressed: () => Navigator.of(context).pop(),
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.share_outlined, color: Colors.black87),
-                onPressed: () {
-                  // TODO: Implement share functionality
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.favorite_border, color: Colors.black87),
-                onPressed: () {
-                  // TODO: Add to wishlist
-                },
-              ),
-            ],
+            // Removed favorites and share buttons as per requirements
+
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Enhanced Image Carousel
-                _buildImageCarousel(),
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFF5F5F5), Color(0xFFE8F5E8)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Enhanced Image Carousel
+                  _buildImageCarousel(),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // Product Details Container
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Product Name and Price
-                        _buildProductHeader(),
-
-                        const SizedBox(height: 24),
-
-                        // Product Description
-                        _buildProductDescription(),
-
-                        const SizedBox(height: 32),
-
-                        // Action Buttons
-                        _buildActionButtons(),
-
-                        const SizedBox(height: 20),
+                  // Enhanced Product Details Container
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(32),
+                        topRight: Radius.circular(32),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          spreadRadius: 0,
+                          blurRadius: 20,
+                          offset: const Offset(0, -5),
+                        ),
                       ],
                     ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Product Name and Price
+                          _buildProductHeader(),
+
+                          const SizedBox(height: 24),
+
+                          // Product Description
+                          _buildProductDescription(),
+
+                          const SizedBox(height: 32),
+
+                          // Action Buttons
+                          _buildActionButtons(),
+
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -152,36 +179,62 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Widget _buildImageCarousel() {
     if (widget.product.images.isEmpty) {
       return Container(
-        height: 400,
-        margin: const EdgeInsets.all(16),
+        height: 420,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.grey[100]!, Colors.grey[50]!],
+          ),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.08),
               spreadRadius: 0,
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              blurRadius: 25,
+              offset: const Offset(0, 12),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.image_not_supported_outlined,
-                size: 80,
-                color: Colors.grey,
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 64,
+                  color: Colors.teal[400],
+                ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 20),
               Text(
                 'لا توجد صور متاحة',
                 style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 18,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'سيتم إضافة الصور قريباً',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -191,20 +244,26 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
     }
 
     return Container(
-      height: 400,
-      margin: const EdgeInsets.all(16),
+      height: 420,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Stack(
         children: [
-          // Carousel using carousel_slider
+          // Enhanced Carousel with better shadows
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.15),
                   spreadRadius: 0,
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  spreadRadius: 0,
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -468,54 +527,85 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.product.name,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-            height: 1.3,
+        // Enhanced Product Name with better typography
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            widget.product.name,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+              height: 1.2,
+              letterSpacing: -0.5,
+              fontFamily: 'Tajawal',
+            ),
+            textAlign: TextAlign.right,
           ),
-          textAlign: TextAlign.right,
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+        const SizedBox(height: 20),
+
+        // Enhanced Price Container with modern design
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal[400]!, Colors.teal[500]!, Colors.teal[600]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.teal.withOpacity(0.4),
+                spreadRadius: 0,
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.teal.withOpacity(0.2),
+                spreadRadius: 0,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.local_offer_outlined, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                '${widget.product.price.toStringAsFixed(3)} د.ك',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                  fontFamily: 'Tajawal',
                 ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.teal[400]!, Colors.teal[600]!],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.teal.withOpacity(0.3),
-                      spreadRadius: 0,
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
-                  child: Text(
-                    '${widget.product.price.toStringAsFixed(3)} د.ك',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                child: const Text(
+                  'السعر',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontFamily: 'Tajawal',
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -525,10 +615,19 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey[200]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,6 +639,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 decoration: BoxDecoration(
                   color: Colors.teal[50],
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.teal.withOpacity(0.1),
+                      spreadRadius: 0,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   Icons.description_outlined,
@@ -554,6 +661,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
+                  fontFamily: 'Tajawal',
                 ),
               ),
             ],
@@ -569,25 +677,78 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   .where((entry) => entry.value.trim().isNotEmpty)
                   .map(
                     (entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        '${entry.key + 1}. ${entry.value.trim()}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[700],
-                          height: 1.7,
-                        ),
-                        textAlign: TextAlign.right,
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            margin: const EdgeInsets.only(left: 8, top: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.teal[50],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${entry.key + 1}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal[600],
+                                  fontFamily: 'Tajawal',
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              entry.value.trim(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[700],
+                                height: 1.7,
+                                fontFamily: 'Tajawal',
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )
                   .toList(),
             )
           else
-            const Text(
-              'لا يوجد وصف متاح لهذا المنتج حالياً. يرجى التواصل معنا للصور متاحة.',
-              style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.7),
-              textAlign: TextAlign.right,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.grey[600],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: const Text(
+                      'لا يوجد وصف متاح لهذا المنتج حالياً. يرجى التواصل معنا للصور متاحة.',
+                      style: TextStyle(
+                        fontSize: 16, 
+                        color: Colors.grey, 
+                        height: 1.7,
+                        fontFamily: 'Tajawal',
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
             ),
         ],
       ),
@@ -597,38 +758,151 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: Icon(Icons.remove),
-              onPressed: () {
-                if (_quantity > 1) setState(() => _quantity--);
-              },
-            ),
-            Text('$_quantity', style: TextStyle(fontSize: 18)),
-            IconButton(
-              icon: Icon(Icons.add),
-              onPressed: () => setState(() => _quantity++),
-            ),
-          ],
+        // Enhanced Quantity Selector
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'الكمية:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  fontFamily: 'Tajawal',
+                ),
+              ),
+              const SizedBox(width: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 0,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(16),
+                          bottomRight: Radius.circular(16),
+                        ),
+                        onTap: () {
+                          if (_quantity > 1) setState(() => _quantity--);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _quantity > 1 ? Colors.teal[50] : Colors.grey[100],
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.remove,
+                            size: 20,
+                            color: _quantity > 1
+                                ? Colors.teal[600]
+                                : Colors.grey[400],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      child: Text(
+                        '$_quantity',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontFamily: 'Tajawal',
+                        ),
+                      ),
+                    ),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          bottomLeft: Radius.circular(16),
+                        ),
+                        onTap: () => setState(() => _quantity++),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.teal[50],
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              bottomLeft: Radius.circular(16),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.add,
+                            size: 20,
+                            color: Colors.teal[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        // Add to Cart Button
+        // Enhanced Add to Cart Button
         Container(
           width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.teal[400]!, Colors.teal[600]!],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.teal.withOpacity(0.4),
+                color: Colors.teal.withOpacity(0.3),
                 spreadRadius: 0,
-                blurRadius: 12,
-                offset: const Offset(0, 6),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.teal.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -847,19 +1121,30 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               backgroundColor: Colors.transparent,
               foregroundColor: Colors.white,
               shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 18),
+              padding: const EdgeInsets.symmetric(vertical: 20),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
               ),
+              elevation: 0,
             ),
           ),
         ),
 
-        const SizedBox(height: 16),
-
-        // Add to Wishlist Button
-        SizedBox(
+        // Enhanced Add to Wishlist Button
+        Container(
           width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.teal[300]!, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.teal.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
           child: OutlinedButton.icon(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -874,7 +1159,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   backgroundColor: Colors.orange[600],
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               );
@@ -885,12 +1170,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.white,
               foregroundColor: Colors.teal[600],
-              side: BorderSide(color: Colors.teal[300]!, width: 2),
-              padding: const EdgeInsets.symmetric(vertical: 18),
+              side: BorderSide.none,
+              padding: const EdgeInsets.symmetric(vertical: 20),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
               ),
+              elevation: 0,
             ),
           ),
         ),
