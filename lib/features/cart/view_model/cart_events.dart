@@ -75,3 +75,22 @@ class CartClearedEvent extends CartEvent {
   @override
   String toString() => 'CartClearedEvent()';
 }
+
+class UpdateCartLineItemsEvent extends CartEvent {
+  final String cartId;
+  final List<CartLineUpdateInput> cartLineInputs;
+  final bool reverse;
+
+  const UpdateCartLineItemsEvent({
+    required this.cartId,
+    required this.cartLineInputs,
+    this.reverse = false,
+  });
+
+  @override
+  List<Object?> get props => [cartId, cartLineInputs, reverse];
+
+  @override
+  String toString() =>
+      'UpdateCartLineItemsEvent(cartId: $cartId, items: ${cartLineInputs.length}, reverse: $reverse)';
+}

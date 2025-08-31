@@ -288,4 +288,47 @@ class CartRepository {
       );
     }
   }
+
+  /// Updates line items in an existing cart specified by cartId.
+  /// Takes a list of CartLineUpdateInput objects specifying line IDs and new quantities.
+  /// Includes debugging logs for input, API call, and response.
+  Future<Cart> updateLineItemsInCart({
+    required String cartId,
+    required List<CartLineUpdateInput> cartLineInputs,
+    bool reverse = false,
+  }) async {
+    try {
+      // Step 1: Log input parameters
+      print('DEBUG: Preparing to update line items in cart with ID: $cartId');
+      print(
+        'DEBUG: Updating ${cartLineInputs.length} line items with quantities: ${cartLineInputs.map((input) => "${input.id}: ${input.quantity}").join(", ")}',
+      );
+
+      // Step 2: Call ShopifyCart.updateLineItemsInCart
+      print('DEBUG: Sending cartLinesUpdate mutation to Shopify API...');
+      final Cart updatedCart = await _shopifyCart.updateLineItemsInCart(
+        cartId: cartId,
+        cartLineInputs: cartLineInputs,
+        reverse: reverse,
+      );
+
+      // Step 3: Log the response
+      if (updatedCart.id == null) {
+        print('DEBUG: Warning - Updated cart has no ID');
+        throw CartRepositoryException('Updated cart is invalid: missing ID');
+      }
+      print('DEBUG: Line items updated in cart successfully!');
+      print('DEBUG: Updated cart ID: ${updatedCart.id}');
+      print(
+        'DEBUG: Updated cart details - lines: ${updatedCart.lines.length}, total: ${updatedCart.cost?.totalAmount?.amount ?? 0.0}',
+      );
+
+      return updatedCart;
+    } catch (e, stackTrace) {
+      // Step 4: Log errors with stack trace for debugging
+      print('DEBUG: Error updating line items in cart: $e');
+      print('DEBUG: Stack trace: $stackTrace');
+      throw CartRepositoryException('Failed to update line items in cart: $e');
+    }
+  }
 }

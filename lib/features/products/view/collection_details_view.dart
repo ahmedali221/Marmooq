@@ -17,22 +17,42 @@ class CollectionDetailsView extends StatefulWidget {
   State<CollectionDetailsView> createState() => _CollectionDetailsViewState();
 }
 
-class _CollectionDetailsViewState extends State<CollectionDetailsView> {
+class _CollectionDetailsViewState extends State<CollectionDetailsView>
+    with TickerProviderStateMixin {
   // Track favorite products
   final Set<String> _favoriteProducts = <String>{};
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   List<Product> _filteredProducts = [];
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _filteredProducts = widget.products;
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _animationController.forward();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -72,245 +92,417 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontFamily: 'Tajawal',
-              fontSize: 20,
+              fontSize: 22,
               color: Colors.white,
             ),
           ),
           flexibleSpace: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                colors: [
+                  const Color(0xFF00695C),
+                  const Color(0xFF26A69A),
+                  const Color(0xFF4DB6AC),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
-          elevation: 8,
-          shadowColor: Colors.teal.withOpacity(0.3),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           centerTitle: true,
           leading: Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
             ),
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+              icon: const Icon(
+                Icons.arrow_back_ios,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
           actions: [
             Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: IconButton(
                 onPressed: () {
                   // Add filter functionality here
+                  _showFilterDialog();
                 },
-                icon: const Icon(Icons.filter_list, color: Colors.white),
+                icon: const Icon(Icons.tune, color: Colors.white, size: 20),
               ),
             ),
           ],
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFF5F5F5), Color(0xFFE8F5E8)],
+              colors: [
+                const Color(0xFFF8F9FA),
+                const Color(0xFFE8F5E8),
+                const Color(0xFFF0F8F0),
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
-          child: Column(
-            children: [
-              // Search Bar
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Column(
+                children: [
+                  // Enhanced Search Bar
+                  Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 4,
                     ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  style: const TextStyle(fontSize: 16),
-                  decoration: InputDecoration(
-                    hintText: 'ابحث في ${widget.collectionName}...',
-                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: Colors.teal[600],
-                      size: 24,
-                    ),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear, color: Colors.grey[500]),
-                            onPressed: () {
-                              _searchController.clear();
-                              _onSearchChanged('');
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              // Products Count
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.teal[50],
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.teal[200]!),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      color: Colors.teal[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_filteredProducts.length} منتج',
-                      style: TextStyle(
-                        color: Colors.teal[700],
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                          spreadRadius: 0,
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.teal.withOpacity(0.1),
+                        width: 1,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Products Grid
-              Expanded(
-                child: _filteredProducts.isEmpty
-                    ? Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Tajawal',
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'ابحث في ${widget.collectionName}...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 16,
+                          fontFamily: 'Tajawal',
+                        ),
+                        prefixIcon: Container(
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Colors.teal[50],
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(20),
+                          child: Icon(
+                            Icons.search,
+                            color: Colors.teal[600],
+                            size: 22,
+                          ),
+                        ),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? Container(
+                                margin: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF00695C),
-                                      Color(0xFF26A69A),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+                                  color: Colors.red[50],
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: const Icon(
-                                  Icons.search_off,
-                                  size: 60,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                _searchQuery.isNotEmpty
-                                    ? 'لم يتم العثور على نتائج'
-                                    : 'لا توجد منتجات في هذه المجموعة',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF00695C),
-                                  fontFamily: 'Tajawal',
-                                ),
-                              ),
-                              if (_searchQuery.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Text(
-                                  'جرب البحث بكلمات مختلفة',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    color: Colors.red[400],
+                                    size: 20,
                                   ),
-                                ),
-                                const SizedBox(height: 20),
-                                ElevatedButton.icon(
                                   onPressed: () {
                                     _searchController.clear();
                                     _onSearchChanged('');
                                   },
-                                  icon: const Icon(Icons.clear_all),
-                                  label: const Text('مسح البحث'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.teal[50],
-                                    foregroundColor: Colors.teal[700],
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                  ),
                                 ),
-                              ],
-                            ],
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Enhanced Products Count
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.teal[50]!,
+                          Colors.teal[100]!.withOpacity(0.5),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(color: Colors.teal[200]!, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.teal.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal[600],
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: const Icon(
+                            Icons.inventory_2_outlined,
+                            color: Colors.white,
+                            size: 18,
                           ),
                         ),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.65,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
-                        itemCount: _filteredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = _filteredProducts[index];
-                          return ProductCardWidget(
-                            product: product,
-                            isFavorite: _favoriteProducts.contains(product.id),
-                            onToggleFavorite: _toggleFavorite,
-                          );
-                        },
-                      ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${_filteredProducts.length} منتج متاح',
+                          style: TextStyle(
+                            color: Colors.teal[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            fontFamily: 'Tajawal',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Products Grid
+                  Expanded(
+                    child: _filteredProducts.isEmpty
+                        ? _buildEmptyState()
+                        : _buildProductsGrid(),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 30,
+              offset: const Offset(0, 15),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF00695C),
+                    const Color(0xFF26A69A),
+                    const Color(0xFF4DB6AC),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.teal.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _searchQuery.isNotEmpty
+                    ? Icons.search_off
+                    : Icons.inventory_2_outlined,
+                size: 60,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'لم يتم العثور على نتائج'
+                  : 'لا توجد منتجات في هذه المجموعة',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF00695C),
+                fontFamily: 'Tajawal',
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (_searchQuery.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'جرب البحث بكلمات مختلفة أو تصفح جميع المنتجات',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[600],
+                  fontFamily: 'Tajawal',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.teal[50]!,
+                      Colors.teal[100]!.withOpacity(0.5),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.teal[200]!, width: 1),
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _searchController.clear();
+                    _onSearchChanged('');
+                  },
+                  icon: Icon(
+                    Icons.clear_all,
+                    color: Colors.teal[700],
+                    size: 20,
+                  ),
+                  label: Text(
+                    'مسح البحث',
+                    style: TextStyle(
+                      color: Colors.teal[700],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      fontFamily: 'Tajawal',
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductsGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 20,
+      ),
+      itemCount: _filteredProducts.length,
+      itemBuilder: (context, index) {
+        final product = _filteredProducts[index];
+        return AnimatedContainer(
+          duration: Duration(milliseconds: 300 + (index * 100)),
+          curve: Curves.easeOutCubic,
+          child: ProductCardWidget(
+            product: product,
+            isFavorite: _favoriteProducts.contains(product.id),
+            onToggleFavorite: _toggleFavorite,
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.tune, color: Colors.teal[600], size: 24),
+            const SizedBox(width: 8),
+            const Text(
+              'تصفية المنتجات',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'سيتم إضافة خيارات التصفية قريباً',
+          style: TextStyle(fontFamily: 'Tajawal'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'حسناً',
+              style: TextStyle(
+                color: Colors.teal[600],
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

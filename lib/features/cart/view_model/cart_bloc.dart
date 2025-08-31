@@ -14,6 +14,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<AddItemsToCartEvent>(_onAddItemsToCart);
     on<RefreshCartEvent>(_onRefreshCart);
     on<CartClearedEvent>(_onCartCleared);
+    on<UpdateCartLineItemsEvent>(_onUpdateCartLineItems);
   }
 
   Future<void> _onCreateCart(
@@ -187,6 +188,30 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       );
     } catch (e) {
       print('DEBUG: Error in _onCartCleared: $e');
+      emit(CartFailure(e.toString()));
+      print('DEBUG: Emitted CartFailure state with error: $e');
+    }
+  }
+
+  Future<void> _onUpdateCartLineItems(
+    UpdateCartLineItemsEvent event,
+    Emitter<CartState> emit,
+  ) async {
+    print('DEBUG: Received event: $event');
+    emit(const CartLoading());
+    print('DEBUG: Emitted CartLoading state');
+
+    try {
+      print('DEBUG: Updating line items in cart with ID: ${event.cartId}');
+      final cart = await cartRepository.updateLineItemsInCart(
+        cartId: event.cartId,
+        cartLineInputs: event.cartLineInputs,
+        reverse: event.reverse,
+      );
+      emit(CartSuccess(cart));
+      print('DEBUG: Emitted CartSuccess state after updating line items');
+    } catch (e) {
+      print('DEBUG: Error in _onUpdateCartLineItems: $e');
       emit(CartFailure(e.toString()));
       print('DEBUG: Emitted CartFailure state with error: $e');
     }
