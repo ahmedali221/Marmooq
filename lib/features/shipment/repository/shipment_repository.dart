@@ -142,4 +142,38 @@ class ShipmentRepository {
       throw Exception('Failed to create checkout: $e');
     }
   }
+
+  Future<bool> isCheckoutCompleted(String checkoutId) async {
+    try {
+      final shopifyCustom = ShopifyCustom.instance;
+
+      const checkoutQuery = r'''
+        query getCheckoutStatus($id: ID!) {
+          node(id: $id) {
+            ... on Checkout {
+              id
+              completedAt
+            }
+          }
+        }
+      ''';
+
+      final result = await shopifyCustom.customQuery(
+        gqlQuery: checkoutQuery,
+        variables: {'id': checkoutId},
+      );
+
+      final node = result?['node'];
+      if (node == null || node['__typename'] != 'Checkout') {
+        print('Error checking checkout status: Checkout not found');
+        return false;
+      }
+
+      return node['completedAt'] != null;
+    } catch (e) {
+      print('Error checking checkout status: $e');
+      return false;
+    }
+  }
+
 }

@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
     final shipmentRepository = ShipmentRepository();
 
     final GoRouter router = GoRouter(
-      initialLocation: '/login',
+      initialLocation: '/',
       routes: [
         GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
         GoRoute(

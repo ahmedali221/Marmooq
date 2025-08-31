@@ -12,6 +12,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<LoadCartEvent>(_onLoadCart);
     on<GetCartByIdEvent>(_onGetCartById);
     on<AddItemsToCartEvent>(_onAddItemsToCart);
+    on<RefreshCartEvent>(_onRefreshCart);
+    on<CartClearedEvent>(_onCartCleared);
   }
 
   Future<void> _onCreateCart(
@@ -121,6 +123,70 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       print('DEBUG: Emitted CartSuccess state');
     } catch (e) {
       print('DEBUG: Error in _onAddItemsToCart: $e');
+      emit(CartFailure(e.toString()));
+      print('DEBUG: Emitted CartFailure state with error: $e');
+    }
+  }
+
+  Future<void> _onRefreshCart(
+    RefreshCartEvent event,
+    Emitter<CartState> emit,
+  ) async {
+    print('DEBUG: Received event: $event');
+    emit(const CartLoading());
+    print('DEBUG: Emitted CartLoading state');
+
+    try {
+      // Get stored cart ID
+      final cartId = await SecurityService.getCartId();
+      print('DEBUG: Refreshing cart, stored cart ID: $cartId');
+
+      if (cartId == null) {
+        // No stored cart ID, create a new cart
+        print('DEBUG: No stored cart ID found, creating a new cart');
+        final cart = await cartRepository.createCart();
+        emit(CartInitialized(cart, isNewCart: true));
+        print('DEBUG: Emitted CartInitialized state with isNewCart=true');
+      } else {
+        // Try to get the cart by ID
+        try {
+          print('DEBUG: Retrieving cart with ID: $cartId');
+          final cart = await cartRepository.getCartById(cartId);
+          emit(CartInitialized(cart, isNewCart: false));
+          print('DEBUG: Emitted CartInitialized state with isNewCart=false');
+        } catch (e) {
+          // If cart retrieval fails, create a new cart
+          print('DEBUG: Failed to retrieve cart, creating a new one: $e');
+          final cart = await cartRepository.createCart();
+          emit(CartInitialized(cart, isNewCart: true));
+          print('DEBUG: Emitted CartInitialized state with isNewCart=true');
+        }
+      }
+    } catch (e) {
+      print('DEBUG: Error in _onRefreshCart: $e');
+      emit(CartFailure(e.toString()));
+      print('DEBUG: Emitted CartFailure state with error: $e');
+    }
+  }
+
+  Future<void> _onCartCleared(
+    CartClearedEvent event,
+    Emitter<CartState> emit,
+  ) async {
+    print('DEBUG: Received event: $event');
+    emit(const CartLoading());
+    print('DEBUG: Emitted CartLoading state');
+
+    try {
+      // Create a new empty cart
+      print('DEBUG: Creating new empty cart after clearing');
+      final cart = await cartRepository.createCart();
+      emit(CartInitialized(cart, isNewCart: true));
+      print(
+        'DEBUG: Emitted CartInitialized state with isNewCart=true for cleared cart',
+      );
+    } catch (e) {
+      print('DEBUG: Error in _onCartCleared: $e');
       emit(CartFailure(e.toString()));
       print('DEBUG: Emitted CartFailure state with error: $e');
     }

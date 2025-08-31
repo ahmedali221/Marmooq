@@ -61,3 +61,17 @@ class AddItemsToCartEvent extends CartEvent {
   String toString() =>
       'AddItemsToCartEvent(cartId: $cartId, items: ${cartLineInputs.length}, reverse: $reverse)';
 }
+
+class RefreshCartEvent extends CartEvent {
+  const RefreshCartEvent();
+
+  @override
+  String toString() => 'RefreshCartEvent()';
+}
+
+class CartClearedEvent extends CartEvent {
+  const CartClearedEvent();
+
+  @override
+  String toString() => 'CartClearedEvent()';
+}

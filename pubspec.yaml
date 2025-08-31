@@ -51,6 +51,7 @@ dependencies:
   cached_network_image: ^3.4.1
   shopify_sheet: ^0.0.4
   url_launcher: ^6.3.2
+  webview_flutter: ^4.13.0
   
 
 dev_dependencies:

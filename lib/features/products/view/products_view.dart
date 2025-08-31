@@ -281,7 +281,7 @@ class _ProductsViewState extends State<ProductsView>
                   } else if (cartState is CartInitialized) {
                     itemCount = cartState.cart.lines.length;
                   }
-                  
+
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.teal[50],
