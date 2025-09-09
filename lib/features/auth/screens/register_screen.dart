@@ -24,7 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController(text: 'demo@example.com');
   final _passwordController = TextEditingController(text: 'DemoPass123');
   final _confirmPasswordController = TextEditingController(text: 'DemoPass123');
-  final _phoneController = TextEditingController(text: '+1234567890');
+  final _phoneController = TextEditingController(text: '+96550000000');
   bool _acceptsMarketing = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -61,13 +61,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _register() {
     if (_formKey.currentState?.validate() ?? false) {
+      final normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
+        _phoneController.text,
+      );
+      debugPrint(
+        '[Register] Normalized Kuwait phone to: ' +
+            (normalizedPhone.isEmpty ? '(empty)' : normalizedPhone),
+      );
       context.read<AuthBloc>().add(
         AuthRegister(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          phone: _phoneController.text.trim(),
+          phone: normalizedPhone.isEmpty ? null : normalizedPhone,
           acceptsMarketing: _acceptsMarketing,
         ),
       );
@@ -190,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
-                        if (!ValidationUtils.isValidPhone(value)) {
+                        if (!ValidationUtils.isValidKuwaitPhone(value)) {
                           return 'يرجى إدخال رقم هاتف صالح';
                         }
                       }

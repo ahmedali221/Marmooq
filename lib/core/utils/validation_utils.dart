@@ -159,4 +159,61 @@ class ValidationUtils {
     }
     return 'Phone is valid';
   }
+
+  /// Validates a Kuwait phone number.
+  /// Accepted inputs:
+  /// - Local 8-digit numbers (e.g., 5XXXXXXX, 6XXXXXXX, 9XXXXXXX)
+  /// - With country code +965 followed by 8 digits
+  /// - With leading zeros/spaces/dashes which will be normalized
+  static bool isValidKuwaitPhone(String phone) {
+    if (phone.isEmpty) return true; // Optional field
+    final normalized = normalizeKuwaitPhone(phone);
+    // E.164 for Kuwait must be +965 followed by 8 digits
+    final RegExp kwRegex = RegExp(r'^\+965[0-9]{8}$');
+    return kwRegex.hasMatch(normalized);
+  }
+
+  /// Normalizes any Kuwait phone input to E.164: +965XXXXXXXX
+  /// If input cannot be normalized, returns the trimmed original input.
+  static String normalizeKuwaitPhone(String phone) {
+    if (phone.isEmpty) return '';
+    var p = phone.trim();
+    // Remove all non-digits except leading +
+    p = p.replaceAll(RegExp(r'[^0-9+]'), '');
+
+    // If already E.164 +965XXXXXXXX
+    final RegExp e164Kw = RegExp(r'^\+965[0-9]{8}$');
+    if (e164Kw.hasMatch(p)) return p;
+
+    // If starts with 00965 or 0965 → convert to +965
+    if (p.startsWith('00965')) {
+      p = '+965' + p.substring(5);
+    } else if (p.startsWith('0965')) {
+      p = '+965' + p.substring(4);
+    }
+
+    // If starts with +965 but has extra leading zero(s)
+    if (p.startsWith('+965')) {
+      var rest = p.substring(4);
+      rest = rest.replaceAll(RegExp(r'^0+'), '');
+      if (rest.length == 8) return '+965' + rest;
+    }
+
+    // If local 8-digit number starting with valid mobile prefixes 5/6/9 or landline 2
+    var digitsOnly = p.replaceAll(RegExp(r'[^0-9]'), '');
+    digitsOnly = digitsOnly.replaceAll(
+      RegExp(r'^965'),
+      '',
+    ); // remove leading 965 if present
+    digitsOnly = digitsOnly.replaceAll(
+      RegExp(r'^0+'),
+      '',
+    ); // remove leading zeros
+    if (digitsOnly.length == 8) {
+      return '+965' + digitsOnly;
+    }
+
+    // Fallback: return trimmed original if unable to normalize
+    return phone.trim();
+  }
 }

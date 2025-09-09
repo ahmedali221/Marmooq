@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:traincode/features/products/model/product_model.dart';
@@ -7,6 +8,8 @@ import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:traincode/features/cart/view_model/cart_states.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
+import 'package:go_router/go_router.dart';
+import 'package:traincode/core/services/security_service.dart';
 
 class ProductDetailsView extends StatefulWidget {
   final Product product;
@@ -96,19 +99,21 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: IconButton(
                 icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            // Removed favorites and share buttons as per requirements
 
+            // Removed favorites and share buttons as per requirements
           ),
           body: Container(
             decoration: const BoxDecoration(
@@ -729,18 +734,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.grey[600],
-                    size: 20,
-                  ),
+                  Icon(Icons.info_outline, color: Colors.grey[600], size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: const Text(
                       'لا يوجد وصف متاح لهذا المنتج حالياً. يرجى التواصل معنا للصور متاحة.',
                       style: TextStyle(
-                        fontSize: 16, 
-                        color: Colors.grey, 
+                        fontSize: 16,
+                        color: Colors.grey,
                         height: 1.7,
                         fontFamily: 'Tajawal',
                       ),
@@ -752,6 +753,193 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             ),
         ],
       ),
+    );
+  }
+
+  Future<void> _handleBuyNow() async {
+    setState(() {
+      _isAddingToCart = true;
+    });
+
+    try {
+      // Check if product is available (has a valid variant ID)
+      if (widget.product.variantId == null ||
+          widget.product.variantId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('المنتج غير متوفر حالياً'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+
+        setState(() {
+          _isAddingToCart = false;
+        });
+        return;
+      }
+
+      // Get the current cart state
+      final cartState = context.read<CartBloc>().state;
+      String cartId;
+
+      if (cartState is CartInitialized) {
+        cartId = cartState.cart.id!;
+      } else if (cartState is CartSuccess) {
+        cartId = cartState.cart.id!;
+      } else {
+        // Create a new cart if none exists
+        context.read<CartBloc>().add(const CreateCartEvent());
+        
+        // Wait for cart creation by listening to state changes
+        await _waitForCartState([CartInitialized, CartSuccess]);
+        final newCartState = context.read<CartBloc>().state;
+        
+        if (newCartState is CartInitialized) {
+          cartId = newCartState.cart.id!;
+        } else if (newCartState is CartSuccess) {
+          cartId = newCartState.cart.id!;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.error, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('فشل في إنشاء السلة'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          setState(() {
+            _isAddingToCart = false;
+          });
+          return;
+        }
+      }
+
+      // Create cart line input with product variant ID and quantity
+      final cartLineInput = CartLineUpdateInput(
+        merchandiseId: widget.product.variantId,
+        quantity: _quantity,
+      );
+
+      // Dispatch add items to cart event
+      context.read<CartBloc>().add(
+        AddItemsToCartEvent(
+          cartId: cartId,
+          cartLineInputs: [cartLineInput],
+        ),
+      );
+
+      // Wait for cart update to complete
+      await _waitForCartState([CartSuccess]);
+
+      // Get customer access token and email from secure storage
+      final customerAccessToken = await SecurityService.getAccessToken();
+      final userData = await SecurityService.getUserData();
+      final email = userData?['email'] as String?;
+
+      if (customerAccessToken == null || customerAccessToken.isEmpty) {
+        // User not logged in, show login prompt
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.login, color: Colors.white),
+                SizedBox(width: 8),
+                Text('يرجى تسجيل الدخول للمتابعة إلى الدفع'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            action: SnackBarAction(
+              label: 'تسجيل الدخول',
+              textColor: Colors.white,
+              onPressed: () {
+                context.go('/login');
+              },
+            ),
+          ),
+        );
+      } else {
+        // Navigate to checkout page
+        context.go('/shipment', extra: {
+          'customerAccessToken': customerAccessToken,
+          'cartId': cartId,
+          'email': email ?? '',
+        });
+      }
+
+      // Reset loading state
+      setState(() {
+        _isAddingToCart = false;
+      });
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Text('حدث خطأ: ${e.toString()}'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+
+      // Reset loading state on error
+      setState(() {
+        _isAddingToCart = false;
+      });
+    }
+  }
+
+  // Helper method to wait for specific cart states
+  Future<void> _waitForCartState(List<Type> expectedStates) async {
+    final completer = Completer<void>();
+    late StreamSubscription subscription;
+    
+    subscription = context.read<CartBloc>().stream.listen((state) {
+      if (expectedStates.any((type) => state.runtimeType == type)) {
+        subscription.cancel();
+        completer.complete();
+      } else if (state is CartFailure) {
+        subscription.cancel();
+        completer.completeError(state.error);
+      }
+    });
+    
+    // Add timeout to prevent infinite waiting
+    return completer.future.timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        subscription.cancel();
+        throw TimeoutException('Cart operation timed out', const Duration(seconds: 10));
+      },
     );
   }
 
@@ -818,7 +1006,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: _quantity > 1 ? Colors.teal[50] : Colors.grey[100],
+                            color: _quantity > 1
+                                ? Colors.teal[50]
+                                : Colors.grey[100],
                             borderRadius: const BorderRadius.only(
                               topRight: Radius.circular(16),
                               bottomRight: Radius.circular(16),
@@ -1115,6 +1305,65 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 : const Icon(Icons.shopping_cart_outlined, size: 22),
             label: Text(
               _isAddingToCart ? 'جاري الإضافة...' : 'إضافة إلى السلة',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+
+        // Buy Now Button
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.orange[400]!, Colors.orange[600]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.3),
+                spreadRadius: 0,
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ElevatedButton.icon(
+            onPressed: _isAddingToCart
+                ? null
+                : () async {
+                    await _handleBuyNow();
+                  },
+            icon: _isAddingToCart
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.flash_on, size: 22),
+            label: Text(
+              _isAddingToCart ? 'جاري المعالجة...' : 'اشتري الآن',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(

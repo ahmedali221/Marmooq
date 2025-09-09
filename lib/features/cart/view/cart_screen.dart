@@ -98,10 +98,7 @@ class _CartScreenState extends State<CartScreen>
             ),
             content: const Text(
               'هل أنت متأكد من أنك تريد مسح جميع العناصر من السلة؟ لا يمكن التراجع عن هذا الإجراء.',
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 16,
-              ),
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 16),
             ),
             actions: [
               TextButton(
@@ -808,7 +805,11 @@ class _CartScreenState extends State<CartScreen>
                 onPressed: () {
                   _showClearCartDialog(context);
                 },
-                icon: const Icon(Icons.clear_all, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.clear_all,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
             Container(

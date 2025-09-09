@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:traincode/core/services/security_service.dart';
+import 'package:traincode/core/utils/validation_utils.dart';
 import 'package:traincode/core/services/auth_exception.dart';
 
 /// Service for handling Shopify authentication operations.
@@ -53,16 +54,14 @@ class ShopifyAuthService {
       }
 
       // Store user data securely
-      if (user != null) {
-        final userData = <String, dynamic>{
-          'email': user.email,
-          'firstName': user.firstName,
-          'lastName': user.lastName,
-          'phone': user.phone,
-          'id': user.id,
-        };
-        await SecurityService.syncUserDataWithShopify(userData);
-      }
+      final userData = <String, dynamic>{
+        'email': user.email,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'phone': user.phone,
+        'id': user.id,
+      };
+      await SecurityService.syncUserDataWithShopify(userData);
 
       // Generate a new session ID for this login
       await SecurityService.generateSessionId();
@@ -87,25 +86,57 @@ class ShopifyAuthService {
     bool? acceptsMarketing,
   }) async {
     try {
+      final normalizedPhone = (phone == null || phone.trim().isEmpty)
+          ? null
+          : ValidationUtils.normalizeKuwaitPhone(phone);
+      debugPrint(
+        '[AuthService] Signup payload prepared: '
+                '{email: ' +
+            email +
+            ', firstName: ' +
+            (firstName ?? '') +
+            ', lastName: ' +
+            (lastName ?? '') +
+            ', phone(normalized): ' +
+            (normalizedPhone ?? '(null)') +
+            ', acceptsMarketing: ' +
+            (acceptsMarketing?.toString() ?? 'null') +
+            '}',
+      );
+
       final user = await _shopifyAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
+        firstName: firstName,
+        lastName: lastName,
+        phone: normalizedPhone,
+        acceptsMarketing: acceptsMarketing,
+      );
+      debugPrint(
+        '[AuthService] User created. ShopifyUser.id=' + (user.id ?? '(null)'),
       );
 
-      // Update additional fields if provided
-      if (firstName != null || lastName != null || phone != null || acceptsMarketing != null) {
-        final customer = ShopifyCustomer.instance;
-        await customer.customerUpdate(
-          firstName: firstName,
-          lastName: lastName,
-          phoneNumber: phone,
-          acceptsMarketing: acceptsMarketing,
-        );
+      // Ensure we have a valid access token after registration
+      String? accessToken = await _shopifyAuth.currentCustomerAccessToken;
+      // Retry a few times as token provisioning can lag right after creation
+      if (accessToken == null || accessToken.isEmpty) {
+        for (int attempt = 0; attempt < 4; attempt++) {
+          try {
+            await _shopifyAuth.signInWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+          } catch (e) {
+            debugPrint('Sign-in attempt ${attempt + 1} failed: $e');
+          }
+          accessToken = await _shopifyAuth.currentCustomerAccessToken;
+          if (accessToken != null && accessToken.isNotEmpty) break;
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
       }
 
-      // Store the access token securely
-      final accessToken = await _shopifyAuth.currentCustomerAccessToken;
-      if (accessToken != null) {
+      if (accessToken != null && accessToken.isNotEmpty) {
+        // Store the access token securely
         await SecurityService.storeAccessToken(accessToken);
 
         // Store token expiration date if available
@@ -121,19 +152,78 @@ class ShopifyAuthService {
           );
           await SecurityService.storeTokenExpirationDate(defaultExpiration);
         }
+
+        // Update additional fields if provided (now with token)
+        if (firstName != null ||
+            lastName != null ||
+            normalizedPhone != null ||
+            acceptsMarketing != null) {
+          try {
+            final customer = ShopifyCustomer.instance;
+            await customer.customerUpdate(
+              firstName: firstName,
+              lastName: lastName,
+              phoneNumber: normalizedPhone?.replaceAll(' ', ''),
+              acceptsMarketing: acceptsMarketing,
+              customerAccessToken: accessToken,
+            );
+            debugPrint(
+              '[AuthService] customerUpdate called with phone=' +
+                  (normalizedPhone ?? '(null)'),
+            );
+
+            // Verify phone persisted; retry once if needed
+            if (normalizedPhone != null) {
+              try {
+                final verifyUser = await _shopifyAuth.currentUser(
+                  forceRefresh: true,
+                );
+                final currentPhone = verifyUser?.phone;
+                debugPrint(
+                  '[AuthService] Post-signup verify phone=' +
+                      (currentPhone ?? '(empty)'),
+                );
+                if (currentPhone == null || currentPhone.isEmpty) {
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  await customer.customerUpdate(
+                    phoneNumber: normalizedPhone.replaceAll(' ', ''),
+                    customerAccessToken: accessToken,
+                  );
+                  debugPrint('[AuthService] Retried setting phone after delay');
+                }
+              } catch (e) {
+                debugPrint(
+                  'Phone verification after signup failed: ' + e.toString(),
+                );
+              }
+            }
+          } catch (e) {
+            // Don't fail registration if profile update fails
+            debugPrint('Post-registration customerUpdate failed: $e');
+          }
+        }
       }
 
-      // Store user data securely
-      if (user != null) {
-        final userData = <String, dynamic>{
-          'email': user.email,
-          'firstName': user.firstName ?? firstName,
-          'lastName': user.lastName ?? lastName,
-          'phone': user.phone ?? phone,
-          'id': user.id,
-        };
-        await SecurityService.syncUserDataWithShopify(userData);
-      }
+      // Store user data securely (refresh to get latest fields)
+      final refreshed =
+          await _shopifyAuth.currentUser(forceRefresh: true) ?? user;
+      debugPrint(
+        '[AuthService] Refreshed user after signup: email=' +
+            (refreshed.email ?? '(null)') +
+            ', phone=' +
+            (refreshed.phone ?? '(empty)'),
+      );
+      final userData = <String, dynamic>{
+        'email': refreshed.email,
+        'firstName': refreshed.firstName ?? firstName,
+        'lastName': refreshed.lastName ?? lastName,
+        'phone': refreshed.phone ?? normalizedPhone,
+        'id': refreshed.id,
+      };
+      await SecurityService.syncUserDataWithShopify(userData);
+      debugPrint(
+        '[AuthService] Synced user data to storage: ' + userData.toString(),
+      );
 
       // Generate a new session ID for this registration
       await SecurityService.generateSessionId();
@@ -187,6 +277,220 @@ class ShopifyAuthService {
     } catch (e) {
       debugPrint('Shopify get current user error: $e');
       return null;
+    }
+  }
+
+  /// Update the current Shopify customer profile
+  /// Any provided field will be updated; leave null to keep existing
+  Future<ShopifyUser> updateCustomer({
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? email,
+    bool? acceptsMarketing,
+  }) async {
+    try {
+      final normalizedPhone = (phone == null || phone.trim().isEmpty)
+          ? null
+          : ValidationUtils.normalizeKuwaitPhone(phone);
+      // Retrieve the current customer access token (required by Shopify)
+      String? customerAccessToken = await SecurityService.getAccessToken();
+      customerAccessToken ??= await _shopifyAuth.currentCustomerAccessToken;
+      if (customerAccessToken == null || customerAccessToken.isEmpty) {
+        throw AuthException('Missing customer access token');
+      }
+
+      final customer = ShopifyCustomer.instance;
+      await customer.customerUpdate(
+        firstName: firstName,
+        lastName: lastName,
+        phoneNumber: normalizedPhone,
+        email: email,
+        customerAccessToken: customerAccessToken,
+        acceptsMarketing: acceptsMarketing,
+      );
+      debugPrint(
+        '[AuthService] customerUpdate (profile) called with phone=' +
+            (normalizedPhone ?? '(null)'),
+      );
+
+      // Verify phone persisted; retry once if needed
+      if (normalizedPhone != null) {
+        try {
+          final verifyUser = await _shopifyAuth.currentUser(forceRefresh: true);
+          final currentPhone = verifyUser?.phone;
+          debugPrint(
+            '[AuthService] Post-update verify phone=' +
+                (currentPhone ?? '(empty)'),
+          );
+          if (currentPhone == null || currentPhone.isEmpty) {
+            await Future.delayed(const Duration(milliseconds: 300));
+            await customer.customerUpdate(
+              phoneNumber: normalizedPhone,
+              customerAccessToken: customerAccessToken,
+            );
+            debugPrint('[AuthService] Retried setting phone after delay');
+          }
+        } catch (e) {
+          debugPrint('Phone verification after update failed: ' + e.toString());
+        }
+      }
+
+      // Refresh current user data after update
+      final updated = await _shopifyAuth.currentUser(forceRefresh: true);
+      if (updated != null) {
+        final userData = <String, dynamic>{
+          'email': updated.email,
+          'firstName': updated.firstName,
+          'lastName': updated.lastName,
+          'phone': updated.phone,
+          'id': updated.id,
+        };
+        await SecurityService.syncUserDataWithShopify(userData);
+        return updated;
+      }
+      // Fallback: fetch without force if null returned
+      final fallback = await _shopifyAuth.currentUser();
+      if (fallback != null) return fallback;
+      throw AuthException('Failed to refresh user after update');
+    } catch (e) {
+      debugPrint('Shopify update customer error: $e');
+      throw AuthException.fromShopifyError(e);
+    }
+  }
+
+  /// List addresses for the current customer
+  Future<List<Address>> listAddresses() async {
+    try {
+      final token =
+          await SecurityService.getAccessToken() ??
+          await _shopifyAuth.currentCustomerAccessToken;
+      if (token == null || token.isEmpty) {
+        throw AuthException('Missing customer access token');
+      }
+      // Fetch addresses via customerAddressCreate/delete/update requires token,
+      // but to list addresses, we can fetch the current user and parse nodes if available.
+      // Fallback: return empty list if SDK doesn't expose addresses here.
+      final user = await _shopifyAuth.currentUser(forceRefresh: true);
+      try {
+        // Some versions expose defaultAddress and addresses; guard by runtime checks
+        final dynamic dyn = user;
+        if (dyn != null && dyn.toJson is Function) {
+          final map = dyn.toJson() as Map<String, dynamic>;
+          final edges = (map['addresses']?['edges'] as List?) ?? [];
+          return edges
+              .map((e) => e['node'])
+              .where((n) => n != null)
+              .map<Address>((n) => Address.fromJson(n as Map<String, dynamic>))
+              .toList();
+        }
+      } catch (_) {}
+      return <Address>[];
+    } catch (e) {
+      debugPrint('Shopify list addresses error: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new address
+  Future<Address> createAddress({
+    String? address1,
+    String? address2,
+    String? company,
+    String? city,
+    String? country,
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? province,
+    String? zip,
+  }) async {
+    try {
+      final token =
+          await SecurityService.getAccessToken() ??
+          await _shopifyAuth.currentCustomerAccessToken;
+      if (token == null || token.isEmpty) {
+        throw AuthException('Missing customer access token');
+      }
+      final customer = ShopifyCustomer.instance;
+      return await customer.customerAddressCreate(
+        address1: address1,
+        address2: address2,
+        company: company,
+        city: city,
+        country: country,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        province: province,
+        zip: zip,
+        customerAccessToken: token,
+      );
+    } catch (e) {
+      debugPrint('Shopify create address error: $e');
+      rethrow;
+    }
+  }
+
+  /// Update an existing address
+  Future<void> updateAddress({
+    required String id,
+    String? address1,
+    String? address2,
+    String? company,
+    String? city,
+    String? country,
+    String? firstName,
+    String? lastName,
+    String? phone,
+    String? province,
+    String? zip,
+  }) async {
+    try {
+      final token =
+          await SecurityService.getAccessToken() ??
+          await _shopifyAuth.currentCustomerAccessToken;
+      if (token == null || token.isEmpty) {
+        throw AuthException('Missing customer access token');
+      }
+      final customer = ShopifyCustomer.instance;
+      await customer.customerAddressUpdate(
+        customerAccessToken: token,
+        id: id,
+        address1: address1,
+        address2: address2,
+        company: company,
+        city: city,
+        country: country,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        province: province,
+        zip: zip,
+      );
+    } catch (e) {
+      debugPrint('Shopify update address error: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete an address by id
+  Future<void> deleteAddress({required String addressId}) async {
+    try {
+      final token =
+          await SecurityService.getAccessToken() ??
+          await _shopifyAuth.currentCustomerAccessToken;
+      if (token == null || token.isEmpty) {
+        throw AuthException('Missing customer access token');
+      }
+      final customer = ShopifyCustomer.instance;
+      await customer.customerAddressDelete(
+        customerAccessToken: token,
+        addressId: addressId,
+      );
+    } catch (e) {
+      debugPrint('Shopify delete address error: $e');
+      rethrow;
     }
   }
 

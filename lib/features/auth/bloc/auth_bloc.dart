@@ -77,6 +77,32 @@ class AuthDeleteAccount extends AuthEvent {
   List<Object?> get props => [userId];
 }
 
+/// Event to update profile fields
+class AuthUpdateProfile extends AuthEvent {
+  final String? firstName;
+  final String? lastName;
+  final String? phone;
+  final String? email;
+  final bool? acceptsMarketing;
+
+  AuthUpdateProfile({
+    this.firstName,
+    this.lastName,
+    this.phone,
+    this.email,
+    this.acceptsMarketing,
+  });
+
+  @override
+  List<Object?> get props => [
+    firstName,
+    lastName,
+    phone,
+    email,
+    acceptsMarketing,
+  ];
+}
+
 /// Authentication BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final ShopifyAuthService _authService;
@@ -90,6 +116,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignOut>(_onSignOut);
     on<AuthResetPassword>(_onResetPassword);
     on<AuthDeleteAccount>(_onDeleteAccount);
+    on<AuthUpdateProfile>(_onUpdateProfile);
   }
 
   /// Initialize authentication state
@@ -125,7 +152,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      
+
       // Verify authentication was successful
       final isAuthenticated = await _authService.isAuthenticated();
       if (isAuthenticated) {
@@ -153,7 +180,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         phone: event.phone,
         acceptsMarketing: event.acceptsMarketing,
       );
-      
+
       // Verify authentication was successful
       final isAuthenticated = await _authService.isAuthenticated();
       if (isAuthenticated) {
@@ -214,6 +241,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {
       emit(AuthState.error('An error occurred while deleting account'));
+    }
+  }
+
+  /// Update profile fields
+  Future<void> _onUpdateProfile(
+    AuthUpdateProfile event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    try {
+      final updated = await _authService.updateCustomer(
+        firstName: event.firstName,
+        lastName: event.lastName,
+        phone: event.phone,
+        email: event.email,
+        acceptsMarketing: event.acceptsMarketing,
+      );
+      emit(AuthState.authenticated(updated));
+    } on AuthException catch (e) {
+      emit(AuthState.error(e.message, code: e.code));
+    } catch (e) {
+      emit(AuthState.error('An error occurred while updating profile'));
     }
   }
 }

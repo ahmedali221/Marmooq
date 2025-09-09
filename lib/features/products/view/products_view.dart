@@ -80,26 +80,23 @@ class _ProductsViewState extends State<ProductsView>
   ) {
     if (_searchQuery.isEmpty) return collections;
 
-    return collections
-        .map((collection) {
-          final List<dynamic> products = collection['products'] ?? [];
-          final filteredProducts = products.where((product) {
-            final Product prod = Product.fromJson(
-              product as Map<String, dynamic>,
-            );
-            return prod.name.toLowerCase().contains(_searchQuery) ||
-                prod.description?.toLowerCase().contains(_searchQuery) == true;
-          }).toList();
+    return collections.map((collection) {
+      final List<dynamic> products = collection['products'] ?? [];
+      final filteredProducts = products.where((product) {
+        final Product prod = Product.fromJson(
+          product as Map<String, dynamic>,
+        );
+        return prod.name.toLowerCase().contains(_searchQuery) ||
+            prod.description.toLowerCase().contains(_searchQuery);
+      }).toList();
 
-          return {...collection, 'products': filteredProducts};
-        })
-        .where((collection) {
-          final List<dynamic> products = collection['products'] ?? [];
-          final String collectionName =
-              collection['collectionName']?.toLowerCase() ?? '';
-          return products.isNotEmpty || collectionName.contains(_searchQuery);
-        })
-        .toList();
+      return {...collection, 'products': filteredProducts};
+    }).where((collection) {
+      final List<dynamic> products = collection['products'] ?? [];
+      final String collectionName =
+          collection['collectionName']?.toLowerCase() ?? '';
+      return products.isNotEmpty || collectionName.contains(_searchQuery);
+    }).toList();
   }
 
   @override
@@ -258,9 +255,23 @@ class _ProductsViewState extends State<ProductsView>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: _isSearchVisible
-                      ? Colors.teal[100]
-                      : Colors.transparent,
+                  color: Colors.teal[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.person_outline,
+                    color: Colors.teal[700],
+                  ),
+                  tooltip: 'الملف الشخصي',
+                  onPressed: () => context.go('/profile'),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                decoration: BoxDecoration(
+                  color:
+                      _isSearchVisible ? Colors.teal[100] : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(

@@ -6,6 +6,9 @@ import 'package:traincode/features/auth/bloc/auth_bloc.dart';
 import 'package:traincode/features/auth/screens/forgot_password_screen.dart';
 import 'package:traincode/features/auth/screens/login_screen.dart';
 import 'package:traincode/features/auth/screens/register_screen.dart';
+import 'package:traincode/features/auth/screens/profile_screen.dart';
+// import 'package:traincode/features/auth/screens/edit_profile_screen.dart';
+// import 'package:traincode/features/auth/screens/addresses_screen.dart';
 import 'package:traincode/features/cart/repository/cart_repository.dart';
 import 'package:traincode/features/cart/view/cart_screen.dart';
 import 'package:traincode/features/cart/view_model/cart_bloc.dart';
@@ -16,7 +19,7 @@ import 'package:traincode/features/products/view_model/products_bloc.dart';
 import 'package:traincode/features/shipment/repository/shipment_repository.dart';
 import 'package:traincode/features/shipment/view/orderConfirmationPage.dart';
 import 'package:traincode/features/shipment/view/shipmentPage.dart';
-import 'package:traincode/features/shipment/view_model/shipment_bloc.dart';
+// import 'package:traincode/features/shipment/view_model/shipment_bloc.dart';
 
 import 'package:traincode/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -61,6 +64,18 @@ class MyApp extends StatelessWidget {
           path: '/register',
           builder: (context, state) => const RegisterScreen(),
         ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+        // GoRoute(
+        //   path: '/edit-profile',
+        //   builder: (context, state) => const EditProfileScreen(),
+        // ),
+        // GoRoute(
+        //   path: '/addresses',
+        //   builder: (context, state) => const AddressesScreen(),
+        // ),
         GoRoute(
           path: '/forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
