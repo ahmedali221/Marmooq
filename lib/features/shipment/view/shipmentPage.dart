@@ -2,15 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:feather_icons/feather_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:traincode/features/shipment/repository/shipment_repository.dart';
 import 'package:traincode/features/cart/repository/cart_repository.dart';
-import 'package:traincode/core/services/security_service.dart';
 import 'package:traincode/features/cart/view_model/cart_bloc.dart';
 import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:traincode/core/utils/validation_utils.dart';
 
 class ShippingDetailsScreen extends StatefulWidget {
   final String customerAccessToken;
@@ -34,13 +37,40 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
   bool _isLoading = false;
   bool _hasCartItems = false;
   List<CartLineInput> _lineItems = [];
+  String _selectedCountry = 'Kuwait';
 
   final ShipmentRepository _shipmentRepository = ShipmentRepository();
+
+  // Shipping form controllers
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _address1Controller = TextEditingController();
+  final TextEditingController _address2Controller = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _provinceController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
+  final TextEditingController _zipController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchCartLineItems();
+    _countryController.text = _selectedCountry;
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _address1Controller.dispose();
+    _address2Controller.dispose();
+    _cityController.dispose();
+    _provinceController.dispose();
+    _countryController.dispose();
+    _zipController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchCartLineItems() async {
@@ -52,8 +82,8 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         return;
       }
       setState(() {
-        _hasCartItems = (cart.lines ?? []).isNotEmpty;
-        _lineItems = (cart.lines ?? [])
+        _hasCartItems = (cart.lines).isNotEmpty;
+        _lineItems = (cart.lines)
             .map(
               (line) => CartLineInput(
                 merchandiseId: line.merchandise!.id,
@@ -115,7 +145,9 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
 
       final webUrl = checkout['webUrl'] as String?;
       if (webUrl != null) {
-        // Navigate to webview screen for checkout
+        // Build prefilled checkout URL with shipping details
+        final prefilledUrl = _buildPrefilledCheckoutUrl(webUrl);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -126,11 +158,10 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
           ),
         );
 
-        // Navigate to webview checkout screen
         final result = await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => CheckoutWebViewScreen(
-              checkoutUrl: webUrl,
+              checkoutUrl: prefilledUrl,
               checkoutId: checkout['id'] as String,
               totalPrice: checkout['totalPrice'],
             ),
@@ -175,6 +206,63 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  String _buildPrefilledCheckoutUrl(String baseCheckoutUrl) {
+    final uri = Uri.parse(baseCheckoutUrl);
+    final Map<String, String> params = Map<String, String>.from(
+      uri.queryParameters,
+    );
+
+    void addIfNotEmpty(String key, String? value) {
+      if (value != null && value.trim().isNotEmpty) {
+        params[key] = value.trim();
+      }
+    }
+
+    // Shopify checkout prefill parameters
+    addIfNotEmpty('checkout[email]', widget.email);
+    addIfNotEmpty(
+      'checkout[shipping_address][first_name]',
+      _firstNameController.text,
+    );
+    addIfNotEmpty(
+      'checkout[shipping_address][last_name]',
+      _lastNameController.text,
+    );
+    addIfNotEmpty(
+      'checkout[shipping_address][address1]',
+      _address1Controller.text,
+    );
+    addIfNotEmpty(
+      'checkout[shipping_address][address2]',
+      _address2Controller.text,
+    );
+    addIfNotEmpty('checkout[shipping_address][city]', _cityController.text);
+    addIfNotEmpty(
+      'checkout[shipping_address][province]',
+      _provinceController.text,
+    );
+    addIfNotEmpty(
+      'checkout[shipping_address][country]',
+      _countryController.text,
+    );
+    addIfNotEmpty('checkout[shipping_address][zip]', _zipController.text);
+    // Normalize Kuwait phone to +965XXXXXXXX pattern before sending
+    final String phoneDigits = _phoneController.text.replaceAll(
+      RegExp(r'\D'),
+      '',
+    );
+    final String fullKuwaitPhone = phoneDigits.isEmpty
+        ? ''
+        : '+965' + phoneDigits;
+    final String normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
+      fullKuwaitPhone,
+    );
+    addIfNotEmpty('checkout[shipping_address][phone]', normalizedPhone);
+
+    final newUri = uri.replace(queryParameters: params);
+    return newUri.toString();
   }
 
   void _showErrorSnackBar(String message) {
@@ -247,10 +335,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
             onPressed: () {
               context.go('/cart');
             },
-            icon: const Icon(
-              Icons.shopping_cart_outlined,
-              color: Colors.black87,
-            ),
+            icon: const Icon(FeatherIcons.shoppingCart, color: Colors.black87),
           ),
         ),
         title: const Text(
@@ -263,27 +348,13 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
           ),
           textDirection: TextDirection.rtl,
         ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF00695C), Color(0xFF26A69A)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        flexibleSpace: Container(color: AppColors.brand),
         elevation: 8,
         shadowColor: Colors.teal.withOpacity(0.3),
         centerTitle: true,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFF5F5F5), Color(0xFFE8F5E8)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: const BoxDecoration(color: Color(0xFFF6FBFC)),
         child: _isLoading
             ? Center(
                 child: Container(
@@ -334,17 +405,17 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
+                              color: Color(0xFF0F6E72).withOpacity(0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
                             ),
                             BoxShadow(
-                              color: Colors.teal.withOpacity(0.1),
-                              blurRadius: 40,
-                              offset: const Offset(0, 16),
+                              color: Color(0xFF0F6E72).withOpacity(0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -353,37 +424,139 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF00695C),
-                                    Color(0xFF26A69A),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(15),
+                                color: Color(0xFF1E9DB2),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.security,
+                                    FeatherIcons.shield,
                                     color: Colors.white,
                                     size: 24,
                                   ),
                                   SizedBox(width: 12),
                                   Text(
-                                    'دفع آمن ومضمون',
+                                    'يرجى ادخال معلوماتك لإكمال الطلب',
                                     style: TextStyle(
                                       fontFamily: 'Tajawal',
                                       fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                     ),
                                     textDirection: TextDirection.rtl,
                                   ),
                                 ],
                               ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Shipping form fields
+                            _buildTextField(
+                              controller: _firstNameController,
+                              label: 'الاسم الأول',
+                              hint: 'اكتب الاسم الأول',
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _lastNameController,
+                              label: 'اسم العائلة',
+                              hint: 'اكتب اسم العائلة',
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _phoneController,
+                              label: 'رقم الهاتف',
+                              hint: '+965 5xxxxxxx',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              maxLength: 8,
+                              prefixText: '+965 ',
+                              validator: (v) {
+                                final digits = (v ?? '').replaceAll(
+                                  RegExp(r'\D'),
+                                  '',
+                                );
+                                if (digits.isEmpty) {
+                                  return 'يرجى إدخال رقم الهاتف';
+                                }
+                                if (digits.length != 8) {
+                                  return 'رقم الهاتف يجب أن يتكون من 8 أرقام';
+                                }
+                                final full = '+965' + digits;
+                                if (!ValidationUtils.isValidKuwaitPhone(full)) {
+                                  return 'يرجى إدخال رقم كويتي صالح';
+                                }
+                                return null;
+                              },
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _address1Controller,
+                              label: 'العنوان الأول',
+                              hint: 'اسم الشارع والحي',
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _address2Controller,
+                              label: 'العنوان الثاني (اختياري)',
+                              hint: 'شقة، مبنى، معلم بارز',
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _cityController,
+                              label: 'المدينة',
+                              hint: 'اكتب المدينة',
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _provinceController,
+                              label: 'المنطقة/المحافظة',
+                              hint: 'اكتب المنطقة أو المحافظة',
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _countryController,
+                              label: 'الدولة',
+                              hint: 'اكتب الدولة',
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildTextField(
+                              controller: _zipController,
+                              label: 'الرمز البريدي',
+                              hint: 'xxxxx',
+                              keyboardType: TextInputType.number,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                              textInputAction: TextInputAction.done,
                             ),
                             const SizedBox(height: 24),
                             Container(
@@ -399,7 +572,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.info_outline,
+                                    FeatherIcons.info,
                                     color: Colors.amber[700],
                                     size: 24,
                                   ),
@@ -468,7 +641,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                             MainAxisAlignment.center,
                                         children: [
                                           Icon(
-                                            Icons.payment,
+                                            FeatherIcons.creditCard,
                                             color: Colors.white,
                                             size: 24,
                                           ),
@@ -520,7 +693,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(
-                                    Icons.security,
+                                    FeatherIcons.shield,
                                     color: Colors.teal[600],
                                     size: 20,
                                   ),
@@ -595,6 +768,72 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                 ),
               ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+    TextInputAction? textInputAction,
+    List<TextInputFormatter>? inputFormatters,
+    String? prefixText,
+    int? maxLength,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+            textDirection: TextDirection.rtl,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          inputFormatters: inputFormatters,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintTextDirection: TextDirection.rtl,
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            prefixText: prefixText,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.teal.withOpacity(0.2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.teal.withOpacity(0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF26A69A),
+                width: 1.5,
+              ),
+            ),
+          ),
+          validator: validator,
+          textDirection: TextDirection.rtl,
+        ),
+      ],
     );
   }
 }
@@ -919,7 +1158,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                colors: [Color(0xFF1B8EA3), Color(0xFF1E9DB2)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -950,15 +1189,15 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: Color(0xFFE6F7FA),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green[200]!),
+                  border: Border.all(color: Color(0xFFB7E6EF)),
                 ),
                 child: const Column(
                   children: [
                     Icon(
                       Icons.shopping_bag_outlined,
-                      color: Colors.green,
+                      color: Color(0xFF1E9DB2),
                       size: 48,
                     ),
                     SizedBox(height: 12),
@@ -968,6 +1207,17 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
                         fontFamily: 'Tajawal',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني المسجل.',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
                         color: Colors.black87,
                       ),
                       textDirection: TextDirection.rtl,

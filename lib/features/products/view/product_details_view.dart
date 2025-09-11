@@ -10,6 +10,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
 import 'package:go_router/go_router.dart';
 import 'package:traincode/core/services/security_service.dart';
+import 'package:traincode/features/cart/widgets/cart_icon_widget.dart';
+import 'package:feather_icons/feather_icons.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 
 class ProductDetailsView extends StatefulWidget {
   final Product product;
@@ -49,7 +52,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error, color: Colors.white),
+                  const Icon(FeatherIcons.alertCircle, color: Colors.white),
                   const SizedBox(width: 8),
                   Text('حدث خطأ: ${state.error}'),
                 ],
@@ -82,47 +85,48 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 fontFamily: 'Tajawal',
               ),
             ),
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF00695C), Color(0xFF26A69A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-            elevation: 8,
-            shadowColor: Colors.teal.withOpacity(0.3),
+            backgroundColor: AppColors.brandDark,
+            shadowColor: AppColors.brandDark.withOpacity(0.25),
             centerTitle: true,
             leading: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+                icon: const Icon(
+                  FeatherIcons.chevronLeft,
+                  color: AppColors.brandDark,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-
-            // Removed favorites and share buttons as per requirements
+            actions: [
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const CartIconWidget(
+                  iconColor: Colors.white,
+                  backgroundColor: Colors.transparent,
+                  margin: EdgeInsets.zero,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
           body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFF5F5F5), Color(0xFFE8F5E8)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+            color: const Color(0xFFF6FBFC),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,21 +191,17 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         height: 420,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.grey[100]!, Colors.grey[50]!],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: AppColors.brandDark.withOpacity(0.08),
               spreadRadius: 0,
               blurRadius: 25,
               offset: const Offset(0, 12),
             ),
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: AppColors.brandDark.withOpacity(0.04),
               spreadRadius: 0,
               blurRadius: 8,
               offset: const Offset(0, 4),
@@ -215,13 +215,13 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.1),
+                  color: AppColors.brandLight,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.image_not_supported_outlined,
+                  FeatherIcons.image,
                   size: 64,
-                  color: Colors.teal[400],
+                  color: AppColors.brandDark,
                 ),
               ),
               const SizedBox(height: 20),
@@ -291,7 +291,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                CircularProgressIndicator(color: Colors.teal),
+                                CircularProgressIndicator(
+                                  color: AppColors.brandDark,
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'جاري تحميل الصورة...',
@@ -311,7 +313,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.broken_image_outlined,
+                                  FeatherIcons.image,
                                   size: 60,
                                   color: Colors.grey,
                                 ),
@@ -383,8 +385,8 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       ],
                     ),
                     child: Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.teal[700],
+                      FeatherIcons.chevronLeft,
+                      color: AppColors.brandDark,
                       size: 18,
                     ),
                   ),
@@ -427,8 +429,8 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       ],
                     ),
                     child: Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.teal[700],
+                      FeatherIcons.chevronRight,
+                      color: AppColors.brandDark,
                       size: 18,
                     ),
                   ),
@@ -505,11 +507,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.photo_library_outlined,
-                      color: Colors.white,
-                      size: 14,
-                    ),
+                    Icon(FeatherIcons.image, color: Colors.white, size: 14),
                     const SizedBox(width: 6),
                     Text(
                       '${_currentImageIndex + 1} / ${widget.product.images.length}',
@@ -549,43 +547,24 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             textAlign: TextAlign.right,
           ),
         ),
-        const SizedBox(height: 20),
 
         // Enhanced Price Container with modern design
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal[400]!, Colors.teal[500]!, Colors.teal[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppColors.brandDark,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.teal.withOpacity(0.4),
-                spreadRadius: 0,
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.teal.withOpacity(0.2),
-                spreadRadius: 0,
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
+            spacing: 5,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.local_offer_outlined, color: Colors.white, size: 24),
-              const SizedBox(width: 12),
+              Icon(FeatherIcons.tag, color: Colors.white, size: 24),
               Text(
                 '${widget.product.price.toStringAsFixed(3)} د.ك',
                 style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: 0.5,
@@ -642,20 +621,12 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: AppColors.brandLight,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.teal.withOpacity(0.1),
-                      spreadRadius: 0,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Icon(
-                  Icons.description_outlined,
-                  color: Colors.teal[600],
+                  FeatherIcons.fileText,
+                  color: AppColors.brandMuted,
                   size: 20,
                 ),
               ),
@@ -691,7 +662,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             height: 24,
                             margin: const EdgeInsets.only(left: 8, top: 2),
                             decoration: BoxDecoration(
-                              color: Colors.teal[50],
+                              color: AppColors.brandLight,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Center(
@@ -700,7 +671,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.teal[600],
+                                  color: AppColors.brandDark,
                                   fontFamily: 'Tajawal',
                                 ),
                               ),
@@ -734,7 +705,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.grey[600], size: 20),
+                  Icon(FeatherIcons.info, color: Colors.grey[600], size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: const Text(
@@ -769,7 +740,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.error, color: Colors.white),
+                Icon(FeatherIcons.alertCircle, color: Colors.white),
                 SizedBox(width: 8),
                 Text('المنتج غير متوفر حالياً'),
               ],
@@ -799,11 +770,11 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
       } else {
         // Create a new cart if none exists
         context.read<CartBloc>().add(const CreateCartEvent());
-        
+
         // Wait for cart creation by listening to state changes
         await _waitForCartState([CartInitialized, CartSuccess]);
         final newCartState = context.read<CartBloc>().state;
-        
+
         if (newCartState is CartInitialized) {
           cartId = newCartState.cart.id!;
         } else if (newCartState is CartSuccess) {
@@ -813,7 +784,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             SnackBar(
               content: const Row(
                 children: [
-                  Icon(Icons.error, color: Colors.white),
+                  Icon(FeatherIcons.alertCircle, color: Colors.white),
                   SizedBox(width: 8),
                   Text('فشل في إنشاء السلة'),
                 ],
@@ -840,10 +811,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
 
       // Dispatch add items to cart event
       context.read<CartBloc>().add(
-        AddItemsToCartEvent(
-          cartId: cartId,
-          cartLineInputs: [cartLineInput],
-        ),
+        AddItemsToCartEvent(cartId: cartId, cartLineInputs: [cartLineInput]),
       );
 
       // Wait for cart update to complete
@@ -860,12 +828,12 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.login, color: Colors.white),
+                Icon(FeatherIcons.logIn, color: Colors.white),
                 SizedBox(width: 8),
                 Text('يرجى تسجيل الدخول للمتابعة إلى الدفع'),
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.brandDark,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -881,11 +849,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         );
       } else {
         // Navigate to checkout page
-        context.go('/shipment', extra: {
-          'customerAccessToken': customerAccessToken,
-          'cartId': cartId,
-          'email': email ?? '',
-        });
+        context.go(
+          '/shipment',
+          extra: {
+            'customerAccessToken': customerAccessToken,
+            'cartId': cartId,
+            'email': email ?? '',
+          },
+        );
       }
 
       // Reset loading state
@@ -898,7 +869,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.error, color: Colors.white),
+              const Icon(FeatherIcons.alertCircle, color: Colors.white),
               const SizedBox(width: 8),
               Text('حدث خطأ: ${e.toString()}'),
             ],
@@ -922,7 +893,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Future<void> _waitForCartState(List<Type> expectedStates) async {
     final completer = Completer<void>();
     late StreamSubscription subscription;
-    
+
     subscription = context.read<CartBloc>().stream.listen((state) {
       if (expectedStates.any((type) => state.runtimeType == type)) {
         subscription.cancel();
@@ -932,13 +903,16 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         completer.completeError(state.error);
       }
     });
-    
+
     // Add timeout to prevent infinite waiting
     return completer.future.timeout(
       const Duration(seconds: 10),
       onTimeout: () {
         subscription.cancel();
-        throw TimeoutException('Cart operation timed out', const Duration(seconds: 10));
+        throw TimeoutException(
+          'Cart operation timed out',
+          const Duration(seconds: 10),
+        );
       },
     );
   }
@@ -1007,7 +981,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: _quantity > 1
-                                ? Colors.teal[50]
+                                ? AppColors.brandLight
                                 : Colors.grey[100],
                             borderRadius: const BorderRadius.only(
                               topRight: Radius.circular(16),
@@ -1015,10 +989,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             ),
                           ),
                           child: Icon(
-                            Icons.remove,
+                            FeatherIcons.minus,
                             size: 20,
                             color: _quantity > 1
-                                ? Colors.teal[600]
+                                ? AppColors.brandDark
                                 : Colors.grey[400],
                           ),
                         ),
@@ -1050,16 +1024,16 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.teal[50],
+                            color: AppColors.brandLight,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(16),
                               bottomLeft: Radius.circular(16),
                             ),
                           ),
                           child: Icon(
-                            Icons.add,
+                            FeatherIcons.plus,
                             size: 20,
-                            color: Colors.teal[600],
+                            color: AppColors.brandDark,
                           ),
                         ),
                       ),
@@ -1075,24 +1049,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           width: double.infinity,
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal[400]!, Colors.teal[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppColors.brandDark,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.teal.withOpacity(0.3),
+                color: AppColors.brandDark.withOpacity(0.25),
                 spreadRadius: 0,
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.teal.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -1112,7 +1076,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                           SnackBar(
                             content: const Row(
                               children: [
-                                Icon(Icons.error, color: Colors.white),
+                                Icon(
+                                  FeatherIcons.alertCircle,
+                                  color: Colors.white,
+                                ),
                                 SizedBox(width: 8),
                                 Text('المنتج غير متوفر حالياً'),
                               ],
@@ -1146,7 +1113,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                           SnackBar(
                             content: const Row(
                               children: [
-                                Icon(Icons.info, color: Colors.white),
+                                Icon(FeatherIcons.info, color: Colors.white),
                                 SizedBox(width: 8),
                                 Text('جاري إنشاء سلة جديدة...'),
                               ],
@@ -1194,14 +1161,17 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                           SnackBar(
                             content: Row(
                               children: [
-                                const Icon(Icons.warning, color: Colors.white),
+                                const Icon(
+                                  FeatherIcons.alertTriangle,
+                                  color: Colors.white,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'لا يمكن إضافة أكثر من $maxQuantityAllowed قطع من هذا المنتج',
                                 ),
                               ],
                             ),
-                            backgroundColor: Colors.orange,
+                            backgroundColor: AppColors.brandDark,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1237,7 +1207,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                           content: Row(
                             children: [
                               const Icon(
-                                Icons.check_circle,
+                                FeatherIcons.checkCircle,
                                 color: Colors.white,
                               ),
                               const SizedBox(width: 8),
@@ -1248,7 +1218,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                               ),
                             ],
                           ),
-                          backgroundColor: Colors.teal,
+                          backgroundColor: AppColors.brandDark,
                           duration: const Duration(seconds: 3),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
@@ -1274,7 +1244,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                         SnackBar(
                           content: Row(
                             children: [
-                              const Icon(Icons.error, color: Colors.white),
+                              const Icon(
+                                FeatherIcons.alertCircle,
+                                color: Colors.white,
+                              ),
                               const SizedBox(width: 8),
                               Text('حدث خطأ: ${e.toString()}'),
                             ],
@@ -1302,7 +1275,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Icon(Icons.shopping_cart_outlined, size: 22),
+                : const Icon(FeatherIcons.shoppingCart, size: 22),
             label: Text(
               _isAddingToCart ? 'جاري الإضافة...' : 'إضافة إلى السلة',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -1325,23 +1298,14 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           width: double.infinity,
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.orange[400]!, Colors.orange[600]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: Colors.white,
+            border: Border.all(color: AppColors.brandDark, width: 2),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
+                color: AppColors.brandDark.withOpacity(0.1),
                 spreadRadius: 0,
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.orange.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 8,
+                blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -1361,7 +1325,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Icon(Icons.flash_on, size: 22),
+                : const Icon(FeatherIcons.zap, size: 22),
             label: Text(
               _isAddingToCart ? 'جاري المعالجة...' : 'اشتري الآن',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -1370,58 +1334,6 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               backgroundColor: Colors.transparent,
               foregroundColor: Colors.white,
               shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-
-        // Enhanced Add to Wishlist Button
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.teal[300]!, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.teal.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Row(
-                    children: [
-                      Icon(Icons.favorite, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('تم إضافة المنتج إلى المفضلة'),
-                    ],
-                  ),
-                  backgroundColor: Colors.orange[600],
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.favorite_border_outlined, size: 22),
-            label: const Text(
-              'إضافة إلى المفضلة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.teal[600],
-              side: BorderSide.none,
               padding: const EdgeInsets.symmetric(vertical: 20),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),

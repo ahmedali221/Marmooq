@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:feather_icons/feather_icons.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 import 'package:traincode/features/products/model/product_model.dart';
 
 import 'package:traincode/features/products/widgets/product_card_widget.dart';
@@ -96,19 +98,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
               color: Colors.white,
             ),
           ),
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF00695C),
-                  const Color(0xFF26A69A),
-                  const Color(0xFF4DB6AC),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
+          backgroundColor: AppColors.brand,
           elevation: 0,
           shadowColor: Colors.transparent,
           centerTitle: true,
@@ -125,7 +115,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
               icon: const Icon(
-                Icons.arrow_back_ios,
+                FeatherIcons.chevronLeft,
                 color: Colors.white,
                 size: 20,
               ),
@@ -147,23 +137,17 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
                   // Add filter functionality here
                   _showFilterDialog();
                 },
-                icon: const Icon(Icons.tune, color: Colors.white, size: 20),
+                icon: const Icon(
+                  FeatherIcons.sliders,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ],
         ),
         body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFFF8F9FA),
-                const Color(0xFFE8F5E8),
-                const Color(0xFFF0F8F0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          color: const Color(0xFFF6FBFC),
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: SlideTransition(
@@ -214,7 +198,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
-                            Icons.search,
+                            FeatherIcons.search,
                             color: Colors.teal[600],
                             size: 22,
                           ),
@@ -228,7 +212,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
                                 ),
                                 child: IconButton(
                                   icon: Icon(
-                                    Icons.clear,
+                                    FeatherIcons.x,
                                     color: Colors.red[400],
                                     size: 20,
                                   ),
@@ -282,7 +266,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: const Icon(
-                            Icons.inventory_2_outlined,
+                            FeatherIcons.package,
                             color: Colors.white,
                             size: 18,
                           ),
@@ -341,9 +325,9 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF00695C),
-                    const Color(0xFF26A69A),
-                    const Color(0xFF4DB6AC),
+                    AppColors.brand,
+                    AppColors.brandDark,
+                    AppColors.brand,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -359,8 +343,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
               ),
               child: Icon(
                 _searchQuery.isNotEmpty
-                    ? Icons.search_off
-                    : Icons.inventory_2_outlined,
+                    ? FeatherIcons.search
+                    : FeatherIcons.package,
                 size: 60,
                 color: Colors.white,
               ),
@@ -408,11 +392,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
                     _searchController.clear();
                     _onSearchChanged('');
                   },
-                  icon: Icon(
-                    Icons.clear_all,
-                    color: Colors.teal[700],
-                    size: 20,
-                  ),
+                  icon: Icon(FeatherIcons.x, color: Colors.teal[700], size: 20),
                   label: Text(
                     'مسح البحث',
                     style: TextStyle(
@@ -458,11 +438,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
         return AnimatedContainer(
           duration: Duration(milliseconds: 300 + (index * 100)),
           curve: Curves.easeOutCubic,
-          child: ProductCardWidget(
-            product: product,
-            isFavorite: _favoriteProducts.contains(product.id),
-            onToggleFavorite: _toggleFavorite,
-          ),
+          child: ProductCardWidget(product: product),
         );
       },
     );
@@ -475,7 +451,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.tune, color: Colors.teal[600], size: 24),
+            Icon(FeatherIcons.sliders, color: Colors.teal[600], size: 24),
             const SizedBox(width: 8),
             const Text(
               'تصفية المنتجات',

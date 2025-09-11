@@ -1,19 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 import 'package:traincode/features/products/model/product_model.dart';
 import 'package:traincode/features/products/view/product_details_view.dart';
 
 class ProductCardWidget extends StatefulWidget {
   final Product product;
-  final bool isFavorite;
-  final ValueChanged<Product> onToggleFavorite;
 
-  const ProductCardWidget({
-    super.key,
-    required this.product,
-    required this.isFavorite,
-    required this.onToggleFavorite,
-  });
+  const ProductCardWidget({super.key, required this.product});
 
   @override
   State<ProductCardWidget> createState() => _ProductCardWidgetState();
@@ -64,7 +58,7 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                         color: Colors.grey[50],
                         child: Center(
                           child: CircularProgressIndicator(
-                            color: Colors.teal[300],
+                            color: AppColors.brand,
                             strokeWidth: 3,
                           ),
                         ),
@@ -86,7 +80,8 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                     padding: const EdgeInsets.all(12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min, // Use minimum space needed
+                      mainAxisSize:
+                          MainAxisSize.min, // Use minimum space needed
                       children: [
                         Text(
                           widget.product.name,
@@ -108,25 +103,22 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                                 vertical: 4, // Reduced padding
                               ),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.teal[50] ?? const Color(0xFFE0F2F1),
-                                    Colors.teal[100] ?? const Color(0xFFB2DFDB),
-                                  ],
-                                ),
+                                color: AppColors.brandLight,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 '${widget.product.price.toStringAsFixed(2)} د.ك',
                                 style: TextStyle(
-                                  color: Colors.teal[700],
+                                  color: AppColors.brand,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13, // Reduced font size
                                 ),
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.all(6), // Reduced padding
+                              padding: const EdgeInsets.all(
+                                6,
+                              ), // Reduced padding
                               decoration: BoxDecoration(
                                 color: Colors.grey[50],
                                 shape: BoxShape.circle,
@@ -134,7 +126,7 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                               child: Icon(
                                 Icons.add_shopping_cart_outlined,
                                 size: 16, // Reduced icon size
-                                color: Colors.teal[600],
+                                color: AppColors.brand,
                               ),
                             ),
                           ],
@@ -144,32 +136,6 @@ class _ProductCardWidgetState extends State<ProductCardWidget> {
                   ),
                 ),
               ],
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () => widget.onToggleFavorite(widget.product),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    widget.isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: widget.isFavorite ? Colors.red : Colors.grey[600],
-                    size: 20,
-                  ),
-                ),
-              ),
             ),
           ],
         ),

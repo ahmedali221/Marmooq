@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:feather_icons/feather_icons.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/models/src/cart/cart.dart';
@@ -81,7 +83,7 @@ class _CartScreenState extends State<CartScreen>
             title: const Row(
               children: [
                 Icon(
-                  Icons.warning_amber_rounded,
+                  FeatherIcons.alertTriangle,
                   color: Colors.orange,
                   size: 24,
                 ),
@@ -155,7 +157,7 @@ class _CartScreenState extends State<CartScreen>
       onRefresh: () async {
         _refreshCart();
       },
-      color: const Color(0xFF00695C),
+      color: AppColors.brand,
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
@@ -202,26 +204,18 @@ class _CartScreenState extends State<CartScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF00695C),
-                    const Color(0xFF26A69A),
-                    const Color(0xFF4DB6AC),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: AppColors.brand,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.teal.withOpacity(0.3),
+                    color: AppColors.brand.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: const Icon(
-                Icons.shopping_cart_outlined,
+                FeatherIcons.shoppingCart,
                 size: 60,
                 color: Colors.white,
               ),
@@ -232,7 +226,7 @@ class _CartScreenState extends State<CartScreen>
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF00695C),
+                color: AppColors.brand,
                 fontFamily: 'Tajawal',
               ),
             ),
@@ -253,18 +247,11 @@ class _CartScreenState extends State<CartScreen>
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF00695C),
-                        const Color(0xFF26A69A),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
+                    color: AppColors.brand,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.teal.withOpacity(0.3),
+                        color: AppColors.brand.withOpacity(0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
@@ -275,8 +262,8 @@ class _CartScreenState extends State<CartScreen>
                       context.go('/products');
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,
                         vertical: 16,
@@ -289,7 +276,7 @@ class _CartScreenState extends State<CartScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.shopping_bag_outlined,
+                          FeatherIcons.shoppingBag,
                           color: Colors.white,
                           size: 20,
                         ),
@@ -313,10 +300,10 @@ class _CartScreenState extends State<CartScreen>
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.teal[200]!, width: 1.5),
+                    border: Border.all(color: AppColors.brandMuted, width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.teal.withOpacity(0.1),
+                        color: AppColors.brand.withOpacity(0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -340,14 +327,18 @@ class _CartScreenState extends State<CartScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.refresh, color: Colors.teal[600], size: 20),
+                        Icon(
+                          FeatherIcons.refreshCw,
+                          color: AppColors.brand,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Text(
                           'تحديث السلة',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.teal[600],
+                            color: AppColors.brand,
                             fontFamily: 'Tajawal',
                           ),
                         ),
@@ -386,11 +377,7 @@ class _CartScreenState extends State<CartScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [const Color(0xFF00695C), const Color(0xFF26A69A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppColors.brand,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -416,15 +403,11 @@ class _CartScreenState extends State<CartScreen>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [const Color(0xFF00695C), const Color(0xFF26A69A)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+                  color: AppColors.brand,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.teal.withOpacity(0.3),
+                      color: AppColors.brand.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -481,7 +464,7 @@ class _CartScreenState extends State<CartScreen>
                               errorWidget: (context, url, error) => Container(
                                 color: Colors.grey[200],
                                 child: const Icon(
-                                  Icons.image_not_supported_outlined,
+                                  FeatherIcons.image,
                                   color: Colors.grey,
                                   size: 30,
                                 ),
@@ -490,7 +473,7 @@ class _CartScreenState extends State<CartScreen>
                           : Container(
                               color: Colors.grey[200],
                               child: const Icon(
-                                Icons.image_not_supported_outlined,
+                                FeatherIcons.image,
                                 color: Colors.grey,
                                 size: 30,
                               ),
@@ -518,10 +501,10 @@ class _CartScreenState extends State<CartScreen>
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.teal[50],
+                                color: AppColors.brandLight,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: Colors.teal[200]!,
+                                  color: AppColors.brandMuted,
                                   width: 1,
                                 ),
                               ),
@@ -549,9 +532,9 @@ class _CartScreenState extends State<CartScreen>
                                     child: Container(
                                       padding: const EdgeInsets.all(6),
                                       child: Icon(
-                                        Icons.remove,
+                                        FeatherIcons.minus,
                                         size: 18,
-                                        color: Colors.teal[700],
+                                        color: AppColors.brand,
                                       ),
                                     ),
                                   ),
@@ -564,7 +547,7 @@ class _CartScreenState extends State<CartScreen>
                                     child: Text(
                                       '${line.quantity}',
                                       style: TextStyle(
-                                        color: Colors.teal[700],
+                                        color: AppColors.brand,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         fontFamily: 'Tajawal',
@@ -591,9 +574,9 @@ class _CartScreenState extends State<CartScreen>
                                     child: Container(
                                       padding: const EdgeInsets.all(6),
                                       child: Icon(
-                                        Icons.add,
+                                        FeatherIcons.plus,
                                         size: 18,
-                                        color: Colors.teal[700],
+                                        color: AppColors.brand,
                                       ),
                                     ),
                                   ),
@@ -788,7 +771,11 @@ class _CartScreenState extends State<CartScreen>
                 onPressed: () {
                   _refreshCart();
                 },
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                icon: const Icon(
+                  FeatherIcons.refreshCw,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
             Container(
@@ -806,7 +793,7 @@ class _CartScreenState extends State<CartScreen>
                   _showClearCartDialog(context);
                 },
                 icon: const Icon(
-                  Icons.clear_all,
+                  FeatherIcons.trash2,
                   color: Colors.white,
                   size: 20,
                 ),
@@ -827,42 +814,20 @@ class _CartScreenState extends State<CartScreen>
                   context.go('/products');
                 },
                 icon: const Icon(
-                  Icons.arrow_forward,
+                  FeatherIcons.arrowRight,
                   color: Colors.white,
                   size: 20,
                 ),
               ),
             ),
           ],
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF00695C),
-                  const Color(0xFF26A69A),
-                  const Color(0xFF4DB6AC),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
+          backgroundColor: AppColors.brand,
           elevation: 0,
           shadowColor: Colors.transparent,
           centerTitle: true,
         ),
         body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFFF8F9FA),
-                const Color(0xFFE8F5E8),
-                const Color(0xFFF0F8F0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          decoration: const BoxDecoration(color: Color(0xFFF6FBFC)),
           child: BlocConsumer<CartBloc, CartState>(
             listener: (context, state) {
               print('DEBUG: CartScreen state changed to: $state');
@@ -873,13 +838,13 @@ class _CartScreenState extends State<CartScreen>
                 // Instead of creating a new cart, we now load an existing cart or create a new one if needed
                 context.read<CartBloc>().add(LoadCartEvent());
                 return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00695C)),
+                  child: CircularProgressIndicator(color: AppColors.brand),
                 );
               }
               if (state is CartLoading) {
                 print('DEBUG: Rendering CartLoading state');
                 return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00695C)),
+                  child: CircularProgressIndicator(color: AppColors.brand),
                 );
               }
               if (state is CartSuccess) {
@@ -899,7 +864,7 @@ class _CartScreenState extends State<CartScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.error_outline,
+                        FeatherIcons.alertCircle,
                         size: 60,
                         color: Colors.red[400],
                       ),
@@ -926,13 +891,13 @@ class _CartScreenState extends State<CartScreen>
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: _refreshCart,
-                        icon: const Icon(Icons.refresh),
+                        icon: const Icon(FeatherIcons.refreshCw),
                         label: const Text(
                           'إعادة المحاولة',
                           style: TextStyle(fontFamily: 'Tajawal'),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00695C),
+                          backgroundColor: AppColors.brand,
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -946,7 +911,7 @@ class _CartScreenState extends State<CartScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.shopping_cart_outlined,
+                      FeatherIcons.shoppingCart,
                       size: 60,
                       color: Colors.grey[400],
                     ),

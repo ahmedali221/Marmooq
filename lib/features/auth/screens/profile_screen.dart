@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:feather_icons/feather_icons.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:traincode/features/auth/bloc/auth_bloc.dart';
@@ -20,7 +22,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon ?? Icons.info_outline, color: Colors.teal[700]),
+          Icon(icon ?? FeatherIcons.info, color: Colors.teal[700]),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -52,20 +54,45 @@ class ProfileScreen extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('حسابي'),
+          title: const Text(
+            'حسابي',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Tajawal',
+              fontSize: 22,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppColors.brand,
+          elevation: 0,
+          shadowColor: Colors.transparent,
           centerTitle: true,
-          actions: [
-            // IconButton(
-            //   tooltip: 'تعديل',
-            //   icon: const Icon(Icons.edit_outlined),
-            //   onPressed: () => context.go('/edit-profile'),
-            // ),
-            // IconButton(
-            //   tooltip: 'عناويني',
-            //   icon: const Icon(Icons.location_on_outlined),
-            //   onPressed: () => context.go('/addresses'),
-            // ),
-          ],
+          leading: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: IconButton(
+              icon: const Icon(FeatherIcons.chevronLeft, color: Colors.white),
+              onPressed: () => context.go('/products'),
+            ),
+          ),
+
+          // IconButton(
+          //   tooltip: 'تعديل',
+          //   icon: const Icon(Icons.edit_outlined),
+          //   onPressed: () => context.go('/edit-profile'),
+          // ),
+          // IconButton(
+          //   tooltip: 'عناويني',
+          //   icon: const Icon(Icons.location_on_outlined),
+          //   onPressed: () => context.go('/addresses'),
+          // ),
         ),
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
@@ -152,22 +179,22 @@ class ProfileScreen extends StatelessWidget {
                         _buildRow(
                           label: 'الاسم الأول',
                           value: user.firstName,
-                          icon: Icons.person_outline,
+                          icon: FeatherIcons.user,
                         ),
                         _buildRow(
                           label: 'اسم العائلة',
                           value: user.lastName,
-                          icon: Icons.person_outline,
+                          icon: FeatherIcons.user,
                         ),
                         _buildRow(
                           label: 'البريد الإلكتروني',
                           value: user.email,
-                          icon: Icons.alternate_email,
+                          icon: FeatherIcons.mail,
                         ),
                         _buildRow(
                           label: 'رقم الهاتف',
                           value: user.phone,
-                          icon: Icons.phone_outlined,
+                          icon: FeatherIcons.phone,
                         ),
                       ],
                     ),
@@ -189,7 +216,7 @@ class ProfileScreen extends StatelessWidget {
                         onPressed: () {
                           context.read<AuthBloc>().add(AuthSignOut());
                         },
-                        icon: const Icon(Icons.logout),
+                        icon: const Icon(FeatherIcons.logOut),
                         label: const Text('تسجيل الخروج'),
                       ),
                     ),

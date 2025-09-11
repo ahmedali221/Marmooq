@@ -7,8 +7,12 @@ import 'package:traincode/features/products/view_model/products_bloc.dart';
 import 'package:traincode/features/products/view_model/products_event.dart';
 import 'package:traincode/features/products/view_model/products_state.dart';
 import 'package:traincode/features/products/widgets/product_card_widget.dart';
+import 'package:traincode/features/cart/widgets/cart_icon_widget.dart';
 import 'package:traincode/features/cart/view_model/cart_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:traincode/features/cart/view_model/cart_states.dart';
+import 'package:feather_icons/feather_icons.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 
 class ProductsView extends StatefulWidget {
   const ProductsView({super.key});
@@ -18,11 +22,10 @@ class ProductsView extends StatefulWidget {
 }
 
 class _ProductsViewState extends State<ProductsView>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  Set<String> _favorites = {};
   String _searchQuery = '';
   bool _isSearchVisible = false;
   late AnimationController _animationController;
@@ -31,7 +34,10 @@ class _ProductsViewState extends State<ProductsView>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     context.read<ProductsBloc>().add(FetchProductsEvent());
+    // Refresh cart state to ensure it's up to date
+    _refreshCart();
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -45,11 +51,38 @@ class _ProductsViewState extends State<ProductsView>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh cart when app resumes (e.g., returning from checkout)
+    if (state == AppLifecycleState.resumed) {
+      _refreshCart();
+    }
+  }
+
+  void _refreshCart() {
+    // Refresh cart state to ensure it's up to date
+    context.read<CartBloc>().add(const RefreshCartEvent());
+  }
+
+  // Method to refresh cart when navigating back to this page
+  void refreshCartOnReturn() {
+    _refreshCart();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh cart when dependencies change (e.g., when navigating back to this page)
+    _refreshCart();
   }
 
   void _toggleSearch() {
@@ -80,56 +113,65 @@ class _ProductsViewState extends State<ProductsView>
   ) {
     if (_searchQuery.isEmpty) return collections;
 
-    return collections.map((collection) {
-      final List<dynamic> products = collection['products'] ?? [];
-      final filteredProducts = products.where((product) {
-        final Product prod = Product.fromJson(
-          product as Map<String, dynamic>,
-        );
-        return prod.name.toLowerCase().contains(_searchQuery) ||
-            prod.description.toLowerCase().contains(_searchQuery);
-      }).toList();
+    return collections
+        .map((collection) {
+          final List<dynamic> products = collection['products'] ?? [];
+          final filteredProducts = products.where((product) {
+            final Product prod = Product.fromJson(
+              product as Map<String, dynamic>,
+            );
+            return prod.name.toLowerCase().contains(_searchQuery) ||
+                prod.description.toLowerCase().contains(_searchQuery);
+          }).toList();
 
-      return {...collection, 'products': filteredProducts};
-    }).where((collection) {
-      final List<dynamic> products = collection['products'] ?? [];
-      final String collectionName =
-          collection['collectionName']?.toLowerCase() ?? '';
-      return products.isNotEmpty || collectionName.contains(_searchQuery);
-    }).toList();
+          return {...collection, 'products': filteredProducts};
+        })
+        .where((collection) {
+          final List<dynamic> products = collection['products'] ?? [];
+          final String collectionName =
+              collection['collectionName']?.toLowerCase() ?? '';
+          return products.isNotEmpty || collectionName.contains(_searchQuery);
+        })
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FFFE),
-        body: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            _buildSliverAppBar(),
-            BlocBuilder<ProductsBloc, ProductsState>(
-              builder: (context, state) {
-                if (state is ProductsLoading) {
-                  return SliverFillRemaining(child: _buildLoadingState());
-                } else if (state is ProductsLoaded) {
-                  final filteredCollections = _filterCollections(
-                    state.collections,
-                  );
-                  if (filteredCollections.isEmpty) {
-                    return SliverFillRemaining(child: _buildEmptyState());
+      child: BlocListener<CartBloc, CartState>(
+        listener: (context, state) {
+          // Cart state has changed, no need to do anything special here
+          // The cart icon widget will automatically update
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF8FFFE),
+          body: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              _buildSliverAppBar(),
+              BlocBuilder<ProductsBloc, ProductsState>(
+                builder: (context, state) {
+                  if (state is ProductsLoading) {
+                    return SliverFillRemaining(child: _buildLoadingState());
+                  } else if (state is ProductsLoaded) {
+                    final filteredCollections = _filterCollections(
+                      state.collections,
+                    );
+                    if (filteredCollections.isEmpty) {
+                      return SliverFillRemaining(child: _buildEmptyState());
+                    }
+                    return _buildProductsList(filteredCollections);
+                  } else if (state is ProductsError) {
+                    return SliverFillRemaining(child: _buildErrorState(state));
                   }
-                  return _buildProductsList(filteredCollections);
-                } else if (state is ProductsError) {
-                  return SliverFillRemaining(child: _buildErrorState(state));
-                }
-                return const SliverFillRemaining(
-                  child: Center(child: Text('لا توجد منتجات')),
-                );
-              },
-            ),
-          ],
+                  return const SliverFillRemaining(
+                    child: Center(child: Text('لا توجد منتجات')),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -141,22 +183,11 @@ class _ProductsViewState extends State<ProductsView>
       floating: false,
       pinned: true,
       elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.teal[800],
-      title: null,
+      backgroundColor: AppColors.brand,
+      foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.teal[50] ?? const Color(0xFFE0F2F1),
-                Colors.white,
-                Colors.teal[25] ?? const Color(0xFFF1F8E9),
-              ],
-            ),
-          ),
+          color: AppColors.brand,
           child: Column(
             children: [
               const SizedBox(height: 100),
@@ -165,14 +196,14 @@ class _ProductsViewState extends State<ProductsView>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 28,
-                  color: Color(0xFF00695C),
+                  color: Colors.white,
                 ),
               ),
               Text(
                 'اكتشف مجموعتنا الرائعة',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[600],
+                  color: Colors.white70,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -213,8 +244,8 @@ class _ProductsViewState extends State<ProductsView>
                             fontSize: 16,
                           ),
                           prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.teal[600],
+                            FeatherIcons.search,
+                            color: AppColors.brand,
                             size: 24,
                           ),
                           border: OutlineInputBorder(
@@ -228,7 +259,7 @@ class _ProductsViewState extends State<ProductsView>
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: Icon(
-                                    Icons.clear,
+                                    FeatherIcons.x,
                                     color: Colors.grey[500],
                                   ),
                                   onPressed: () {
@@ -255,14 +286,11 @@ class _ProductsViewState extends State<ProductsView>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  icon: Icon(
-                    Icons.person_outline,
-                    color: Colors.teal[700],
-                  ),
+                  icon: const Icon(FeatherIcons.user, color: Colors.white),
                   tooltip: 'الملف الشخصي',
                   onPressed: () => context.go('/profile'),
                 ),
@@ -270,80 +298,25 @@ class _ProductsViewState extends State<ProductsView>
               const SizedBox(width: 4),
               Container(
                 decoration: BoxDecoration(
-                  color:
-                      _isSearchVisible ? Colors.teal[100] : Colors.transparent,
+                  color: _isSearchVisible
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
                   icon: Icon(
-                    _isSearchVisible ? Icons.close : Icons.search,
-                    color: Colors.teal[700],
+                    _isSearchVisible ? FeatherIcons.x : FeatherIcons.search,
+                    color: Colors.white,
                   ),
                   onPressed: _toggleSearch,
                   tooltip: _isSearchVisible ? 'إغلاق البحث' : 'البحث',
                 ),
               ),
               const SizedBox(width: 4),
-              BlocBuilder<CartBloc, CartState>(
-                builder: (context, cartState) {
-                  int itemCount = 0;
-                  if (cartState is CartSuccess) {
-                    itemCount = cartState.cart.lines.length;
-                  } else if (cartState is CartInitialized) {
-                    itemCount = cartState.cart.lines.length;
-                  }
-
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.teal[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          onPressed: () => context.go('/cart'),
-                          icon: Icon(
-                            Icons.shopping_bag_outlined,
-                            color: Colors.teal[700],
-                          ),
-                          tooltip: 'سلة المشتريات',
-                        ),
-                        if (itemCount > 0)
-                          Positioned(
-                            right: 6,
-                            top: 6,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 20,
-                                minHeight: 20,
-                              ),
-                              child: Text(
-                                itemCount > 99 ? '99+' : itemCount.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
+              const CartIconWidget(
+                iconColor: Colors.white,
+                backgroundColor: Colors.transparent,
+                badgeColor: Colors.red,
               ),
             ],
           ),
@@ -367,7 +340,7 @@ class _ProductsViewState extends State<ProductsView>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.teal.withOpacity(0.15),
+                  color: AppColors.brand.withOpacity(0.15),
                   blurRadius: 30,
                   spreadRadius: 5,
                 ),
@@ -379,9 +352,7 @@ class _ProductsViewState extends State<ProductsView>
                   width: 50,
                   height: 50,
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.teal[600]!,
-                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
                     strokeWidth: 4,
                   ),
                 ),
@@ -415,8 +386,8 @@ class _ProductsViewState extends State<ProductsView>
             ),
             child: Icon(
               _searchQuery.isNotEmpty
-                  ? Icons.search_off
-                  : Icons.inventory_2_outlined,
+                  ? FeatherIcons.search
+                  : FeatherIcons.package,
               size: 80,
               color: Colors.grey[400],
             ),
@@ -444,7 +415,7 @@ class _ProductsViewState extends State<ProductsView>
                 _searchController.clear();
                 _onSearchChanged('');
               },
-              icon: const Icon(Icons.clear_all),
+              icon: const Icon(FeatherIcons.x),
               label: const Text('مسح البحث'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal[50],
@@ -491,7 +462,7 @@ class _ProductsViewState extends State<ProductsView>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.error_outline,
+                FeatherIcons.alertCircle,
                 size: 60,
                 color: Colors.red[400],
               ),
@@ -521,7 +492,7 @@ class _ProductsViewState extends State<ProductsView>
               onPressed: () {
                 context.read<ProductsBloc>().add(FetchProductsEvent());
               },
-              icon: const Icon(Icons.refresh, size: 20),
+              icon: const Icon(FeatherIcons.refreshCw, size: 20),
               label: const Text(
                 'إعادة المحاولة',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -591,11 +562,7 @@ class _ProductsViewState extends State<ProductsView>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [Colors.teal[50] ?? const Color(0xFFE0F2F1), Colors.white],
-        ),
+        color: Colors.white,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -613,7 +580,7 @@ class _ProductsViewState extends State<ProductsView>
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.teal[800],
+                    color: AppColors.brandDark,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -630,7 +597,7 @@ class _ProductsViewState extends State<ProductsView>
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.teal[100],
+              color: const Color.fromARGB(255, 228, 235, 231),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextButton.icon(
@@ -650,14 +617,14 @@ class _ProductsViewState extends State<ProductsView>
                 );
               },
               icon: Icon(
-                Icons.arrow_back_ios,
+                FeatherIcons.chevronLeft,
                 size: 16,
-                color: Colors.teal[700],
+                color: AppColors.brandDark,
               ),
               label: Text(
                 'عرض الكل',
                 style: TextStyle(
-                  color: Colors.teal[700],
+                  color: AppColors.brandDark,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -679,24 +646,11 @@ class _ProductsViewState extends State<ProductsView>
           final Product product = Product.fromJson(
             previewProducts[idx] as Map<String, dynamic>,
           );
-          final isFavorite = _favorites.contains(product.id.toString());
           return Padding(
             padding: const EdgeInsets.only(left: 16),
             child: SizedBox(
               width: 200,
-              child: ProductCardWidget(
-                product: product,
-                isFavorite: isFavorite,
-                onToggleFavorite: (p) {
-                  setState(() {
-                    if (_favorites.contains(p.id.toString())) {
-                      _favorites.remove(p.id.toString());
-                    } else {
-                      _favorites.add(p.id.toString());
-                    }
-                  });
-                },
-              ),
+              child: ProductCardWidget(product: product),
             ),
           );
         },

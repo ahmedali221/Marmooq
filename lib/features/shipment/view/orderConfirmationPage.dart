@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:feather_icons/feather_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:traincode/core/constants/app_colors.dart';
 
 class OrderConfirmationScreen extends StatefulWidget {
   final String message;
@@ -95,12 +97,12 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Tajawal'),
           textDirection: TextDirection.rtl,
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: AppColors.brand,
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(FeatherIcons.chevronLeft, color: Colors.white),
           onPressed: () => context.go('/products'),
         ),
       ),
@@ -110,7 +112,11 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle, color: Colors.teal, size: 80),
+              const Icon(
+                FeatherIcons.checkCircle,
+                color: AppColors.brand,
+                size: 80,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'تم تقديم طلبك بنجاح!',
@@ -148,7 +154,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.receipt_long,
+                            FeatherIcons.fileText,
                             color: Colors.grey[600],
                             size: 20,
                           ),
@@ -197,16 +203,20 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.teal[50],
+                    color: AppColors.brandLight,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.teal[200]!, width: 1),
+                    border: Border.all(color: AppColors.brandMuted, width: 1),
                   ),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.timer, color: Colors.teal[600], size: 20),
+                          const Icon(
+                            FeatherIcons.clock,
+                            color: AppColors.brand,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'سيتم التوجيه تلقائياً خلال $_remainingSeconds ثانية',
@@ -224,7 +234,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                       TextButton(
                         onPressed: _cancelAutoRedirect,
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.teal[600],
+                          foregroundColor: AppColors.brand,
                         ),
                         child: const Text(
                           'إلغاء التوجيه التلقائي',
@@ -240,7 +250,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
               ElevatedButton(
                 onPressed: () => context.go('/products'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: AppColors.brand,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(50),
                   shape: RoundedRectangleBorder(

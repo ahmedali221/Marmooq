@@ -53,6 +53,7 @@ dependencies:
   url_launcher: ^6.3.2
   webview_flutter: ^4.13.0
   intl_phone_field: ^3.2.0
+  feather_icons: ^1.2.0
   
 
 dev_dependencies:
