@@ -164,6 +164,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
               checkoutUrl: prefilledUrl,
               checkoutId: checkout['id'] as String,
               totalPrice: checkout['totalPrice'],
+              silentMode: true,
             ),
           ),
         );
@@ -842,12 +843,14 @@ class CheckoutWebViewScreen extends StatefulWidget {
   final String checkoutUrl;
   final String checkoutId;
   final dynamic totalPrice;
+  final bool silentMode; // if true, keep UI hidden and auto-confirm
 
   const CheckoutWebViewScreen({
     super.key,
     required this.checkoutUrl,
     required this.checkoutId,
     required this.totalPrice,
+    this.silentMode = false,
   });
 
   @override
@@ -860,6 +863,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
   String _currentUrl = '';
   bool _checkoutCompleted = false;
   Timer? _timeoutTimer;
+  bool _startedAutoFlow = false;
 
   @override
   void initState() {
@@ -924,6 +928,11 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
 
             // Inject console monitoring after page finishes loading
             _injectConsoleErrorHandler();
+
+            // If running invisibly, try to auto-confirm the order flow
+            if (widget.silentMode) {
+              _attemptAutoConfirm();
+            }
           },
           onWebResourceError: (WebResourceError error) {
             // Handle non-critical errors gracefully
@@ -1044,6 +1053,77 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         setTimeout(checkCompletion, 1000);
       })();
     ''');
+  }
+
+  // Attempt to auto-complete the checkout without showing UI.
+  // This script tries common Shopify checkout flows:
+  // - selects COD if present
+  // - clicks primary action buttons across steps
+  // - waits between actions to allow navigation
+  Future<void> _attemptAutoConfirm() async {
+    if (_startedAutoFlow || _checkoutCompleted) return;
+    _startedAutoFlow = true;
+
+    const String script = r'''
+      (async function(){
+        function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+        function clickIf(selector){
+          const el = document.querySelector(selector);
+          if(el){ el.click(); return true; }
+          return false;
+        }
+        function tapRadioByText(text){
+          const labels=[...document.querySelectorAll('label,span,div')];
+          const target=labels.find(l=>l.textContent && l.textContent.toLowerCase().includes(text));
+          if(target){
+            const r = target.closest('label')?.querySelector('input[type="radio"]') || target.querySelector('input[type="radio"]');
+            if(r){ r.click(); r.dispatchEvent(new Event('change',{bubbles:true})); return true; }
+          }
+          return false;
+        }
+
+        // Try to pick Cash on Delivery if present (Arabic/English)
+        tapRadioByText('cod') || tapRadioByText('الدفع عند الاستلام') || tapRadioByText('cash on delivery');
+        await wait(400);
+
+        // Click continue buttons across steps
+        const primarySelectors = [
+          'button[name="button" i].step__footer__continue-btn',
+          'button[type="submit" i]',
+          'button[data-continue-button]',
+          'button.primary',
+          '.step__footer button',
+        ];
+
+        for (let i=0;i<6;i++){
+          let clicked=false;
+          for(const sel of primarySelectors){
+            const btn=document.querySelector(sel);
+            if(btn){ btn.click(); clicked=true; break; }
+          }
+          if(!clicked){
+            // Try clicking any visible button that looks like continue/pay
+            const btn=[...document.querySelectorAll('button')].find(b=>{
+              const t=(b.textContent||'').toLowerCase();
+              return /continue|pay|complete|confirm|ادفع|متابعة|تأكيد|إتمام/.test(t);
+            });
+            if(btn){ btn.click(); }
+          }
+          await wait(900);
+
+          // If thank-you keywords present, stop.
+          if (location.href.includes('thank_you') || location.href.includes('thank-you') || document.title.toLowerCase().includes('thank')) {
+            break;
+          }
+        }
+      })();
+    ''';
+
+    try {
+      await _controller.runJavaScriptReturningResult(script);
+    } catch (_) {
+      // Ignore scripting errors; completion detection still runs
+    }
   }
 
   void _handleNonCriticalError(WebResourceError error) {
@@ -1370,7 +1450,14 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
       ),
       body: Stack(
         children: [
-          WebViewWidget(controller: _controller),
+          // Keep webview hidden when silentMode is enabled
+          Opacity(
+            opacity: widget.silentMode ? 0.0 : 1.0,
+            child: IgnorePointer(
+              ignoring: widget.silentMode,
+              child: WebViewWidget(controller: _controller),
+            ),
+          ),
           if (_isLoading)
             Container(
               color: Colors.white,
@@ -1395,6 +1482,32 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          if (widget.silentMode && !_checkoutCompleted)
+            // Full-screen loader so user never sees checkout screens
+            Container(
+              color: Colors.white,
+              alignment: Alignment.center,
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF00695C),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'جاري إتمام الطلب بشكل آمن...',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 16,
+                      color: Color(0xFF00695C),
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ],
               ),
             ),
         ],
