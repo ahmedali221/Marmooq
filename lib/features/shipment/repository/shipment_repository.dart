@@ -33,13 +33,11 @@ class ShipmentRepository {
 
       final node = result?['node'];
       if (node == null || node['__typename'] != 'ProductVariant') {
-        print('Error validating merchandise ID: Variant not found or invalid');
         return false;
       }
 
       final product = node['product'];
       if (product == null) {
-        print('Error validating merchandise ID: No associated product');
         return false;
       }
 
@@ -50,7 +48,6 @@ class ShipmentRepository {
 
       return variantExists;
     } catch (e) {
-      print('Error validating merchandise ID: $e');
       return false;
     }
   }
@@ -64,14 +61,6 @@ class ShipmentRepository {
     try {
       final shopifyCart = ShopifyCart.instance;
       final shopifyCustom = ShopifyCustom.instance;
-
-      // Debug: Log input data
-      print('Debug: Creating cart with input:');
-      print('  email: $email');
-      print('  customerAccessToken: $customerAccessToken');
-      print(
-        '  lineItems: ${lineItems.map((item) => 'merchandiseId: ${item.merchandiseId}, quantity: ${item.quantity}').join(', ')}',
-      );
 
       // Create a new cart with the provided line items and buyer identity
       final cartInput = CartInput(
@@ -88,11 +77,6 @@ class ShipmentRepository {
       if (newCart == null) {
         throw Exception('Failed to create new cart');
       }
-
-      // Debug: Log created cart details
-      print(
-        'Debug: Created cart with ID: ${newCart.id}, lines: ${newCart.lines?.map((line) => 'merchandiseId: ${line.merchandise?.id}, quantity: ${line.quantity}').join(', ')}',
-      );
 
       // Fetch cart with checkoutUrl and cost.totalAmount using a custom query
       const cartQuery = r'''
@@ -115,9 +99,6 @@ class ShipmentRepository {
         variables: {'id': newCart.id},
       );
 
-      // Debug: Log full cart query response
-      print('Debug: Cart query response: $cartResult');
-
       final cartData = cartResult?['cart'];
       if (cartData == null) {
         throw Exception('Cart query failed: No response data');
@@ -138,7 +119,6 @@ class ShipmentRepository {
         'totalPrice': totalAmount,
       };
     } catch (e) {
-      print('Error creating checkout: $e');
       throw Exception('Failed to create checkout: $e');
     }
   }
@@ -165,15 +145,12 @@ class ShipmentRepository {
 
       final node = result?['node'];
       if (node == null || node['__typename'] != 'Checkout') {
-        print('Error checking checkout status: Checkout not found');
         return false;
       }
 
       return node['completedAt'] != null;
     } catch (e) {
-      print('Error checking checkout status: $e');
       return false;
     }
   }
-
 }

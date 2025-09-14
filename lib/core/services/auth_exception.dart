@@ -7,7 +7,8 @@ class AuthException implements Exception {
   AuthException(this.message, {this.code, this.originalError});
 
   @override
-  String toString() => 'AuthException: $message${code != null ? ' (Code: $code)' : ''}';
+  String toString() =>
+      'AuthException: $message${code != null ? ' (Code: $code)' : ''}';
 
   /// Factory constructor for common authentication errors
   factory AuthException.fromShopifyError(dynamic error) {
@@ -27,13 +28,29 @@ class AuthException implements Exception {
 
     // Handle common Shopify error messages
     if (message.contains('Unidentified customer')) {
-      return AuthException('Invalid email or password', code: 'invalid_credentials', originalError: error);
+      return AuthException(
+        'Invalid email or password',
+        code: 'invalid_credentials',
+        originalError: error,
+      );
     } else if (message.contains('password')) {
-      return AuthException('Password is incorrect', code: 'invalid_password', originalError: error);
+      return AuthException(
+        'Password is incorrect',
+        code: 'invalid_password',
+        originalError: error,
+      );
     } else if (message.contains('email') && message.contains('taken')) {
-      return AuthException('Email is already in use', code: 'email_in_use', originalError: error);
+      return AuthException(
+        'Email is already in use',
+        code: 'email_in_use',
+        originalError: error,
+      );
     } else if (message.contains('token') && message.contains('expired')) {
-      return AuthException('Your session has expired. Please sign in again', code: 'token_expired', originalError: error);
+      return AuthException(
+        'Your session has expired. Please sign in again',
+        code: 'token_expired',
+        originalError: error,
+      );
     }
 
     return AuthException(message, code: code, originalError: error);
@@ -41,7 +58,10 @@ class AuthException implements Exception {
 
   /// Common error types
   static AuthException invalidCredentials() {
-    return AuthException('Invalid email or password', code: 'invalid_credentials');
+    return AuthException(
+      'Invalid email or password',
+      code: 'invalid_credentials',
+    );
   }
 
   static AuthException emailInUse() {
@@ -53,11 +73,17 @@ class AuthException implements Exception {
   }
 
   static AuthException networkError() {
-    return AuthException('Network error. Please check your connection', code: 'network_error');
+    return AuthException(
+      'Network error. Please check your connection',
+      code: 'network_error',
+    );
   }
 
   static AuthException serverError() {
-    return AuthException('Server error. Please try again later', code: 'server_error');
+    return AuthException(
+      'Server error. Please try again later',
+      code: 'server_error',
+    );
   }
 
   static AuthException userNotFound() {
@@ -65,6 +91,9 @@ class AuthException implements Exception {
   }
 
   static AuthException sessionExpired() {
-    return AuthException('Your session has expired. Please sign in again', code: 'session_expired');
+    return AuthException(
+      'Your session has expired. Please sign in again',
+      code: 'session_expired',
+    );
   }
 }

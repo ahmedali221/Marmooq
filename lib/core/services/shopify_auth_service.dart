@@ -68,7 +68,6 @@ class ShopifyAuthService {
 
       return user;
     } catch (e) {
-      debugPrint('Shopify sign in error: $e');
       throw AuthException.fromShopifyError(e);
     }
   }
@@ -89,20 +88,6 @@ class ShopifyAuthService {
       final normalizedPhone = (phone == null || phone.trim().isEmpty)
           ? null
           : ValidationUtils.normalizeKuwaitPhone(phone);
-      debugPrint(
-        '[AuthService] Signup payload prepared: '
-                '{email: ' +
-            email +
-            ', firstName: ' +
-            (firstName ?? '') +
-            ', lastName: ' +
-            (lastName ?? '') +
-            ', phone(normalized): ' +
-            (normalizedPhone ?? '(null)') +
-            ', acceptsMarketing: ' +
-            (acceptsMarketing?.toString() ?? 'null') +
-            '}',
-      );
 
       final user = await _shopifyAuth.createUserWithEmailAndPassword(
         email: email,
@@ -111,9 +96,6 @@ class ShopifyAuthService {
         lastName: lastName,
         phone: normalizedPhone,
         acceptsMarketing: acceptsMarketing,
-      );
-      debugPrint(
-        '[AuthService] User created. ShopifyUser.id=' + (user.id ?? '(null)'),
       );
 
       // Ensure we have a valid access token after registration
@@ -127,7 +109,7 @@ class ShopifyAuthService {
               password: password,
             );
           } catch (e) {
-            debugPrint('Sign-in attempt ${attempt + 1} failed: $e');
+            // Sign-in attempt failed, continue to next attempt
           }
           accessToken = await _shopifyAuth.currentCustomerAccessToken;
           if (accessToken != null && accessToken.isNotEmpty) break;
@@ -167,10 +149,6 @@ class ShopifyAuthService {
               acceptsMarketing: acceptsMarketing,
               customerAccessToken: accessToken,
             );
-            debugPrint(
-              '[AuthService] customerUpdate called with phone=' +
-                  (normalizedPhone ?? '(null)'),
-            );
 
             // Verify phone persisted; retry once if needed
             if (normalizedPhone != null) {
@@ -179,27 +157,17 @@ class ShopifyAuthService {
                   forceRefresh: true,
                 );
                 final currentPhone = verifyUser?.phone;
-                debugPrint(
-                  '[AuthService] Post-signup verify phone=' +
-                      (currentPhone ?? '(empty)'),
-                );
                 if (currentPhone == null || currentPhone.isEmpty) {
                   await Future.delayed(const Duration(milliseconds: 300));
                   await customer.customerUpdate(
                     phoneNumber: normalizedPhone.replaceAll(' ', ''),
                     customerAccessToken: accessToken,
                   );
-                  debugPrint('[AuthService] Retried setting phone after delay');
                 }
-              } catch (e) {
-                debugPrint(
-                  'Phone verification after signup failed: ' + e.toString(),
-                );
-              }
+              } catch (e) {}
             }
           } catch (e) {
             // Don't fail registration if profile update fails
-            debugPrint('Post-registration customerUpdate failed: $e');
           }
         }
       }

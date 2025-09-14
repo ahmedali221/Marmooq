@@ -39,55 +39,65 @@ class CartIconWidget extends StatelessWidget {
 
         return Container(
           margin: margin,
-          padding: padding,
-          decoration: BoxDecoration(
-            color: backgroundColor ?? AppColors.brandLight,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Stack(
-            children: [
-              IconButton(
-                onPressed: () => context.go('/cart'),
-                icon: Icon(
-                  FeatherIcons.shoppingBag,
-                  color: iconColor ?? AppColors.brand,
-                  size: iconSize ?? 24,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(25),
+              onTap: () => context.go('/cart'),
+              child: Container(
+                padding: padding ?? const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: backgroundColor ?? Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                tooltip: tooltip ?? 'سلة المشتريات',
-              ),
-              if (itemCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: badgeColor ?? Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      FeatherIcons.shoppingBag,
+                      color: iconColor ?? Colors.black87,
+                      size: iconSize ?? 22,
+                    ),
+                    if (itemCount > 0)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor ?? AppColors.brand,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            itemCount > 99 ? '99+' : itemCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ],
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 20,
-                      minHeight: 20,
-                    ),
-                    child: Text(
-                      itemCount > 99 ? '99+' : itemCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                  ],
                 ),
-            ],
+              ),
+            ),
           ),
         );
       },

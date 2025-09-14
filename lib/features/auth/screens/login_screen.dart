@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       child: state.isLoading
-                          ? const CircularProgressIndicator()
+                          ? const CircularProgressIndicator.adaptive()
                           : const Text(
                               'تسجيل الدخول',
                               style: TextStyle(fontSize: 16),

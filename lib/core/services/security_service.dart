@@ -189,7 +189,6 @@ class SecurityService {
   /// Stores cart ID securely.
   static Future<void> storeCartId(String cartId) async {
     await _secureStorage.write(key: _cartIdKey, value: cartId);
-    print('DEBUG: Cart ID stored securely: $cartId');
   }
 
   /// Retrieves stored cart ID.
@@ -200,6 +199,5 @@ class SecurityService {
   /// Clears stored cart ID.
   static Future<void> clearCartId() async {
     await _secureStorage.delete(key: _cartIdKey);
-    print('DEBUG: Cart ID cleared from secure storage');
   }
 }

@@ -16,49 +16,50 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
     );
-    
+
     // Create fade-in animation
-    _fadeInAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.65, curve: Curves.easeInOut),
-    ));
-    
+    _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeInOut),
+      ),
+    );
+
     // Create scale animation
-    _scaleAnimation = Tween<double>(
-      begin: 0.6,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
-    ));
-    
+    _scaleAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
+      ),
+    );
+
     // Start animation and check authentication after delay
     _animationController.forward();
-    
+
     // Check authentication status after animation completes
     Future.delayed(const Duration(milliseconds: 2000), () {
       _checkAuthenticationStatus();
     });
   }
-  
+
   void _checkAuthenticationStatus() {
-    // Initialize authentication state
-    context.read<AuthBloc>().add(AuthInitialize());
+    // Check if widget is still mounted before accessing context
+    if (mounted) {
+      // Initialize authentication state
+      context.read<AuthBloc>().add(AuthInitialize());
+    }
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -71,6 +72,8 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: Colors.white,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
+          if (!mounted) return;
+
           if (state.isAuthenticated) {
             // Navigate to products if authenticated
             context.go('/products');
@@ -143,7 +146,7 @@ class _SplashScreenState extends State<SplashScreen>
                         SizedBox(
                           width: 40,
                           height: 40,
-                          child: CircularProgressIndicator(
+                          child: CircularProgressIndicator.adaptive(
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Colors.teal[600]!,
                             ),
@@ -162,5 +165,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-
-

@@ -14,6 +14,7 @@ import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:traincode/core/utils/validation_utils.dart';
+import 'package:traincode/core/widgets/standard_app_bar.dart';
 
 class ShippingDetailsScreen extends StatefulWidget {
   final String customerAccessToken;
@@ -33,7 +34,6 @@ class ShippingDetailsScreen extends StatefulWidget {
 
 class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _isDebugMode = kDebugMode;
   bool _isLoading = false;
   bool _hasCartItems = false;
   List<CartLineInput> _lineItems = [];
@@ -41,7 +41,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
 
   final ShipmentRepository _shipmentRepository = ShipmentRepository();
 
-  // Shipping form controllers
+  // Simplified form controllers
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+
+  // Keep original controllers for data mapping
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _address1Controller = TextEditingController();
@@ -50,7 +55,6 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
   final TextEditingController _provinceController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _zipController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void initState() {
@@ -61,6 +65,9 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
 
   @override
   void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _address1Controller.dispose();
@@ -69,7 +76,6 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     _provinceController.dispose();
     _countryController.dispose();
     _zipController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -114,10 +120,34 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     }
   }
 
+  void _mapFormData() {
+    // Split full name into first and last name
+    final nameParts = _fullNameController.text.trim().split(' ');
+    if (nameParts.isNotEmpty) {
+      _firstNameController.text = nameParts.first;
+      if (nameParts.length > 1) {
+        _lastNameController.text = nameParts.sublist(1).join(' ');
+      } else {
+        _lastNameController.text = '';
+      }
+    }
+
+    // Map address to address1 and set defaults for other fields
+    _address1Controller.text = _addressController.text.trim();
+    _address2Controller.text = '';
+    _cityController.text = 'Kuwait City';
+    _provinceController.text = 'Kuwait';
+    _countryController.text = 'Kuwait';
+    _zipController.text = '00000';
+  }
+
   Future<void> _handleCompleteOrder() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    // Map simplified form data to original structure
+    _mapFormData();
 
     if (widget.customerAccessToken.isEmpty) {
       final error = 'رمز الوصول للعميل فارغ';
@@ -272,320 +302,289 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         content: Text(message, textDirection: TextDirection.rtl),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 5),
-        action: _isDebugMode
-            ? SnackBarAction(
-                label: 'تفاصيل',
-                textColor: Colors.white,
-                onPressed: () {
-                  _showDebugDialog(message);
-                },
-              )
-            : null,
-      ),
-    );
-  }
-
-  void _showDebugDialog(String errorMessage) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'تفاصيل الخطأ',
-          textDirection: TextDirection.rtl,
-          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Text(
-            errorMessage,
-            textDirection: TextDirection.rtl,
-            style: const TextStyle(fontFamily: 'Tajawal'),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'إغلاق',
-              textDirection: TextDirection.rtl,
-              style: TextStyle(fontFamily: 'Tajawal'),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            onPressed: () {
-              context.go('/cart');
-            },
-            icon: const Icon(FeatherIcons.shoppingCart, color: Colors.black87),
-          ),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: StandardAppBar(
+          backgroundColor: Colors.white,
+          title: 'تفاصيل الشحن',
+          onLeadingPressed: () => context.go('/cart'),
+          actions: [],
+          elevation: 0,
+          centerTitle: true,
         ),
-        title: const Text(
-          'تفاصيل الشحن',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Tajawal',
-            fontSize: 22,
-            color: Colors.white,
-          ),
-          textDirection: TextDirection.rtl,
-        ),
-        flexibleSpace: Container(color: AppColors.brand),
-        elevation: 8,
-        shadowColor: Colors.teal.withOpacity(0.3),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(color: Color(0xFFF6FBFC)),
-        child: _isLoading
-            ? Center(
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+        body: Container(
+          decoration: const BoxDecoration(color: AppColors.brandLight),
+          child: _isLoading
+              ? Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator.adaptive(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.brand,
+                          ),
+                          strokeWidth: 3,
+                        ),
+                        SizedBox(height: 24),
+                        Text(
+                          'جاري معالجة طلبك...',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.brand,
+                          ),
+                          textDirection: TextDirection.rtl,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF00695C),
-                        ),
-                        strokeWidth: 3,
-                      ),
-                      SizedBox(height: 24),
-                      Text(
-                        'جاري معالجة طلبك...',
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF00695C),
-                        ),
-                        textDirection: TextDirection.rtl,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0xFF0F6E72).withOpacity(0.08),
-                              blurRadius: 24,
-                              offset: const Offset(0, 10),
-                            ),
-                            BoxShadow(
-                              color: Color(0xFF0F6E72).withOpacity(0.04),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Color(0xFF1E9DB2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    FeatherIcons.shield,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'يرجى ادخال معلوماتك لإكمال الطلب',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.brand,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      FeatherIcons.shield,
                                       color: Colors.white,
+                                      size: 24,
                                     ),
-                                    textDirection: TextDirection.rtl,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            // Shipping form fields
-                            _buildTextField(
-                              controller: _firstNameController,
-                              label: 'الاسم الأول',
-                              hint: 'اكتب الاسم الأول',
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _lastNameController,
-                              label: 'اسم العائلة',
-                              hint: 'اكتب اسم العائلة',
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _phoneController,
-                              label: 'رقم الهاتف',
-                              hint: '+965 5xxxxxxx',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              maxLength: 8,
-                              prefixText: '+965 ',
-                              validator: (v) {
-                                final digits = (v ?? '').replaceAll(
-                                  RegExp(r'\D'),
-                                  '',
-                                );
-                                if (digits.isEmpty) {
-                                  return 'يرجى إدخال رقم الهاتف';
-                                }
-                                if (digits.length != 8) {
-                                  return 'رقم الهاتف يجب أن يتكون من 8 أرقام';
-                                }
-                                final full = '+965' + digits;
-                                if (!ValidationUtils.isValidKuwaitPhone(full)) {
-                                  return 'يرجى إدخال رقم كويتي صالح';
-                                }
-                                return null;
-                              },
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _address1Controller,
-                              label: 'العنوان الأول',
-                              hint: 'اسم الشارع والحي',
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _address2Controller,
-                              label: 'العنوان الثاني (اختياري)',
-                              hint: 'شقة، مبنى، معلم بارز',
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _cityController,
-                              label: 'المدينة',
-                              hint: 'اكتب المدينة',
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _provinceController,
-                              label: 'المنطقة/المحافظة',
-                              hint: 'اكتب المنطقة أو المحافظة',
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _countryController,
-                              label: 'الدولة',
-                              hint: 'اكتب الدولة',
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _zipController,
-                              label: 'الرمز البريدي',
-                              hint: 'xxxxx',
-                              keyboardType: TextInputType.number,
-                              validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'مطلوب'
-                                  : null,
-                              textInputAction: TextInputAction.done,
-                            ),
-                            const SizedBox(height: 24),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.amber[50],
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.amber[200]!,
-                                  width: 1,
+                                    SizedBox(width: 12),
+                                    Text(
+                                      'يرجى ادخال معلوماتك لإكمال الطلب',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
+                              const SizedBox(height: 24),
+                              // Simplified shipping form fields
+                              _buildTextField(
+                                controller: _fullNameController,
+                                label: 'الاسم الكامل',
+                                hint: 'اكتب الاسم الكامل',
+                                validator: (v) => v == null || v.trim().isEmpty
+                                    ? 'مطلوب'
+                                    : null,
+                                textInputAction: TextInputAction.next,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildTextField(
+                                controller: _phoneController,
+                                label: 'رقم الهاتف',
+                                hint: '+965 5xxxxxxx',
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                maxLength: 8,
+                                prefixText: '+965 ',
+                                validator: (v) {
+                                  final digits = (v ?? '').replaceAll(
+                                    RegExp(r'\D'),
+                                    '',
+                                  );
+                                  if (digits.isEmpty) {
+                                    return 'يرجى إدخال رقم الهاتف';
+                                  }
+                                  if (digits.length != 8) {
+                                    return 'رقم الهاتف يجب أن يتكون من 8 أرقام';
+                                  }
+                                  final full = '+965' + digits;
+                                  if (!ValidationUtils.isValidKuwaitPhone(
+                                    full,
+                                  )) {
+                                    return 'يرجى إدخال رقم كويتي صالح';
+                                  }
+                                  return null;
+                                },
+                                textInputAction: TextInputAction.next,
+                              ),
+                              const SizedBox(height: 12),
+                              _buildTextField(
+                                controller: _addressController,
+                                label: 'العنوان الكامل',
+                                hint:
+                                    'اكتب العنوان الكامل (الشارع، الحي، المنطقة)',
+                                validator: (v) => v == null || v.trim().isEmpty
+                                    ? 'مطلوب'
+                                    : null,
+                                textInputAction: TextInputAction.done,
+                                maxLines: 3,
+                              ),
+                              const SizedBox(height: 24),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.brandLight,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.brandMuted,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      FeatherIcons.info,
+                                      color: AppColors.brand,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Expanded(
+                                      child: Text(
+                                        'اضغط للانتقال إلى صفحة الدفع الآمنة',
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 16,
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        textDirection: TextDirection.rtl,
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      AppColors.brand,
+                                      AppColors.brandDark,
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: _isLoading || !_hasCartItems
+                                      ? null
+                                      : _handleCompleteOrder,
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(60),
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  child: _isLoading
+                                      ? const CircularProgressIndicator.adaptive(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                          strokeWidth: 2,
+                                        )
+                                      : const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              FeatherIcons.creditCard,
+                                              color: Colors.white,
+                                              size: 24,
+                                            ),
+                                            SizedBox(width: 12),
+                                            Text(
+                                              'الانتقال إلى الدفع',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'Tajawal',
+                                                color: Colors.white,
+                                              ),
+                                              textDirection: TextDirection.rtl,
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppColors.brandMuted,
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
                                 children: [
-                                  Icon(
-                                    FeatherIcons.info,
-                                    color: Colors.amber[700],
-                                    size: 24,
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.brandLight,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      FeatherIcons.shield,
+                                      color: AppColors.brand,
+                                      size: 20,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   const Expanded(
                                     child: Text(
-                                      'اضغط للانتقال إلى صفحة الدفع الآمنة',
+                                      'معلومات الدفع الآمن',
                                       style: TextStyle(
                                         fontFamily: 'Tajawal',
                                         fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                         color: Colors.black87,
-                                        fontWeight: FontWeight.w500,
                                       ),
                                       textDirection: TextDirection.rtl,
                                       textAlign: TextAlign.right,
@@ -593,181 +592,60 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 32),
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF00695C),
-                                    Color(0xFF26A69A),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.teal.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    color: AppColors.brand,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'سيتم توجيهك إلى صفحة دفع آمنة لإتمام عملية الشراء',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                      textAlign: TextAlign.right,
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: ElevatedButton(
-                                onPressed: _isLoading || !_hasCartItems
-                                    ? null
-                                    : _handleCompleteOrder,
-                                style: ElevatedButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(60),
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                        strokeWidth: 2,
-                                      )
-                                    : const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            FeatherIcons.creditCard,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
-                                            'الانتقال إلى الدفع',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: 'Tajawal',
-                                              color: Colors.white,
-                                            ),
-                                            textDirection: TextDirection.rtl,
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.teal.withOpacity(0.2),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.teal.withOpacity(0.1),
-                              spreadRadius: 0,
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.teal[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    FeatherIcons.shield,
-                                    color: Colors.teal[600],
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    color: AppColors.brand,
                                     size: 20,
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'معلومات الدفع الآمن',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'جميع المعاملات مشفرة ومؤمنة بالكامل',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                      textAlign: TextAlign.right,
                                     ),
-                                    textDirection: TextDirection.rtl,
-                                    textAlign: TextAlign.right,
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  color: Colors.teal[600],
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'سيتم توجيهك إلى صفحة دفع آمنة لإتمام عملية الشراء',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                    textDirection: TextDirection.rtl,
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  color: Colors.teal[600],
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'جميع المعاملات مشفرة ومؤمنة بالكامل',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                    textDirection: TextDirection.rtl,
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
+        ),
       ),
     );
   }
@@ -782,6 +660,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     List<TextInputFormatter>? inputFormatters,
     String? prefixText,
     int? maxLength,
+    int? maxLines,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -805,6 +684,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
           textInputAction: textInputAction,
           inputFormatters: inputFormatters,
           maxLength: maxLength,
+          maxLines: maxLines ?? 1,
           decoration: InputDecoration(
             hintText: hint,
             hintTextDirection: TextDirection.rtl,
@@ -817,18 +697,15 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
             prefixText: prefixText,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.teal.withOpacity(0.2)),
+              borderSide: BorderSide(color: AppColors.brandMuted),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.teal.withOpacity(0.2)),
+              borderSide: BorderSide(color: AppColors.brandMuted),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF26A69A),
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
             ),
           ),
           validator: validator,
@@ -1230,7 +1107,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           }
         });
 
-        return AlertDialog(
+        return AlertDialog.adaptive(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -1367,7 +1244,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: const Text(
           'خطأ',
           textDirection: TextDirection.rtl,
@@ -1434,7 +1311,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
+                child: CircularProgressIndicator.adaptive(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
@@ -1465,7 +1342,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
+                    CircularProgressIndicator.adaptive(
                       valueColor: AlwaysStoppedAnimation<Color>(
                         Color(0xFF00695C),
                       ),
@@ -1492,7 +1369,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(
+                  CircularProgressIndicator.adaptive(
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Color(0xFF00695C),
                     ),
@@ -1519,7 +1396,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: const Text(
           'انتهت مهلة الدفع',
           textDirection: TextDirection.rtl,
@@ -1556,7 +1433,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
   void _showExitConfirmation() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: const Text(
           'تأكيد الخروج',
           textDirection: TextDirection.rtl,

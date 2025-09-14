@@ -65,10 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
         _phoneController.text,
       );
-      debugPrint(
-        '[Register] Normalized Kuwait phone to: ' +
-            (normalizedPhone.isEmpty ? '(empty)' : normalizedPhone),
-      );
       context.read<AuthBloc>().add(
         AuthRegister(
           email: _emailController.text.trim(),
@@ -295,7 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       child: state.isLoading
-                          ? const CircularProgressIndicator()
+                          ? const CircularProgressIndicator.adaptive()
                           : const Text(
                               'إنشاء حساب',
                               style: TextStyle(fontSize: 16),

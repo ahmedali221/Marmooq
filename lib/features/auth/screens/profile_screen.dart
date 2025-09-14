@@ -6,230 +6,227 @@ import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:traincode/features/auth/bloc/auth_bloc.dart';
 import 'package:traincode/features/auth/bloc/auth_state.dart';
+import 'package:traincode/core/widgets/standard_app_bar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  Widget _buildRow({
-    required String label,
-    required String? value,
-    IconData? icon,
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0))),
-      ),
-      child: Row(
-        children: [
-          Icon(icon ?? FeatherIcons.info, color: Colors.teal[700]),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 12),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  (value == null || value.isEmpty) ? 'غير متوفر' : value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.grey[700], size: 20),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Tajawal',
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'حسابي',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Tajawal',
-              fontSize: 22,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: AppColors.brand,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          centerTitle: true,
-          leading: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: IconButton(
-              icon: const Icon(FeatherIcons.chevronLeft, color: Colors.white),
-              onPressed: () => context.go('/products'),
-            ),
-          ),
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: StandardAppBar(
+        backgroundColor: Colors.white,
+        title: 'الملف الشخصي',
+        onLeadingPressed: null,
+        actions: [],
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state.status == AuthStatus.unauthenticated) {
+            context.go('/login');
+          }
+        },
+        builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator.adaptive());
+          }
 
-          // IconButton(
-          //   tooltip: 'تعديل',
-          //   icon: const Icon(Icons.edit_outlined),
-          //   onPressed: () => context.go('/edit-profile'),
-          // ),
-          // IconButton(
-          //   tooltip: 'عناويني',
-          //   icon: const Icon(Icons.location_on_outlined),
-          //   onPressed: () => context.go('/addresses'),
-          // ),
-        ),
-        body: BlocConsumer<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state.status == AuthStatus.unauthenticated) {
-              context.go('/login');
-            }
-          },
-          builder: (context, state) {
-            if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (!state.isAuthenticated || state.user == null) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('الرجاء تسجيل الدخول لعرض الملف الشخصي'),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => context.go('/login'),
-                      child: const Text('تسجيل الدخول'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final ShopifyUser user = state.user!;
-
-            return SingleChildScrollView(
+          if (!state.isAuthenticated || state.user == null) {
+            return Center(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 16),
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.teal[100],
-                    child: Text(
-                      ((user.firstName ?? '').isNotEmpty
-                              ? user.firstName!.substring(0, 1)
-                              : 'م') +
-                          ((user.lastName ?? '').isNotEmpty
-                              ? user.lastName!.substring(0, 1)
-                              : ''),
-                      style: TextStyle(
-                        color: Colors.teal[800],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
-                    ),
+                  const Text(
+                    'يرجى تسجيل الدخول لعرض الملف الشخصي',
+                    style: TextStyle(fontFamily: 'Tajawal'),
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    [
-                      user.firstName,
-                      user.lastName,
-                    ].where((e) => (e ?? '').isNotEmpty).join(' '),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                  ElevatedButton(
+                    onPressed: () => context.go('/login'),
+                    child: const Text(
+                      'تسجيل الدخول',
+                      style: TextStyle(fontFamily: 'Tajawal'),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email ?? '',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildRow(
-                          label: 'الاسم الأول',
-                          value: user.firstName,
-                          icon: FeatherIcons.user,
-                        ),
-                        _buildRow(
-                          label: 'اسم العائلة',
-                          value: user.lastName,
-                          icon: FeatherIcons.user,
-                        ),
-                        _buildRow(
-                          label: 'البريد الإلكتروني',
-                          value: user.email,
-                          icon: FeatherIcons.mail,
-                        ),
-                        _buildRow(
-                          label: 'رقم الهاتف',
-                          value: user.phone,
-                          icon: FeatherIcons.phone,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[600],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          context.read<AuthBloc>().add(AuthSignOut());
-                        },
-                        icon: const Icon(FeatherIcons.logOut),
-                        label: const Text('تسجيل الخروج'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             );
-          },
-        ),
+          }
+
+          final ShopifyUser user = state.user!;
+          final String fullName = [
+            user.firstName,
+            user.lastName,
+          ].where((e) => (e ?? '').isNotEmpty).join(' ');
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Header with profile info
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        // Profile Image
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.brand,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              ((user.firstName ?? '').isNotEmpty
+                                      ? user.firstName!.substring(0, 1)
+                                      : 'M') +
+                                  ((user.lastName ?? '').isNotEmpty
+                                      ? user.lastName!.substring(0, 1)
+                                      : ''),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // User Name
+                        Text(
+                          fullName.isNotEmpty ? fullName : 'Mark Adam',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Email
+                        Text(
+                          user.email ?? 'sunny_koeipndag@hotmail.com',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Menu Items
+                  _buildMenuItem(
+                    icon: FeatherIcons.user,
+                    title:
+                        'الاسم: ${fullName.isNotEmpty ? fullName : 'غير محدد'}',
+                    onTap: () {
+                      // Navigate to profile details
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: FeatherIcons.mail,
+                    title: 'البريد الإلكتروني: ${user.email ?? 'غير محدد'}',
+                    onTap: () {
+                      // Navigate to contact
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: FeatherIcons.phone,
+                    title: 'الهاتف: ${user.phone ?? 'غير محدد'}',
+                    onTap: () {
+                      // Navigate to phone settings
+                    },
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Sign Out Button
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () {
+                        context.read<AuthBloc>().add(AuthSignOut());
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        'تسجيل الخروج',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange[600],
+                          fontFamily: 'Tajawal',
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
-
-// _openEditDialog removed: migrated to dedicated EditProfileScreen

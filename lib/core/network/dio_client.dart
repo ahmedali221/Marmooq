@@ -22,8 +22,7 @@ class DioClient {
     _storefrontDio.interceptors.add(
       InterceptorsWrapper(
         onError: (DioException e, ErrorInterceptorHandler handler) {
-          // Handle storefront-specific errors, e.g., log or throw custom exception
-          print('Storefront API Error: ${e.message}');
+          // Handle storefront-specific errors
           return handler.next(e);
         },
       ),

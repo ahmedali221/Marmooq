@@ -4,6 +4,11 @@ import 'package:shopify_flutter/models/src/shopify_user/address/address.dart';
 import 'package:traincode/core/services/shopify_auth_service.dart';
 import 'package:traincode/features/auth/bloc/auth_bloc.dart';
 import 'package:traincode/features/auth/bloc/auth_state.dart';
+import 'package:feather_icons/feather_icons.dart';
+import 'package:traincode/core/constants/app_colors.dart';
+import 'package:go_router/go_router.dart';
+import 'package:traincode/features/cart/view_model/cart_bloc.dart';
+import 'package:traincode/features/cart/view_model/cart_states.dart';
 
 class AddressesScreen extends StatefulWidget {
   const AddressesScreen({super.key});
@@ -44,7 +49,7 @@ class _AddressesScreenState extends State<AddressesScreen> {
       builder: (ctx) {
         return Directionality(
           textDirection: TextDirection.rtl,
-          child: AlertDialog(
+          child: AlertDialog.adaptive(
             title: Text(address == null ? 'إضافة عنوان' : 'تعديل العنوان'),
             content: SingleChildScrollView(
               child: Column(
@@ -170,7 +175,13 @@ class _AddressesScreenState extends State<AddressesScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('عناويني'), centerTitle: true),
+        appBar: AppBar(
+          title: const Text('عناويني'),
+          centerTitle: true,
+          backgroundColor: AppColors.brand,
+          foregroundColor: Colors.white,
+          actions: [_buildCartIcon(), const SizedBox(width: 16)],
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _openAddressDialog(),
           child: const Icon(Icons.add),
@@ -181,7 +192,9 @@ class _AddressesScreenState extends State<AddressesScreen> {
               future: _future,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator.adaptive(),
+                  );
                 }
                 if (snapshot.hasError) {
                   return Center(child: Text('خطأ: ${snapshot.error}'));
@@ -279,9 +292,75 @@ class _AddressesScreenState extends State<AddressesScreen> {
       ),
     );
   }
+
+  Widget _buildCartIcon() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, cartState) {
+        int itemCount = 0;
+        if (cartState is CartSuccess) {
+          itemCount = cartState.cart.lines.length;
+        } else if (cartState is CartInitialized) {
+          itemCount = cartState.cart.lines.length;
+        }
+
+        return Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => context.go('/cart'),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      FeatherIcons.shoppingBag,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    if (itemCount > 0)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white, width: 1),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            itemCount > 99 ? '99+' : itemCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
-
-
-
-
-

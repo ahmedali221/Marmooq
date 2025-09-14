@@ -10,7 +10,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
 import 'package:go_router/go_router.dart';
 import 'package:traincode/core/services/security_service.dart';
-import 'package:traincode/features/cart/widgets/cart_icon_widget.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:traincode/core/constants/app_colors.dart';
 
@@ -27,13 +26,27 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   late CarouselSliderController _carouselController;
   int _currentImageIndex = 0;
   int _quantity = 1;
-
   bool _isAddingToCart = false;
+  bool _isLoading = true;
+  Product? _loadedProduct;
 
   @override
   void initState() {
     super.initState();
     _carouselController = CarouselSliderController();
+    _loadProductDetails();
+  }
+
+  Future<void> _loadProductDetails() async {
+    // Simulate loading delay for demonstration
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (mounted) {
+      setState(() {
+        _loadedProduct = widget.product;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -44,6 +57,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
     return BlocListener<CartBloc, CartState>(
       listener: (context, state) {
         if (state is CartFailure) {
@@ -75,110 +92,71 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         textDirection: TextDirection.rtl,
         child: Scaffold(
           backgroundColor: Colors.grey[50],
-          appBar: AppBar(
-            title: Text(
-              widget.product.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Colors.white,
-                fontFamily: 'Tajawal',
-              ),
-            ),
-            backgroundColor: AppColors.brandDark,
-            shadowColor: AppColors.brandDark.withOpacity(0.25),
-            centerTitle: true,
-            leading: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  FeatherIcons.chevronLeft,
-                  color: AppColors.brandDark,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const CartIconWidget(
-                  iconColor: Colors.white,
-                  backgroundColor: Colors.transparent,
-                  margin: EdgeInsets.zero,
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-          ),
-          body: Container(
-            color: const Color(0xFFF6FBFC),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Enhanced Image Carousel
-                  _buildImageCarousel(),
+          body: Column(
+            children: [
+              // Image at the top
+              _buildImageCarousel(),
 
-                  const SizedBox(height: 20),
-
-                  // Enhanced Product Details Container
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(32),
-                        topRight: Radius.circular(32),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          spreadRadius: 0,
-                          blurRadius: 20,
-                          offset: const Offset(0, -5),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              // Content below
+              Expanded(
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Product Name and Price
-                          _buildProductHeader(),
+                          const SizedBox(height: 16),
 
-                          const SizedBox(height: 24),
+                          // Enhanced Product Details Container
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(24),
+                                topRight: Radius.circular(24),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  spreadRadius: 0,
+                                  blurRadius: 10,
+                                  offset: const Offset(0, -2),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                24,
+                                20,
+                                100,
+                              ), // Added bottom padding for cart icon
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Product Name and Price
+                                  _buildProductHeader(),
 
-                          // Product Description
-                          _buildProductDescription(),
+                                  const SizedBox(height: 12),
 
-                          const SizedBox(height: 32),
+                                  // Product Description
+                                  _buildProductDescription(),
 
-                          // Action Buttons
-                          _buildActionButtons(),
+                                  const SizedBox(height: 24),
 
-                          const SizedBox(height: 20),
+                                  // Action Buttons
+                                  _buildActionButtons(),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -186,104 +164,94 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   }
 
   Widget _buildImageCarousel() {
-    if (widget.product.images.isEmpty) {
+    if (_loadedProduct!.images.isEmpty) {
       return Container(
-        height: 420,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        height: 350,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.brandDark.withOpacity(0.08),
-              spreadRadius: 0,
-              blurRadius: 25,
-              offset: const Offset(0, 12),
-            ),
-            BoxShadow(
-              color: AppColors.brandDark.withOpacity(0.04),
-              spreadRadius: 0,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.brandLight,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  FeatherIcons.image,
-                  size: 64,
-                  color: AppColors.brandDark,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'لا توجد صور متاحة',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'سيتم إضافة الصور قريباً',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
+          color: Colors.grey[100],
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
           ),
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      FeatherIcons.image,
+                      size: 48,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'لا توجد صور متاحة',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'سيتم إضافة الصور قريباً',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            ),
+            // Overlay buttons
+            _buildImageOverlayButtons(),
+          ],
         ),
       );
     }
 
     return Container(
-      height: 420,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      height: 350,
       child: Stack(
         children: [
           // Enhanced Carousel with better shadows
           Container(
+            width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  spreadRadius: 0,
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
-                ),
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
                   spreadRadius: 0,
-                  blurRadius: 10,
+                  blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
               child: CarouselSlider.builder(
                 carouselController: _carouselController,
-                itemCount: widget.product.images.length,
+                itemCount: _loadedProduct!.images.length,
                 itemBuilder: (context, index, realIndex) {
                   return Hero(
-                    tag: 'product-image-${widget.product.id}-$index',
+                    tag: 'product-image-${_loadedProduct!.id}-$index',
                     child: Container(
                       width: double.infinity,
                       child: CachedNetworkImage(
-                        imageUrl: widget.product.images[index],
+                        imageUrl: _loadedProduct!.images[index],
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           color: Colors.grey[100],
@@ -291,8 +259,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                CircularProgressIndicator(
-                                  color: AppColors.brandDark,
+                                CircularProgressIndicator.adaptive(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.brand,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -331,10 +301,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   );
                 },
                 options: CarouselOptions(
-                  height: 400,
+                  height: 300,
                   viewportFraction: 1.0,
                   enableInfiniteScroll: true,
-                  autoPlay: false, // Set to true for auto-play
+                  autoPlay: false,
                   enlargeCenterPage: false,
                   onPageChanged: (index, reason) {
                     setState(() {
@@ -348,10 +318,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           ),
 
           // Navigation Arrows
-          if (widget.product.images.length > 1) ...[
+          if (_loadedProduct!.images.length > 1) ...[
             // Previous Arrow
             Positioned(
-              left: 16,
+              left: 8,
               top: 0,
               bottom: 0,
               child: Center(
@@ -364,30 +334,30 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                       );
                     } else {
                       _carouselController.animateToPage(
-                        widget.product.images.length - 1,
+                        _loadedProduct!.images.length - 1,
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
                       );
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          spreadRadius: 1,
-                          blurRadius: 6,
+                          color: Colors.black.withOpacity(0.1),
+                          spreadRadius: 0,
+                          blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: Icon(
                       FeatherIcons.chevronLeft,
-                      color: AppColors.brandDark,
-                      size: 18,
+                      color: Colors.grey[700],
+                      size: 16,
                     ),
                   ),
                 ),
@@ -395,7 +365,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             ),
             // Next Arrow
             Positioned(
-              right: 16,
+              right: 8,
               top: 0,
               bottom: 0,
               child: Center(
@@ -415,23 +385,23 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          spreadRadius: 1,
-                          blurRadius: 6,
+                          color: Colors.black.withOpacity(0.1),
+                          spreadRadius: 0,
+                          blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: Icon(
                       FeatherIcons.chevronRight,
-                      color: AppColors.brandDark,
-                      size: 18,
+                      color: Colors.grey[700],
+                      size: 16,
                     ),
                   ),
                 ),
@@ -521,74 +491,157 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 ),
               ),
             ),
+
+          // Overlay buttons (Back and Heart)
+          _buildImageOverlayButtons(),
         ],
       ),
     );
   }
 
+  Widget _buildImageOverlayButtons() {
+    return Positioned(
+      top: 50, // Below status bar
+      left: 20,
+      right: 20,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Back button
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: Icon(
+                FeatherIcons.chevronLeft,
+                color: Colors.black87,
+                size: 20,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+
+          // Cart button
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: _buildCartIcon(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCartIcon() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, cartState) {
+        int itemCount = 0;
+        if (cartState is CartSuccess) {
+          itemCount = cartState.cart.lines.length;
+        } else if (cartState is CartInitialized) {
+          itemCount = cartState.cart.lines.length;
+        }
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => context.go('/cart'),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    FeatherIcons.shoppingBag,
+                    color: Colors.black87,
+                    size: 20,
+                  ),
+                  if (itemCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.brand,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          itemCount > 99 ? '99+' : itemCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildProductHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Enhanced Product Name with better typography
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        // Product Name
+        Expanded(
           child: Text(
             widget.product.name,
             style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
               color: Colors.black87,
               height: 1.2,
-              letterSpacing: -0.5,
-              fontFamily: 'Tajawal',
             ),
             textAlign: TextAlign.right,
           ),
         ),
-
-        // Enhanced Price Container with modern design
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.brandDark,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            spacing: 5,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(FeatherIcons.tag, color: Colors.white, size: 24),
-              Text(
-                '${widget.product.price.toStringAsFixed(3)} د.ك',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                  fontFamily: 'Tajawal',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'السعر',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    fontFamily: 'Tajawal',
-                  ),
-                ),
-              ),
-            ],
+        const SizedBox(width: 16),
+        // Price
+        Text(
+          '${widget.product.price.toStringAsFixed(2)} د.ك',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.brand,
           ),
         ),
       ],
@@ -598,129 +651,49 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Widget _buildProductDescription() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[200]!, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 0,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200] ?? Colors.grey, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.brandLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  FeatherIcons.fileText,
-                  color: AppColors.brandMuted,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
+              Icon(FeatherIcons.fileText, color: AppColors.brand, size: 18),
+              const SizedBox(width: 8),
               const Text(
                 'وصف المنتج',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
-                  fontFamily: 'Tajawal',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (widget.product.description.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.product.description
-                  .split(',')
-                  .asMap()
-                  .entries
-                  .where((entry) => entry.value.trim().isNotEmpty)
-                  .map(
-                    (entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            margin: const EdgeInsets.only(left: 8, top: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.brandLight,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${entry.key + 1}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.brandDark,
-                                  fontFamily: 'Tajawal',
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              entry.value.trim(),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[700],
-                                height: 1.7,
-                                fontFamily: 'Tajawal',
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
+            Text(
+              widget.product.description,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                height: 1.5,
+              ),
+              textAlign: TextAlign.right,
             )
           else
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!, width: 1),
+            Text(
+              'لا يوجد وصف متاح لهذا المنتج حالياً.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
               ),
-              child: Row(
-                children: [
-                  Icon(FeatherIcons.info, color: Colors.grey[600], size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: const Text(
-                      'لا يوجد وصف متاح لهذا المنتج حالياً. يرجى التواصل معنا للصور متاحة.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                        height: 1.7,
-                        fontFamily: 'Tajawal',
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
-              ),
+              textAlign: TextAlign.right,
             ),
         ],
       ),
@@ -734,8 +707,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
 
     try {
       // Check if product is available (has a valid variant ID)
-      if (widget.product.variantId == null ||
-          widget.product.variantId.isEmpty) {
+      if (_loadedProduct!.variantId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -833,7 +805,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 Text('يرجى تسجيل الدخول للمتابعة إلى الدفع'),
               ],
             ),
-            backgroundColor: AppColors.brandDark,
+            backgroundColor: AppColors.brand,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -920,429 +892,380 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Enhanced Quantity Selector
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'الكمية:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                  fontFamily: 'Tajawal',
+        // Action Buttons Row
+        Row(
+          children: [
+            // Add to Cart Button (Smaller, with cart icon)
+            Container(
+              width: 60,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300] ?? Colors.grey,
+                  width: 1,
                 ),
               ),
-              const SizedBox(width: 20),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[200]!, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 0,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(16),
-                          bottomRight: Radius.circular(16),
-                        ),
-                        onTap: () {
-                          if (_quantity > 1) setState(() => _quantity--);
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _isAddingToCart
+                      ? null
+                      : () async {
+                          setState(() {
+                            _isAddingToCart = true;
+                          });
+
+                          try {
+                            // Check if product is available (has a valid variant ID)
+                            if (widget.product.variantId == null ||
+                                widget.product.variantId.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Row(
+                                    children: [
+                                      Icon(
+                                        FeatherIcons.alertCircle,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('المنتج غير متوفر حالياً'),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+
+                              setState(() {
+                                _isAddingToCart = false;
+                              });
+                              return;
+                            }
+
+                            // Get the current cart state
+                            final cartState = context.read<CartBloc>().state;
+                            String cartId;
+
+                            if (cartState is CartInitialized) {
+                              cartId = cartState.cart.id ?? '';
+                            } else if (cartState is CartSuccess) {
+                              cartId = cartState.cart.id ?? '';
+                            } else {
+                              // Create a new cart if none exists
+                              context.read<CartBloc>().add(
+                                const CreateCartEvent(),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Row(
+                                    children: [
+                                      Icon(
+                                        FeatherIcons.info,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('جاري إنشاء سلة جديدة...'),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.blue,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Check if the product is already in the cart
+                            bool isDuplicate = false;
+                            int existingQuantity = 0;
+                            final int maxQuantityAllowed = 10;
+
+                            if (cartState is CartInitialized) {
+                              for (final line in cartState.cart.lines) {
+                                if (line.merchandise?.id ==
+                                    widget.product.variantId) {
+                                  isDuplicate = true;
+                                  existingQuantity = line.quantity!;
+                                  break;
+                                }
+                              }
+                            } else if (cartState is CartSuccess) {
+                              for (final line in cartState.cart.lines) {
+                                if (line.merchandise?.id ==
+                                    widget.product.variantId) {
+                                  isDuplicate = true;
+                                  existingQuantity = line.quantity!;
+                                  break;
+                                }
+                              }
+                            }
+
+                            // Check if adding the new quantity would exceed the maximum allowed
+                            if (isDuplicate &&
+                                existingQuantity + _quantity >
+                                    maxQuantityAllowed) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(
+                                        FeatherIcons.alertTriangle,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'لا يمكن إضافة أكثر من $maxQuantityAllowed قطع من هذا المنتج',
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: AppColors.brand,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+
+                              setState(() {
+                                _isAddingToCart = false;
+                              });
+                              return;
+                            }
+
+                            // Create cart line input with product variant ID and quantity
+                            final cartLineInput = CartLineUpdateInput(
+                              merchandiseId: widget.product.variantId,
+                              quantity: isDuplicate
+                                  ? existingQuantity + _quantity
+                                  : _quantity,
+                            );
+
+                            // Dispatch add items to cart event
+                            context.read<CartBloc>().add(
+                              AddItemsToCartEvent(
+                                cartId: cartId,
+                                cartLineInputs: [cartLineInput],
+                              ),
+                            );
+
+                            // Show success message based on whether item was added or updated
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(
+                                      FeatherIcons.checkCircle,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      isDuplicate
+                                          ? 'تم تحديث كمية المنتج في السلة'
+                                          : 'تم إضافة المنتج إلى السلة بنجاح',
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: AppColors.brand,
+                                duration: const Duration(seconds: 3),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                action: SnackBarAction(
+                                  label: 'عرض السلة',
+                                  textColor: Colors.white,
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/cart');
+                                  },
+                                ),
+                              ),
+                            );
+
+                            // Reset loading state
+                            setState(() {
+                              _isAddingToCart = false;
+                            });
+                          } catch (e) {
+                            // Show error message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(
+                                      FeatherIcons.alertCircle,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text('حدث خطأ: ${e.toString()}'),
+                                  ],
+                                ),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+
+                            // Reset loading state on error
+                            setState(() {
+                              _isAddingToCart = false;
+                            });
+                          }
                         },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _quantity > 1
-                                ? AppColors.brandLight
-                                : Colors.grey[100],
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(16),
-                              bottomRight: Radius.circular(16),
+                  child: Center(
+                    child: _isAddingToCart
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator.adaptive(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black87,
+                              ),
+                              strokeWidth: 2,
                             ),
-                          ),
-                          child: Icon(
-                            FeatherIcons.minus,
+                          )
+                        : Icon(
+                            FeatherIcons.shoppingBag,
+                            color: Colors.black87,
                             size: 20,
-                            color: _quantity > 1
-                                ? AppColors.brandDark
-                                : Colors.grey[400],
                           ),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Text(
-                        '$_quantity',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          fontFamily: 'Tajawal',
-                        ),
-                      ),
-                    ),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          bottomLeft: Radius.circular(16),
-                        ),
-                        onTap: () => setState(() => _quantity++),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.brandLight,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              bottomLeft: Radius.circular(16),
-                            ),
-                          ),
-                          child: Icon(
-                            FeatherIcons.plus,
-                            size: 20,
-                            color: AppColors.brandDark,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-        // Enhanced Add to Cart Button
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: AppColors.brandDark,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.brandDark.withOpacity(0.25),
-                spreadRadius: 0,
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: ElevatedButton.icon(
-            onPressed: _isAddingToCart
-                ? null
-                : () async {
-                    setState(() {
-                      _isAddingToCart = true;
-                    });
-
-                    try {
-                      // Check if product is available (has a valid variant ID)
-                      if (widget.product.variantId == null ||
-                          widget.product.variantId.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Row(
-                              children: [
-                                Icon(
-                                  FeatherIcons.alertCircle,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 8),
-                                Text('المنتج غير متوفر حالياً'),
-                              ],
-                            ),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-
-                        setState(() {
-                          _isAddingToCart = false;
-                        });
-                        return;
-                      }
-
-                      // Get the current cart state
-                      final cartState = context.read<CartBloc>().state;
-                      String cartId;
-
-                      if (cartState is CartInitialized) {
-                        cartId = cartState.cart.id!;
-                      } else if (cartState is CartSuccess) {
-                        cartId = cartState.cart.id!;
-                      } else {
-                        // Create a new cart if none exists
-                        context.read<CartBloc>().add(const CreateCartEvent());
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Row(
-                              children: [
-                                Icon(FeatherIcons.info, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text('جاري إنشاء سلة جديدة...'),
-                              ],
-                            ),
-                            backgroundColor: Colors.blue,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Check if the product is already in the cart
-                      bool isDuplicate = false;
-                      int existingQuantity = 0;
-                      final int maxQuantityAllowed =
-                          10; // Maximum quantity allowed per product
-
-                      if (cartState is CartInitialized) {
-                        for (final line in cartState.cart.lines) {
-                          if (line.merchandise?.id ==
-                              widget.product.variantId) {
-                            isDuplicate = true;
-                            existingQuantity = line.quantity!;
-                            break;
-                          }
-                        }
-                      } else if (cartState is CartSuccess) {
-                        for (final line in cartState.cart.lines) {
-                          if (line.merchandise?.id ==
-                              widget.product.variantId) {
-                            isDuplicate = true;
-                            existingQuantity = line.quantity!;
-                            break;
-                          }
-                        }
-                      }
-
-                      // Check if adding the new quantity would exceed the maximum allowed
-                      if (isDuplicate &&
-                          existingQuantity + _quantity > maxQuantityAllowed) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(
-                                  FeatherIcons.alertTriangle,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'لا يمكن إضافة أكثر من $maxQuantityAllowed قطع من هذا المنتج',
-                                ),
-                              ],
-                            ),
-                            backgroundColor: AppColors.brandDark,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-
-                        setState(() {
-                          _isAddingToCart = false;
-                        });
-                        return;
-                      }
-
-                      // Create cart line input with product variant ID and quantity
-                      final cartLineInput = CartLineUpdateInput(
-                        merchandiseId: widget.product.variantId,
-                        quantity: isDuplicate
-                            ? existingQuantity + _quantity
-                            : _quantity,
-                      );
-
-                      // Dispatch add items to cart event
-                      context.read<CartBloc>().add(
-                        AddItemsToCartEvent(
-                          cartId: cartId,
-                          cartLineInputs: [cartLineInput],
-                        ),
-                      );
-
-                      // Show success message based on whether item was added or updated
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(
-                                FeatherIcons.checkCircle,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                isDuplicate
-                                    ? 'تم تحديث كمية المنتج في السلة'
-                                    : 'تم إضافة المنتج إلى السلة بنجاح',
-                              ),
-                            ],
-                          ),
-                          backgroundColor: AppColors.brandDark,
-                          duration: const Duration(seconds: 3),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          action: SnackBarAction(
-                            label: 'عرض السلة',
-                            textColor: Colors.white,
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/cart');
-                            },
-                          ),
-                        ),
-                      );
-
-                      // Reset loading state
-                      setState(() {
-                        _isAddingToCart = false;
-                      });
-                    } catch (e) {
-                      // Show error message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(
-                                FeatherIcons.alertCircle,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 8),
-                              Text('حدث خطأ: ${e.toString()}'),
-                            ],
-                          ),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-
-                      // Reset loading state on error
-                      setState(() {
-                        _isAddingToCart = false;
-                      });
-                    }
-                  },
-            icon: _isAddingToCart
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+            ),
+            const SizedBox(width: 12),
+            // Buy Now Button (Main button)
+            Expanded(
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.brand,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  onPressed: _isAddingToCart
+                      ? null
+                      : () async {
+                          await _handleBuyNow();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                : const Icon(FeatherIcons.shoppingCart, size: 22),
-            label: Text(
-              _isAddingToCart ? 'جاري الإضافة...' : 'إضافة إلى السلة',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-
-        // Buy Now Button
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: AppColors.brandDark, width: 2),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.brandDark.withOpacity(0.1),
-                spreadRadius: 0,
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ElevatedButton.icon(
-            onPressed: _isAddingToCart
-                ? null
-                : () async {
-                    await _handleBuyNow();
-                  },
-            icon: _isAddingToCart
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _isAddingToCart ? 'جاري المعالجة...' : 'اشتري الآن',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                  )
-                : const Icon(FeatherIcons.zap, size: 22),
-            label: Text(
-              _isAddingToCart ? 'جاري المعالجة...' : 'اشتري الآن',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
               ),
-              elevation: 0,
             ),
-          ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(FeatherIcons.arrowRight, color: Colors.black),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text(
+            'تحميل المنتج...',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Container(
+          color: Colors.grey[50],
+          child: Column(
+            children: [
+              // Loading image placeholder
+              Container(
+                height: 300,
+                color: Colors.grey[200],
+                child: const Center(
+                  child: CircularProgressIndicator.adaptive(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Loading content placeholder
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 24,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 20,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        height: 60,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        height: 50,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

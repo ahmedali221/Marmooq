@@ -120,7 +120,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
             child: state.isLoading
-                ? const CircularProgressIndicator()
+                ? const CircularProgressIndicator.adaptive()
                 : const Text('Send Reset Link', style: TextStyle(fontSize: 16)),
           ),
           const SizedBox(height: 16),

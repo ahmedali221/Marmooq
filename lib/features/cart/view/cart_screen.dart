@@ -10,6 +10,7 @@ import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:traincode/features/cart/view_model/cart_states.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:traincode/core/services/security_service.dart';
+import 'package:traincode/core/widgets/standard_app_bar.dart';
 
 class CartScreen extends StatefulWidget {
   static const String routeName = '/cart';
@@ -76,7 +77,7 @@ class _CartScreenState extends State<CartScreen>
       builder: (BuildContext context) {
         return Directionality(
           textDirection: TextDirection.rtl,
-          child: AlertDialog(
+          child: AlertDialog.adaptive(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -453,11 +454,18 @@ class _CartScreenState extends State<CartScreen>
                           ? CachedNetworkImage(
                               imageUrl: line.merchandise!.image!.originalSrc,
                               fit: BoxFit.cover,
+                              memCacheWidth: 80,
+                              memCacheHeight: 80,
+                              maxWidthDiskCache: 160,
+                              maxHeightDiskCache: 160,
+                              fadeInDuration: const Duration(milliseconds: 200),
                               placeholder: (context, url) => Container(
                                 color: Colors.grey[200],
                                 child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFF00695C),
+                                  child: CircularProgressIndicator.adaptive(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF00695C),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -516,7 +524,7 @@ class _CartScreenState extends State<CartScreen>
                                       if (line.quantity! > 1) {
                                         context.read<CartBloc>().add(
                                           UpdateCartLineItemsEvent(
-                                            cartId: cart.id!,
+                                            cartId: cart.id,
                                             cartLineInputs: [
                                               CartLineUpdateInput(
                                                 id: line.id,
@@ -559,7 +567,7 @@ class _CartScreenState extends State<CartScreen>
                                     onTap: () {
                                       context.read<CartBloc>().add(
                                         UpdateCartLineItemsEvent(
-                                          cartId: cart.id!,
+                                          cartId: cart.id,
                                           cartLineInputs: [
                                             CartLineUpdateInput(
                                               id: line.id,
@@ -602,7 +610,7 @@ class _CartScreenState extends State<CartScreen>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${(line.cost?.amountPerQuantity?.amount ?? 0.0).toStringAsFixed(3)} د.ك',
+                        '${(line.cost?.amountPerQuantity.amount ?? 0.0).toStringAsFixed(3)} د.ك',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -691,7 +699,7 @@ class _CartScreenState extends State<CartScreen>
                     final Map<String, dynamic>? userData =
                         await SecurityService.getUserData();
                     final String email = userData?['email'] ?? '';
-                    final String cartId = cart.id ?? '';
+                    final String cartId = cart.id;
 
                     if (customerAccessToken == null ||
                         customerAccessToken.isEmpty) {
@@ -709,8 +717,7 @@ class _CartScreenState extends State<CartScreen>
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
+                    backgroundColor: AppColors.brandDark,
                     minimumSize: const Size.fromHeight(56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -746,119 +753,60 @@ class _CartScreenState extends State<CartScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'سلة التسوق',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-              color: Colors.white,
-              fontFamily: 'Tajawal',
-            ),
-          ),
+        appBar: StandardAppBar(
+          backgroundColor: Colors.white,
+          title: 'سلة التسوق',
+          onLeadingPressed: null,
           actions: [
-            Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                onPressed: () {
-                  _refreshCart();
-                },
-                icon: const Icon(
-                  FeatherIcons.refreshCw,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+            StandardAppBarAction(
+              iconColor: AppColors.brandDark,
+              icon: FeatherIcons.refreshCw,
+              onPressed: () {
+                _refreshCart();
+              },
             ),
-            Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                onPressed: () {
-                  _showClearCartDialog(context);
-                },
-                icon: const Icon(
-                  FeatherIcons.trash2,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                onPressed: () {
-                  context.go('/products');
-                },
-                icon: const Icon(
-                  FeatherIcons.arrowRight,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+            StandardAppBarAction(
+              iconColor: AppColors.brandDark,
+              icon: FeatherIcons.trash2,
+              onPressed: () {
+                _showClearCartDialog(context);
+              },
             ),
           ],
-          backgroundColor: AppColors.brand,
           elevation: 0,
-          shadowColor: Colors.transparent,
           centerTitle: true,
         ),
+
         body: Container(
           decoration: const BoxDecoration(color: Color(0xFFF6FBFC)),
           child: BlocConsumer<CartBloc, CartState>(
             listener: (context, state) {
-              print('DEBUG: CartScreen state changed to: $state');
+              // Cart state listener
             },
             builder: (context, state) {
               if (state is CartInitial) {
-                print('DEBUG: CartInitial state, triggering LoadCartEvent');
-                // Instead of creating a new cart, we now load an existing cart or create a new one if needed
+                // Load existing cart or create a new one if needed
                 context.read<CartBloc>().add(LoadCartEvent());
                 return const Center(
-                  child: CircularProgressIndicator(color: AppColors.brand),
+                  child: CircularProgressIndicator.adaptive(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
+                  ),
                 );
               }
               if (state is CartLoading) {
-                print('DEBUG: Rendering CartLoading state');
                 return const Center(
-                  child: CircularProgressIndicator(color: AppColors.brand),
+                  child: CircularProgressIndicator.adaptive(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
+                  ),
                 );
               }
               if (state is CartSuccess) {
-                print('DEBUG: Rendering CartSuccess state');
                 return _buildCartContent(context, state.cart);
               }
               if (state is CartInitialized) {
-                print(
-                  'DEBUG: Rendering CartInitialized state, isNewCart: ${state.isNewCart}',
-                );
                 return _buildCartContent(context, state.cart);
               }
               if (state is CartFailure) {
-                print('DEBUG: Rendering CartFailure state');
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -905,7 +853,6 @@ class _CartScreenState extends State<CartScreen>
                   ),
                 );
               }
-              print('DEBUG: Rendering default state');
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

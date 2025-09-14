@@ -139,7 +139,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.unauthenticated());
       }
     } catch (e) {
-      debugPrint('Auth initialization error: $e');
       emit(AuthState.unauthenticated());
     }
   }
@@ -163,7 +162,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on AuthException catch (e) {
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {
-      debugPrint('Sign in error: $e');
       emit(AuthState.error('An unexpected error occurred during sign in'));
     }
   }
@@ -191,7 +189,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on AuthException catch (e) {
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {
-      debugPrint('Registration error: $e');
       emit(AuthState.error('An unexpected error occurred during registration'));
     }
   }

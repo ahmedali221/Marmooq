@@ -14,7 +14,7 @@ import 'package:traincode/features/cart/view/cart_screen.dart';
 import 'package:traincode/features/cart/view_model/cart_bloc.dart';
 import 'package:traincode/features/cart/view_model/cart_events.dart';
 import 'package:traincode/features/products/model/products_repository.dart';
-import 'package:traincode/features/products/view/products_view.dart';
+import 'package:traincode/core/navigation/main_navigation.dart';
 import 'package:traincode/features/products/view_model/products_bloc.dart';
 import 'package:traincode/features/shipment/repository/shipment_repository.dart';
 import 'package:traincode/features/shipment/view/orderConfirmationPage.dart';
@@ -23,6 +23,7 @@ import 'package:traincode/features/shipment/view/shipmentPage.dart';
 
 import 'package:traincode/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,12 @@ Future<void> main() async {
   );
   final shopifyLocalization = ShopifyLocalization.instance;
   shopifyLocalization.setCountryCode('KW');
+
+  // Enable performance optimizations
+  if (kDebugMode) {
+    debugProfileBuildsEnabled = true;
+  }
+
   runApp(const MyApp());
 }
 
@@ -54,7 +61,7 @@ class MyApp extends StatelessWidget {
         GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
         GoRoute(
           path: '/products',
-          builder: (context, state) => const ProductsView(),
+          builder: (context, state) => const MainNavigation(),
         ),
         GoRoute(
           path: '/login',
