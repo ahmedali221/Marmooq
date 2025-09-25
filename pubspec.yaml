@@ -55,6 +55,7 @@ dependencies:
   intl_phone_field: ^3.2.0
   feather_icons: ^1.2.0
   device_preview: ^1.1.0
+  flutter_launcher_icons: ^0.14.4
   
 
 dev_dependencies:
@@ -70,6 +71,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/marmooq_logo.png"
+  android_adaptive_icon_background: "#000000"
+  android_adaptive_icon_foreground: "assets/marmooq_logo.png"
+ 
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

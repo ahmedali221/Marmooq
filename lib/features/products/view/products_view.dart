@@ -165,7 +165,6 @@ class _ProductsViewState extends State<ProductsView>
             backgroundColor: Colors.white,
             title: 'مرموق',
             onLeadingPressed: null,
-            actions: [_buildCartIcon()],
             elevation: 0,
             centerTitle: true,
           ),
@@ -188,14 +187,22 @@ class _ProductsViewState extends State<ProductsView>
                                 'مرحباً! أهلاً بك في مرموق',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 18),
+                                  fontSize:
+                                      ResponsiveUtils.getResponsiveFontSize(
+                                        context,
+                                        mobile: 18,
+                                      ),
                                   color: Colors.black87,
                                 ),
                               ),
                               Text(
                                 'اكتشف منتجاتنا الرائعة',
                                 style: TextStyle(
-                                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
+                                  fontSize:
+                                      ResponsiveUtils.getResponsiveFontSize(
+                                        context,
+                                        mobile: 14,
+                                      ),
                                   color: Colors.grey[600],
                                 ),
                               ),
@@ -204,14 +211,25 @@ class _ProductsViewState extends State<ProductsView>
                         ),
                       ],
                     ),
-                    SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+                    SizedBox(
+                      height: ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 20,
+                      ),
+                    ),
                     // Search bar
                     Container(
-                      height: ResponsiveUtils.getResponsiveHeight(context, mobile: 50),
+                      height: ResponsiveUtils.getResponsiveHeight(
+                        context,
+                        mobile: 50,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(
-                          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+                          ResponsiveUtils.getResponsiveBorderRadius(
+                            context,
+                            mobile: 25,
+                          ),
                         ),
                       ),
                       child: TextField(
@@ -219,7 +237,10 @@ class _ProductsViewState extends State<ProductsView>
                         focusNode: _searchFocusNode,
                         onChanged: _onSearchChanged,
                         style: TextStyle(
-                          fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                          fontSize: ResponsiveUtils.getResponsiveFontSize(
+                            context,
+                            mobile: 16,
+                          ),
                         ),
                         decoration: InputDecoration(
                           filled: true,
@@ -227,29 +248,47 @@ class _ProductsViewState extends State<ProductsView>
                           hintText: 'ابحث هنا...',
                           hintStyle: TextStyle(
                             color: Colors.grey[500],
-                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(
+                              context,
+                              mobile: 16,
+                            ),
                           ),
                           prefixIcon: Icon(
                             FeatherIcons.search,
                             color: Colors.grey[500],
-                            size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
+                            size: ResponsiveUtils.getResponsiveIconSize(
+                              context,
+                              mobile: 20,
+                            ),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
-                              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+                              ResponsiveUtils.getResponsiveBorderRadius(
+                                context,
+                                mobile: 25,
+                              ),
                             ),
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20),
-                            vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+                            horizontal: ResponsiveUtils.getResponsiveSpacing(
+                              context,
+                              mobile: 20,
+                            ),
+                            vertical: ResponsiveUtils.getResponsiveSpacing(
+                              context,
+                              mobile: 12,
+                            ),
                           ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: Icon(
                                     FeatherIcons.x,
                                     color: Colors.grey[500],
-                                    size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 18),
+                                    size: ResponsiveUtils.getResponsiveIconSize(
+                                      context,
+                                      mobile: 18,
+                                    ),
                                   ),
                                   onPressed: () {
                                     _searchController.clear();
@@ -304,21 +343,24 @@ class _ProductsViewState extends State<ProductsView>
         return Material(
           color: Colors.transparent,
           child: InkWell(
-              borderRadius: BorderRadius.circular(
-                ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
-              ),
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+            ),
             onTap: () {
               // Cart navigation is handled by bottom navigation
             },
             child: Container(
-                padding: EdgeInsets.all(
-                  ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-                ),
+              padding: EdgeInsets.all(
+                ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                  borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 25,
                   ),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.08),
@@ -333,33 +375,60 @@ class _ProductsViewState extends State<ProductsView>
                   Icon(
                     FeatherIcons.shoppingBag,
                     color: Colors.black87,
-                    size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 22),
+                    size: ResponsiveUtils.getResponsiveIconSize(
+                      context,
+                      mobile: 22,
+                    ),
                   ),
                   if (itemCount > 0)
                     Positioned(
-                      right: -ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
-                      top: -ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
+                      right: -ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 4,
+                      ),
+                      top: -ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 4,
+                      ),
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 6),
-                          vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 2),
+                          horizontal: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 6,
+                          ),
+                          vertical: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 2,
+                          ),
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.brand,
                           borderRadius: BorderRadius.circular(
-                            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                            ResponsiveUtils.getResponsiveBorderRadius(
+                              context,
+                              mobile: 12,
+                            ),
                           ),
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         constraints: BoxConstraints(
-                          minWidth: ResponsiveUtils.getResponsiveWidth(context, mobile: 18),
-                          minHeight: ResponsiveUtils.getResponsiveHeight(context, mobile: 18),
+                          minWidth: ResponsiveUtils.getResponsiveWidth(
+                            context,
+                            mobile: 18,
+                          ),
+                          minHeight: ResponsiveUtils.getResponsiveHeight(
+                            context,
+                            mobile: 18,
+                          ),
                         ),
                         child: Text(
                           itemCount > 99 ? '99+' : itemCount.toString(),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 10),
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(
+                              context,
+                              mobile: 10,
+                            ),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -401,18 +470,32 @@ class _ProductsViewState extends State<ProductsView>
             child: Column(
               children: [
                 SizedBox(
-                  width: ResponsiveUtils.getResponsiveWidth(context, mobile: 50),
-                  height: ResponsiveUtils.getResponsiveHeight(context, mobile: 50),
+                  width: ResponsiveUtils.getResponsiveWidth(
+                    context,
+                    mobile: 50,
+                  ),
+                  height: ResponsiveUtils.getResponsiveHeight(
+                    context,
+                    mobile: 50,
+                  ),
                   child: CircularProgressIndicator.adaptive(
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
                     strokeWidth: 4,
                   ),
                 ),
-                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+                SizedBox(
+                  height: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 20,
+                  ),
+                ),
                 Text(
                   'جاري تحميل المنتجات...',
                   style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 18),
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context,
+                      mobile: 18,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[700],
                   ),
@@ -444,27 +527,39 @@ class _ProductsViewState extends State<ProductsView>
               color: Colors.grey[400],
             ),
           ),
-          SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24)),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
+          ),
           Text(
             _searchQuery.isNotEmpty
                 ? 'لم يتم العثور على نتائج'
                 : 'لا توجد مجموعات متاحة',
             style: TextStyle(
-              fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 20),
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                mobile: 20,
+              ),
               fontWeight: FontWeight.w600,
               color: Colors.grey[600],
             ),
           ),
-          SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+          ),
           if (_searchQuery.isNotEmpty) ...[
             Text(
               'جرب البحث بكلمات مختلفة',
               style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16), 
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 16,
+                ),
                 color: Colors.grey[500],
               ),
             ),
-            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+            SizedBox(
+              height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20),
+            ),
             ElevatedButton.icon(
               onPressed: () {
                 _searchController.clear();
@@ -477,12 +572,21 @@ class _ProductsViewState extends State<ProductsView>
                 foregroundColor: Colors.teal[700],
                 elevation: 0,
                 padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
-                  vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+                  horizontal: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 24,
+                  ),
+                  vertical: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 12,
+                  ),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      mobile: 20,
+                    ),
                   ),
                 ),
               ),
@@ -495,14 +599,14 @@ class _ProductsViewState extends State<ProductsView>
 
   Widget _buildErrorState(ProductsError state) {
     return Center(
-      child:         Container(
-          margin: ResponsiveUtils.getResponsiveMargin(context),
-          padding: ResponsiveUtils.getResponsivePadding(context),
+      child: Container(
+        margin: ResponsiveUtils.getResponsiveMargin(context),
+        padding: ResponsiveUtils.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: Colors.white,
-            borderRadius: BorderRadius.circular(
-              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
-            ),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -522,56 +626,86 @@ class _ProductsViewState extends State<ProductsView>
               ),
               child: Icon(
                 FeatherIcons.alertCircle,
-                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 60),
+                size: ResponsiveUtils.getResponsiveIconSize(
+                  context,
+                  mobile: 60,
+                ),
                 color: Colors.red[400],
               ),
             ),
-            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24)),
+            SizedBox(
+              height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
+            ),
             Text(
               'حدث خطأ في تحميل المنتجات',
               style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 22),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 22,
+                ),
                 fontWeight: FontWeight.w700,
                 color: Colors.grey[800],
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
+            SizedBox(
+              height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+            ),
             Text(
               state.failure.message,
               style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 16,
+                ),
                 color: Colors.grey[600],
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32)),
+            SizedBox(
+              height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
+            ),
             ElevatedButton.icon(
               onPressed: () {
                 context.read<ProductsBloc>().add(FetchProductsEvent());
               },
               icon: Icon(
-                FeatherIcons.refreshCw, 
-                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
+                FeatherIcons.refreshCw,
+                size: ResponsiveUtils.getResponsiveIconSize(
+                  context,
+                  mobile: 20,
+                ),
               ),
               label: Text(
                 'إعادة المحاولة',
                 style: TextStyle(
-                  fontWeight: FontWeight.w600, 
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                  fontWeight: FontWeight.w600,
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal[600] ?? const Color(0xFF00695C),
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
-                  vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+                  horizontal: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 32,
+                  ),
+                  vertical: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      mobile: 16,
+                    ),
                   ),
                 ),
                 elevation: 4,
@@ -598,11 +732,19 @@ class _ProductsViewState extends State<ProductsView>
             final previewProducts = productsList.take(6).toList();
 
             return Container(
-              margin: EdgeInsets.only(bottom: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24)),
+              margin: EdgeInsets.only(
+                bottom: ResponsiveUtils.getResponsiveSpacing(
+                  context,
+                  mobile: 24,
+                ),
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -618,7 +760,12 @@ class _ProductsViewState extends State<ProductsView>
                 children: [
                   _buildCollectionHeader(collectionName, productsList),
                   _buildProductsHorizontalList(previewProducts),
-                  SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32)), // Increased from 16 to 32
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 32,
+                    ),
+                  ), // Increased from 16 to 32
                 ],
               ),
             );
@@ -667,16 +814,27 @@ class _ProductsViewState extends State<ProductsView>
                 Text(
                   collectionName,
                   style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 20),
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context,
+                      mobile: 20,
+                    ),
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
-                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 4)),
+                SizedBox(
+                  height: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 4,
+                  ),
+                ),
                 Text(
                   '${productsList.length} منتج',
                   style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(
+                      context,
+                      mobile: 14,
+                    ),
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
@@ -686,8 +844,14 @@ class _ProductsViewState extends State<ProductsView>
           ),
           Container(
             padding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12), 
-              vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 6),
+              horizontal: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                mobile: 12,
+              ),
+              vertical: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                mobile: 6,
+              ),
             ),
             decoration: BoxDecoration(
               color: AppColors.brand.withOpacity(0.1),
@@ -719,13 +883,24 @@ class _ProductsViewState extends State<ProductsView>
                     style: TextStyle(
                       color: AppColors.brand,
                       fontWeight: FontWeight.w600,
-                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context,
+                        mobile: 14,
+                      ),
                     ),
                   ),
-                  SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 4)),
+                  SizedBox(
+                    width: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 4,
+                    ),
+                  ),
                   Icon(
                     FeatherIcons.chevronLeft,
-                    size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 16),
+                    size: ResponsiveUtils.getResponsiveIconSize(
+                      context,
+                      mobile: 16,
+                    ),
                     color: AppColors.brand,
                   ),
                 ],
@@ -739,7 +914,10 @@ class _ProductsViewState extends State<ProductsView>
 
   Widget _buildProductsHorizontalList(List<dynamic> previewProducts) {
     return SizedBox(
-      height: ResponsiveUtils.getResponsiveHeight(context, mobile: 280), // Fixed height for horizontal scrolling
+      height: ResponsiveUtils.getResponsiveHeight(
+        context,
+        mobile: 280,
+      ), // Fixed height for horizontal scrolling
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
@@ -752,7 +930,9 @@ class _ProductsViewState extends State<ProductsView>
             previewProducts[idx] as Map<String, dynamic>,
           );
           return Container(
-            width: ResponsiveUtils.getResponsiveCardWidth(context), // Responsive width for each product card
+            width: ResponsiveUtils.getResponsiveCardWidth(
+              context,
+            ), // Responsive width for each product card
             margin: EdgeInsets.only(
               right: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
               bottom: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20),
