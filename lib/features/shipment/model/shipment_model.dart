@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:traincode/features/shipment/model/address_model.dart';
-import 'package:traincode/features/shipment/model/shipping_method_model.dart';
+import 'package:marmooq/features/shipment/model/address_model.dart';
+import 'package:marmooq/features/shipment/model/shipping_method_model.dart';
 
 /// Model class representing a complete shipment with address and selected shipping method
 class ShipmentModel extends Equatable {

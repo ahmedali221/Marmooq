@@ -2,26 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
-import 'package:traincode/features/auth/bloc/auth_bloc.dart';
-import 'package:traincode/features/auth/screens/forgot_password_screen.dart';
-import 'package:traincode/features/auth/screens/login_screen.dart';
-import 'package:traincode/features/auth/screens/register_screen.dart';
-import 'package:traincode/features/auth/screens/profile_screen.dart';
-// import 'package:traincode/features/auth/screens/edit_profile_screen.dart';
-// import 'package:traincode/features/auth/screens/addresses_screen.dart';
-import 'package:traincode/features/cart/repository/cart_repository.dart';
-import 'package:traincode/features/cart/view/cart_screen.dart';
-import 'package:traincode/features/cart/view_model/cart_bloc.dart';
-import 'package:traincode/features/cart/view_model/cart_events.dart';
-import 'package:traincode/features/products/model/products_repository.dart';
-import 'package:traincode/core/navigation/main_navigation.dart';
-import 'package:traincode/features/products/view_model/products_bloc.dart';
-import 'package:traincode/features/shipment/repository/shipment_repository.dart';
-import 'package:traincode/features/shipment/view/orderConfirmationPage.dart';
-import 'package:traincode/features/shipment/view/shipmentPage.dart';
-// import 'package:traincode/features/shipment/view_model/shipment_bloc.dart';
+import 'package:marmooq/features/auth/bloc/auth_bloc.dart';
+import 'package:marmooq/features/auth/screens/login_screen.dart';
+import 'package:marmooq/features/auth/screens/register_screen.dart';
+import 'package:marmooq/features/auth/screens/profile_screen.dart';
+// import 'package:marmooq/features/auth/screens/edit_profile_screen.dart';
+// import 'package:marmooq/features/auth/screens/addresses_screen.dart';
+import 'package:marmooq/features/cart/repository/cart_repository.dart';
+import 'package:marmooq/features/cart/view/cart_screen.dart';
+import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
+import 'package:marmooq/features/cart/view_model/cart_events.dart';
+import 'package:marmooq/features/products/model/products_repository.dart';
+import 'package:marmooq/core/navigation/main_navigation.dart';
+import 'package:marmooq/features/products/view_model/products_bloc.dart';
+import 'package:marmooq/features/shipment/repository/shipment_repository.dart';
+import 'package:marmooq/features/shipment/view/orderConfirmationPage.dart';
+import 'package:marmooq/features/shipment/view/shipmentPage.dart';
+// import 'package:marmooq/features/shipment/view_model/shipment_bloc.dart';
 
-import 'package:traincode/splash_screen.dart';
+import 'package:marmooq/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 
@@ -33,7 +32,7 @@ Future<void> main() async {
   ShopifyConfig.setConfig(
     storefrontAccessToken: dotenv.env['SHOPIFY_STOREFRONT_TOKEN']!,
     storeUrl: 'fagk1b-a1.myshopify.com',
-    storefrontApiVersion: '2024-07',
+    storefrontApiVersion: '2025-07',
     language: 'ar',
   );
   final shopifyLocalization = ShopifyLocalization.instance;
@@ -75,6 +74,7 @@ class MyApp extends StatelessWidget {
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
         ),
+
         // GoRoute(
         //   path: '/edit-profile',
         //   builder: (context, state) => const EditProfileScreen(),
@@ -83,10 +83,6 @@ class MyApp extends StatelessWidget {
         //   path: '/addresses',
         //   builder: (context, state) => const AddressesScreen(),
         // ),
-        GoRoute(
-          path: '/forgot-password',
-          builder: (context, state) => const ForgotPasswordScreen(),
-        ),
         GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
         GoRoute(
           path: '/shipment',
@@ -140,7 +136,7 @@ class MyApp extends StatelessWidget {
           // ),
         ],
         child: MaterialApp.router(
-          title: 'TrainCode',
+          title: 'marmooq',
           theme: ThemeData(
             primarySwatch:
                 Colors.teal, // Updated to match ShippingDetailsScreen

@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
-import 'package:traincode/core/services/security_service.dart';
-import 'package:traincode/features/cart/repository/cart_repository.dart';
-import 'package:traincode/features/cart/view_model/cart_events.dart';
-import 'package:traincode/features/cart/view_model/cart_states.dart';
+import 'package:marmooq/core/services/security_service.dart';
+import 'package:marmooq/features/cart/repository/cart_repository.dart';
+import 'package:marmooq/features/cart/view_model/cart_events.dart';
+import 'package:marmooq/features/cart/view_model/cart_states.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final CartRepository cartRepository;

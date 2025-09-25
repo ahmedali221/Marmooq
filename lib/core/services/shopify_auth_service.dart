@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
-import 'package:traincode/core/services/security_service.dart';
-import 'package:traincode/core/utils/validation_utils.dart';
-import 'package:traincode/core/services/auth_exception.dart';
+import 'package:marmooq/core/services/security_service.dart';
+import 'package:marmooq/core/utils/validation_utils.dart';
+import 'package:marmooq/core/services/auth_exception.dart';
 
 /// Service for handling Shopify authentication operations.
 class ShopifyAuthService {

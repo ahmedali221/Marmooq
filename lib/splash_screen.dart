@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:traincode/features/auth/bloc/auth_bloc.dart';
-import 'package:traincode/features/auth/bloc/auth_state.dart';
+import 'package:marmooq/features/auth/bloc/auth_bloc.dart';
+import 'package:marmooq/features/auth/bloc/auth_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 1200),
     );
 
     // Create fade-in animation
@@ -43,13 +43,9 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Start animation and check authentication after delay
+    // Start animation and initialize/authenticate immediately
     _animationController.forward();
-
-    // Check authentication status after animation completes
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      _checkAuthenticationStatus();
-    });
+    _checkAuthenticationStatus();
   }
 
   void _checkAuthenticationStatus() {
@@ -68,8 +64,13 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(
+        0xFFF6FBFC,
+      ), // Match launch screen background
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (!mounted) return;
@@ -83,16 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
           }
         },
         child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.teal[50] ?? const Color(0xFFE0F2F1),
-                Colors.white,
-              ],
-            ),
-          ),
+          decoration: const BoxDecoration(color: Color(0xFFF6FBFC)),
           child: Center(
             child: AnimatedBuilder(
               animation: _animationController,
@@ -104,51 +96,58 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // Logo container with background circle
                         Container(
-                          padding: const EdgeInsets.all(20),
+                          width: isTablet ? 160 : 120,
+                          height: isTablet ? 160 : 120,
                           decoration: BoxDecoration(
-                            color: Colors.white,
                             shape: BoxShape.circle,
+                            color: Colors.white,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.teal.withOpacity(0.3),
-                                blurRadius: 30,
-                                spreadRadius: 5,
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
                               ),
                             ],
                           ),
-                          child: Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 80,
-                            color: Colors.teal[700],
+                          child: Center(
+                            child: Image.asset(
+                              'assets/marmooq_logo.png',
+                              width: isTablet ? 100 : 80,
+                              height: isTablet ? 100 : 80,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        SizedBox(height: isTablet ? 40 : 30),
                         Text(
                           'مرموق',
                           style: TextStyle(
-                            fontSize: 42,
+                            fontSize: isTablet ? 48 : 36,
                             fontWeight: FontWeight.bold,
-                            color: Colors.teal[800],
+                            color: const Color(0xFF00695C),
                             letterSpacing: 1.2,
+                            fontFamily: 'Tajawal',
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'للتسوق الإلكتروني',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[700],
+                            fontSize: isTablet ? 20 : 16,
+                            color: Colors.grey[600],
                             letterSpacing: 0.5,
+                            fontFamily: 'Tajawal',
                           ),
                         ),
-                        const SizedBox(height: 60),
+                        SizedBox(height: isTablet ? 80 : 60),
                         SizedBox(
-                          width: 40,
-                          height: 40,
+                          width: isTablet ? 50 : 40,
+                          height: isTablet ? 50 : 40,
                           child: CircularProgressIndicator.adaptive(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.teal[600]!,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF00695C),
                             ),
                             strokeWidth: 3,
                           ),

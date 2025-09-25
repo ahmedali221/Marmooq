@@ -1,8 +1,8 @@
 // import 'package:bloc/bloc.dart';
 
-// import 'package:traincode/features/shipment/repository/shipment_repository.dart';
-// import 'package:traincode/features/shipment/view_model/shipment_events.dart';
-// import 'package:traincode/features/shipment/view_model/shipment_states.dart';
+// import 'package:marmooq/features/shipment/repository/shipment_repository.dart';
+// import 'package:marmooq/features/shipment/view_model/shipment_events.dart';
+// import 'package:marmooq/features/shipment/view_model/shipment_states.dart';
 
 // class ShippingBloc extends Bloc<ShippingEvent, ShippingState> {
 //   final ShipmentRepository _repository;

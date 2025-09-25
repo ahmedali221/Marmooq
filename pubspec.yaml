@@ -1,5 +1,5 @@
-name: traincode
-description: "A new Flutter project."
+name: marmooq
+description: "marmooq - للتسوق الإلكتروني"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -54,6 +54,7 @@ dependencies:
   webview_flutter: ^4.13.0
   intl_phone_field: ^3.2.0
   feather_icons: ^1.2.0
+  device_preview: ^1.1.0
   
 
 dev_dependencies:

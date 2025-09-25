@@ -2,12 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
-import 'package:traincode/core/constants/app_colors.dart';
-import 'package:traincode/features/cart/view_model/cart_bloc.dart';
-import 'package:traincode/features/cart/view_model/cart_events.dart';
-import 'package:traincode/features/cart/view_model/cart_states.dart';
-import 'package:traincode/features/products/model/product_model.dart';
-import 'package:traincode/features/products/view/product_details_view.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
+import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
+import 'package:marmooq/features/cart/view_model/cart_events.dart';
+import 'package:marmooq/features/cart/view_model/cart_states.dart';
+import 'package:marmooq/features/products/model/product_model.dart';
+import 'package:marmooq/features/products/view/product_details_view.dart';
 
 class ProductCardWidget extends StatefulWidget {
   final Product product;

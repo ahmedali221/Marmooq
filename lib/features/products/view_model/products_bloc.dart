@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:dartz/dartz.dart';
-import 'package:traincode/features/products/model/product_failure.dart';
-import 'package:traincode/features/products/model/products_repository.dart';
-import 'package:traincode/features/products/view_model/products_event.dart';
-import 'package:traincode/features/products/view_model/products_state.dart';
+import 'package:marmooq/features/products/model/product_failure.dart';
+import 'package:marmooq/features/products/model/products_repository.dart';
+import 'package:marmooq/features/products/view_model/products_event.dart';
+import 'package:marmooq/features/products/view_model/products_state.dart';
 
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   final ProductsRepository repository;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:feather_icons/feather_icons.dart';
-import 'package:traincode/core/constants/app_colors.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
 
 class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -19,7 +19,7 @@ class StandardAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leadingIcon,
     this.actions,
     this.centerTitle = true,
-    this.showLeading = true,
+    this.showLeading = false,
     this.backgroundColor,
     this.elevation = 0,
   }) : super(key: key);

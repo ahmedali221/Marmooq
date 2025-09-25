@@ -4,7 +4,7 @@ import 'package:shopify_flutter/models/src/cart/inputs/cart_input/cart_input.dar
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_input/cart_line_input.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
 import 'package:shopify_flutter/shopify/src/shopify_cart.dart';
-import 'package:traincode/core/services/security_service.dart';
+import 'package:marmooq/core/services/security_service.dart';
 
 // Custom exception class for cart operations
 class CartRepositoryException implements Exception {

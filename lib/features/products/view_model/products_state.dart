@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:traincode/features/products/model/product_failure.dart';
+import 'package:marmooq/features/products/model/product_failure.dart';
 
 abstract class ProductsState extends Equatable {
   @override

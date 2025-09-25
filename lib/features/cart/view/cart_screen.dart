@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:feather_icons/feather_icons.dart';
-import 'package:traincode/core/constants/app_colors.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/models/src/cart/cart.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
-import 'package:traincode/features/cart/view_model/cart_bloc.dart';
-import 'package:traincode/features/cart/view_model/cart_events.dart';
-import 'package:traincode/features/cart/view_model/cart_states.dart';
+import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
+import 'package:marmooq/features/cart/view_model/cart_events.dart';
+import 'package:marmooq/features/cart/view_model/cart_states.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:traincode/core/services/security_service.dart';
-import 'package:traincode/core/widgets/standard_app_bar.dart';
+import 'package:marmooq/core/services/security_service.dart';
+import 'package:marmooq/core/widgets/standard_app_bar.dart';
+import 'package:marmooq/core/utils/responsive_utils.dart';
 
 class CartScreen extends StatefulWidget {
   static const String routeName = '/cart';
@@ -163,19 +164,52 @@ class _CartScreenState extends State<CartScreen>
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 20.0,
+          child: ResponsiveUtils.getResponsiveLayout(
+            context: context,
+            mobile: ListView(
+              padding: ResponsiveUtils.getResponsivePadding(context),
+              children: [
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+                if (cart.lines.isEmpty)
+                  _buildEmptyCartState()
+                else
+                  _buildCartItems(cart),
+              ],
             ),
-            children: [
-              // Cart ID displayed in a subtle way
-              const SizedBox(height: 20),
-              if (cart.lines.isEmpty)
-                _buildEmptyCartState()
-              else
-                _buildCartItems(cart),
-            ],
+            tablet: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ResponsiveUtils.getResponsiveContainerWidth(context, tabletRatio: 0.8),
+                ),
+                child: ListView(
+                  padding: ResponsiveUtils.getResponsivePadding(context),
+                  children: [
+                    SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+                    if (cart.lines.isEmpty)
+                      _buildEmptyCartState()
+                    else
+                      _buildCartItems(cart),
+                  ],
+                ),
+              ),
+            ),
+            desktop: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ResponsiveUtils.getResponsiveContainerWidth(context, desktopRatio: 0.6),
+                ),
+                child: ListView(
+                  padding: ResponsiveUtils.getResponsivePadding(context),
+                  children: [
+                    SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+                    if (cart.lines.isEmpty)
+                      _buildEmptyCartState()
+                    else
+                      _buildCartItems(cart),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -185,11 +219,13 @@ class _CartScreenState extends State<CartScreen>
   Widget _buildEmptyCartState() {
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.all(32),
+        margin: ResponsiveUtils.getResponsiveMargin(context),
+        padding: ResponsiveUtils.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -203,10 +239,12 @@ class _CartScreenState extends State<CartScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: ResponsiveUtils.getResponsivePadding(context),
               decoration: BoxDecoration(
                 color: AppColors.brand,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.brand.withOpacity(0.3),
@@ -215,33 +253,33 @@ class _CartScreenState extends State<CartScreen>
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 FeatherIcons.shoppingCart,
-                size: 60,
+                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 60),
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 28),
-            const Text(
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 28)),
+            Text(
               'سلتك فارغة',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 24),
                 fontWeight: FontWeight.bold,
                 color: AppColors.brand,
                 fontFamily: 'Tajawal',
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
+            Text(
               'أضف منتجات للبدء في التسوق',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                 color: Colors.grey,
                 fontFamily: 'Tajawal',
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32)),
             // Changed to Column layout
             Column(
               children: [
@@ -249,7 +287,9 @@ class _CartScreenState extends State<CartScreen>
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: AppColors.brand,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.brand.withOpacity(0.3),
@@ -265,27 +305,29 @@ class _CartScreenState extends State<CartScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.brand,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
+                        vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                        ),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           FeatherIcons.shoppingBag,
                           color: Colors.white,
-                          size: 20,
+                          size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
                         Text(
                           'تصفح المنتجات',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontFamily: 'Tajawal',
@@ -295,12 +337,14 @@ class _CartScreenState extends State<CartScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                    ),
                     border: Border.all(color: AppColors.brandMuted, width: 1.5),
                     boxShadow: [
                       BoxShadow(
@@ -317,12 +361,14 @@ class _CartScreenState extends State<CartScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
+                        vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                        ),
                       ),
                     ),
                     child: Row(
@@ -331,13 +377,13 @@ class _CartScreenState extends State<CartScreen>
                         Icon(
                           FeatherIcons.refreshCw,
                           color: AppColors.brand,
-                          size: 20,
+                          size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
                         Text(
                           'تحديث السلة',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                             fontWeight: FontWeight.w600,
                             color: AppColors.brand,
                             fontFamily: 'Tajawal',
@@ -360,11 +406,13 @@ class _CartScreenState extends State<CartScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          padding: const EdgeInsets.all(20),
+          margin: EdgeInsets.only(bottom: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
+          padding: ResponsiveUtils.getResponsivePadding(context),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -376,22 +424,24 @@ class _CartScreenState extends State<CartScreen>
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, mobile: 10)),
                 decoration: BoxDecoration(
                   color: AppColors.brand,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                  ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.shopping_bag_outlined,
                   color: Colors.white,
-                  size: 20,
+                  size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
                 ),
               ),
-              const SizedBox(width: 16),
-              const Text(
+              SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
+              Text(
                 'عناصر السلة',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 18),
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Tajawal',
                   color: Color(0xFF00695C),
@@ -399,13 +449,15 @@ class _CartScreenState extends State<CartScreen>
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+                  vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.brand,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.brand.withOpacity(0.3),
@@ -416,10 +468,10 @@ class _CartScreenState extends State<CartScreen>
                 ),
                 child: Text(
                   '${cart.lines.length}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
                     fontFamily: 'Tajawal',
                   ),
                 ),
@@ -427,28 +479,34 @@ class _CartScreenState extends State<CartScreen>
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
         ...cart.lines.map<Widget>(
           (line) => Card(
-            margin: const EdgeInsets.only(bottom: 16),
+            margin: EdgeInsets.only(bottom: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(
+                ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+              ),
             ),
             elevation: 3,
             shadowColor: Colors.black.withOpacity(0.1),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: ResponsiveUtils.getResponsivePadding(context),
               child: Row(
                 children: [
                   // Product Image
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                    ),
                     child: Container(
-                      width: 90,
-                      height: 90,
+                      width: ResponsiveUtils.getResponsiveWidth(context, mobile: 90),
+                      height: ResponsiveUtils.getResponsiveHeight(context, mobile: 90),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                        ),
                       ),
                       child: line.merchandise?.image?.originalSrc != null
                           ? CachedNetworkImage(
@@ -488,7 +546,7 @@ class _CartScreenState extends State<CartScreen>
                             ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
                   // Product Details
                   Expanded(
                     child: Column(
@@ -496,21 +554,23 @@ class _CartScreenState extends State<CartScreen>
                       children: [
                         Text(
                           line.merchandise!.product!.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                             fontFamily: 'Tajawal',
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
                         Row(
                           children: [
                             Container(
                               decoration: BoxDecoration(
                                 color: AppColors.brandLight,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(
+                                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                                ),
                                 border: Border.all(
                                   color: AppColors.brandMuted,
                                   width: 1,
@@ -538,25 +598,25 @@ class _CartScreenState extends State<CartScreen>
                                       }
                                     },
                                     child: Container(
-                                      padding: const EdgeInsets.all(6),
+                                      padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, mobile: 6)),
                                       child: Icon(
                                         FeatherIcons.minus,
-                                        size: 18,
+                                        size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 18),
                                         color: AppColors.brand,
                                       ),
                                     ),
                                   ),
                                   // Quantity display
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 6,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+                                      vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 6),
                                     ),
                                     child: Text(
                                       '${line.quantity}',
                                       style: TextStyle(
                                         color: AppColors.brand,
-                                        fontSize: 14,
+                                        fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
                                         fontWeight: FontWeight.w600,
                                         fontFamily: 'Tajawal',
                                       ),
@@ -580,10 +640,10 @@ class _CartScreenState extends State<CartScreen>
                                       );
                                     },
                                     child: Container(
-                                      padding: const EdgeInsets.all(6),
+                                      padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, mobile: 6)),
                                       child: Icon(
                                         FeatherIcons.plus,
-                                        size: 18,
+                                        size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 18),
                                         color: AppColors.brand,
                                       ),
                                     ),
@@ -591,12 +651,12 @@ class _CartScreenState extends State<CartScreen>
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
                             Text(
                               'الكمية',
                               style: TextStyle(
                                 color: Colors.grey[600],
-                                fontSize: 12,
+                                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 12),
                                 fontFamily: 'Tajawal',
                               ),
                             ),
@@ -611,18 +671,18 @@ class _CartScreenState extends State<CartScreen>
                     children: [
                       Text(
                         '${(line.cost?.amountPerQuantity.amount ?? 0.0).toStringAsFixed(3)} د.ك',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                           color: Color(0xFF00695C),
                           fontFamily: 'Tajawal',
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 4)),
                       Text(
                         'لكل قطعة',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 12),
                           color: Colors.grey[600],
                           fontFamily: 'Tajawal',
                         ),
@@ -634,12 +694,14 @@ class _CartScreenState extends State<CartScreen>
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24)),
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: ResponsiveUtils.getResponsivePadding(context),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -654,18 +716,18 @@ class _CartScreenState extends State<CartScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'المجموع:',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 18),
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Tajawal',
                     ),
                   ),
                   Text(
                     '${double.tryParse((cart.cost?.totalAmount.amount ?? "0.00").toString())?.toStringAsFixed(3) ?? "0.000"} د.ك',
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 20),
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF00695C),
                       fontFamily: 'Tajawal',
@@ -673,7 +735,7 @@ class _CartScreenState extends State<CartScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -682,7 +744,9 @@ class _CartScreenState extends State<CartScreen>
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.teal.withOpacity(0.3),
@@ -718,20 +782,28 @@ class _CartScreenState extends State<CartScreen>
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brandDark,
-                    minimumSize: const Size.fromHeight(56),
+                    minimumSize: Size.fromHeight(
+                      ResponsiveUtils.getResponsiveHeight(context, mobile: 56),
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                      ),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.payment, color: Colors.white, size: 20),
-                      SizedBox(width: 12),
+                      Icon(
+                        Icons.payment, 
+                        color: Colors.white, 
+                        size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
+                      ),
+                      SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
                       Text(
                         'المتابعة إلى الدفع',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontFamily: 'Tajawal',

@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:traincode/core/services/auth_exception.dart';
-import 'package:traincode/features/auth/bloc/auth_state.dart';
-import 'package:traincode/core/services/shopify_auth_service.dart';
+import 'package:marmooq/core/services/auth_exception.dart';
+import 'package:marmooq/features/auth/bloc/auth_state.dart';
+import 'package:marmooq/core/services/shopify_auth_service.dart';
 
 /// Authentication events
 abstract class AuthEvent extends Equatable {

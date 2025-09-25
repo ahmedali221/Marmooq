@@ -2,13 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:feather_icons/feather_icons.dart';
-import 'package:traincode/core/constants/app_colors.dart';
-import 'package:traincode/features/products/model/product_model.dart';
-import 'package:traincode/features/products/view_model/products_bloc.dart';
-import 'package:traincode/features/products/view_model/products_event.dart';
-import 'package:traincode/features/products/view_model/products_state.dart';
-import 'package:traincode/features/products/widgets/product_card_widget.dart';
-import 'package:traincode/core/widgets/standard_app_bar.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
+import 'package:marmooq/features/products/model/product_model.dart';
+import 'package:marmooq/features/products/view_model/products_bloc.dart';
+import 'package:marmooq/features/products/view_model/products_event.dart';
+import 'package:marmooq/features/products/view_model/products_state.dart';
+import 'package:marmooq/features/products/widgets/product_card_widget.dart';
+import 'package:marmooq/core/widgets/standard_app_bar.dart';
+import 'package:marmooq/core/utils/responsive_utils.dart';
 
 class SearchView extends StatefulWidget {
   const SearchView({super.key});
@@ -91,43 +92,52 @@ class _SearchViewState extends State<SearchView> {
         children: [
           // Search bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: ResponsiveUtils.getResponsivePadding(context),
             color: Colors.white,
             child: Container(
-              height: 50,
+              height: ResponsiveUtils.getResponsiveHeight(context, mobile: 50),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+                ),
               ),
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
                 onChanged: _onSearchChanged,
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                ),
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.transparent,
                   hintText: 'ابحث في المنتجات...',
-                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+                  hintStyle: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                  ),
                   prefixIcon: Icon(
                     FeatherIcons.search,
                     color: Colors.grey[500],
-                    size: 20,
+                    size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+                    ),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20),
+                    vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: Icon(
                             FeatherIcons.x,
                             color: Colors.grey[500],
-                            size: 18,
+                            size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 18),
                           ),
                           onPressed: () {
                             _searchController.clear();
@@ -169,13 +179,13 @@ class _SearchViewState extends State<SearchView> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: ResponsiveUtils.getResponsivePadding(context),
       child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.7,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(context),
+          childAspectRatio: ResponsiveUtils.getResponsiveGridChildAspectRatio(context),
+          crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+          mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
         ),
         itemCount: results.length,
         cacheExtent: 500, // Cache more items for smoother scrolling
@@ -193,10 +203,12 @@ class _SearchViewState extends State<SearchView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: ResponsiveUtils.getResponsivePadding(context),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(
+                ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.brand.withOpacity(0.15),
@@ -208,18 +220,18 @@ class _SearchViewState extends State<SearchView> {
             child: Column(
               children: [
                 SizedBox(
-                  width: 50,
-                  height: 50,
+                  width: ResponsiveUtils.getResponsiveWidth(context, mobile: 50),
+                  height: ResponsiveUtils.getResponsiveHeight(context, mobile: 50),
                   child: CircularProgressIndicator.adaptive(
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
                     strokeWidth: 4,
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 20)),
                 Text(
                   'جاري تحميل المنتجات...',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 18),
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[700],
                   ),
@@ -235,11 +247,13 @@ class _SearchViewState extends State<SearchView> {
   Widget _buildEmptyState() {
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.all(32),
+        margin: ResponsiveUtils.getResponsiveMargin(context),
+        padding: ResponsiveUtils.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -253,10 +267,12 @@ class _SearchViewState extends State<SearchView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: ResponsiveUtils.getResponsivePadding(context),
               decoration: BoxDecoration(
                 color: AppColors.brandLight,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.brand.withOpacity(0.3),
@@ -267,25 +283,25 @@ class _SearchViewState extends State<SearchView> {
               ),
               child: Icon(
                 FeatherIcons.search,
-                size: 60,
+                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 60),
                 color: AppColors.brand,
               ),
             ),
-            const SizedBox(height: 28),
-            const Text(
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 28)),
+            Text(
               'ابحث عن منتجاتك المفضلة',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 24),
                 fontWeight: FontWeight.bold,
                 color: AppColors.brand,
                 fontFamily: 'Tajawal',
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
+            Text(
               'استخدم شريط البحث للعثور على المنتجات التي تريدها',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                 color: Colors.grey,
                 fontFamily: 'Tajawal',
               ),
@@ -300,11 +316,13 @@ class _SearchViewState extends State<SearchView> {
   Widget _buildNoResultsState() {
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.all(32),
+        margin: ResponsiveUtils.getResponsiveMargin(context),
+        padding: ResponsiveUtils.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -318,55 +336,59 @@ class _SearchViewState extends State<SearchView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: ResponsiveUtils.getResponsivePadding(context),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                ),
               ),
               child: Icon(
                 FeatherIcons.search,
-                size: 60,
+                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 60),
                 color: Colors.grey[400],
               ),
             ),
-            const SizedBox(height: 28),
-            const Text(
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 28)),
+            Text(
               'لم يتم العثور على نتائج',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 24),
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
                 fontFamily: 'Tajawal',
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
             Text(
               'جرب البحث بكلمات مختلفة أو تحقق من الإملاء',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                 color: Colors.grey[600],
                 fontFamily: 'Tajawal',
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32)),
             ElevatedButton.icon(
               onPressed: () {
                 _searchController.clear();
                 _onSearchChanged('');
               },
-              icon: const Icon(FeatherIcons.x),
+              icon: Icon(FeatherIcons.x),
               label: const Text('مسح البحث'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brand,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
+                  vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                  ),
                 ),
               ),
             ),
@@ -379,11 +401,13 @@ class _SearchViewState extends State<SearchView> {
   Widget _buildErrorState(ProductsError state) {
     return Center(
       child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(32),
+        margin: ResponsiveUtils.getResponsiveMargin(context),
+        padding: ResponsiveUtils.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -396,58 +420,60 @@ class _SearchViewState extends State<SearchView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: ResponsiveUtils.getResponsivePadding(context),
               decoration: BoxDecoration(
                 color: Colors.red[50],
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 FeatherIcons.alertCircle,
-                size: 60,
+                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 60),
                 color: Colors.red[400],
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24)),
+            Text(
               'حدث خطأ في تحميل المنتجات',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 22),
                 fontWeight: FontWeight.w700,
                 color: Colors.grey,
                 fontFamily: 'Tajawal',
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
             Text(
               state.failure.message,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
                 color: Colors.grey[600],
                 height: 1.5,
                 fontFamily: 'Tajawal',
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32)),
             ElevatedButton.icon(
               onPressed: () {
                 context.read<ProductsBloc>().add(FetchProductsEvent());
               },
-              icon: const Icon(FeatherIcons.refreshCw, size: 20),
-              label: const Text(
+              icon: Icon(FeatherIcons.refreshCw, size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20)),
+              label: Text(
                 'إعادة المحاولة',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brand,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
+                  vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ),
                 ),
                 elevation: 4,
               ),

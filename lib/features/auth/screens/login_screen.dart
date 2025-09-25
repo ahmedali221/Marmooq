@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:traincode/features/auth/bloc/auth_bloc.dart';
-import 'package:traincode/features/auth/bloc/auth_state.dart';
-import 'package:traincode/core/utils/validation_utils.dart';
+import 'package:marmooq/features/auth/bloc/auth_bloc.dart';
+import 'package:marmooq/features/auth/bloc/auth_state.dart';
+import 'package:marmooq/core/utils/validation_utils.dart';
 
 /// Login screen for Shopify authentication
 class LoginScreen extends StatefulWidget {
@@ -59,15 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
     context.go('/register');
   }
 
-  void _navigateToForgotPassword() {
-    context.go('/forgot-password');
-  }
-
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final isDesktop = screenSize.width > 1200;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(title: const Text('تسجيل الدخول'), centerTitle: true),
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
@@ -92,129 +93,165 @@ class _LoginScreenState extends State<LoginScreen> {
             }
           },
           builder: (context, state) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 24),
-                    // Logo or brand image could go here
-                    const Icon(
-                      FeatherIcons.shoppingBag,
-                      size: 80,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'مرحبا بعودتك',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'تسجيل الدخول إلى حسابك',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'البريد الإلكتروني',
-                        prefixIcon: Icon(FeatherIcons.mail),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'يرجى إدخال بريدك الإلكتروني';
-                        }
-                        if (!ValidationUtils.isValidEmail(value)) {
-                          return 'يرجى إدخال بريد إلكتروني صالح';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: 'كلمة المرور',
-                        prefixIcon: const Icon(FeatherIcons.lock),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? FeatherIcons.eye
-                                : FeatherIcons.eyeOff,
-                          ),
-                          onPressed: _togglePasswordVisibility,
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'يرجى إدخال كلمة المرور';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 32.0 : 16.0,
+                  vertical: 16.0,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop
+                        ? 500
+                        : isTablet
+                        ? 400
+                        : double.infinity,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _rememberMe,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
-                              },
+                        SizedBox(height: isTablet ? 40 : 24),
+                        // Logo or brand image could go here
+                        Image.asset(
+                          'assets/marmooq_logo.png',
+                          height: isTablet ? 100 : 80,
+                          fit: BoxFit.contain,
+                        ),
+                        SizedBox(height: isTablet ? 32 : 24),
+                        Text(
+                          'مرحبا بعودتك',
+                          style: TextStyle(
+                            fontSize: isTablet ? 28 : 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'تسجيل الدخول إلى حسابك',
+                          style: TextStyle(
+                            fontSize: isTablet ? 18 : 16,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: isTablet ? 40 : 32),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'البريد الإلكتروني',
+                            prefixIcon: const Icon(FeatherIcons.mail),
+                            border: const OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: isTablet ? 20 : 16,
                             ),
-                            const Text('تذكرني'),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'يرجى إدخال بريدك الإلكتروني';
+                            }
+                            if (!ValidationUtils.isValidEmail(value)) {
+                              return 'يرجى إدخال بريد إلكتروني صالح';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: 'كلمة المرور',
+                            prefixIcon: const Icon(FeatherIcons.lock),
+                            border: const OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: isTablet ? 20 : 16,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? FeatherIcons.eye
+                                    : FeatherIcons.eyeOff,
+                              ),
+                              onPressed: _togglePasswordVisibility,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'يرجى إدخال كلمة المرور';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _rememberMe = value ?? false;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  'تذكرني',
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 16 : 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        TextButton(
-                          onPressed: _navigateToForgotPassword,
-                          child: const Text('نسيت كلمة المرور؟'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: state.isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: state.isLoading
-                          ? const CircularProgressIndicator.adaptive()
-                          : const Text(
-                              'تسجيل الدخول',
-                              style: TextStyle(fontSize: 16),
+                        SizedBox(height: isTablet ? 32 : 24),
+                        ElevatedButton(
+                          onPressed: state.isLoading ? null : _login,
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              vertical: isTablet ? 20 : 16,
                             ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('ليس لديك حساب؟'),
-                        TextButton(
-                          onPressed: _navigateToRegister,
-                          child: const Text('إنشاء حساب'),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: state.isLoading
+                              ? const CircularProgressIndicator.adaptive()
+                              : Text(
+                                  'تسجيل الدخول',
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 18 : 16,
+                                  ),
+                                ),
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'ليس لديك حساب؟',
+                              style: TextStyle(fontSize: isTablet ? 16 : 14),
+                            ),
+                            TextButton(
+                              onPressed: _navigateToRegister,
+                              child: Text(
+                                'إنشاء حساب',
+                                style: TextStyle(fontSize: isTablet ? 16 : 14),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             );

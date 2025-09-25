@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:feather_icons/feather_icons.dart';
-import 'package:traincode/core/constants/app_colors.dart';
-import 'package:traincode/features/products/view/products_view.dart';
-import 'package:traincode/features/search/view/search_view.dart';
-import 'package:traincode/features/cart/view/cart_screen.dart';
-import 'package:traincode/features/auth/screens/profile_screen.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
+import 'package:marmooq/features/products/view/products_view.dart';
+import 'package:marmooq/features/search/view/search_view.dart';
+import 'package:marmooq/features/cart/view/cart_screen.dart';
+import 'package:marmooq/features/auth/screens/profile_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});

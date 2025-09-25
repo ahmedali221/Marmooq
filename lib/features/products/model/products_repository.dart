@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:traincode/features/products/model/product_failure.dart';
+import 'package:marmooq/features/products/model/product_failure.dart';
 
 class ProductsRepository {
   // Cache configuration

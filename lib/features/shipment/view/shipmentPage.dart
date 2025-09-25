@@ -1,20 +1,20 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:traincode/core/constants/app_colors.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
-import 'package:traincode/features/shipment/repository/shipment_repository.dart';
-import 'package:traincode/features/cart/repository/cart_repository.dart';
-import 'package:traincode/features/cart/view_model/cart_bloc.dart';
-import 'package:traincode/features/cart/view_model/cart_events.dart';
+import 'package:marmooq/features/shipment/repository/shipment_repository.dart';
+import 'package:marmooq/features/cart/repository/cart_repository.dart';
+import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
+import 'package:marmooq/features/cart/view_model/cart_events.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:traincode/core/utils/validation_utils.dart';
-import 'package:traincode/core/widgets/standard_app_bar.dart';
+import 'package:marmooq/core/utils/validation_utils.dart';
+import 'package:marmooq/core/widgets/standard_app_bar.dart';
+import 'package:marmooq/core/utils/responsive_utils.dart';
 
 class ShippingDetailsScreen extends StatefulWidget {
   final String customerAccessToken;
@@ -324,10 +324,15 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
           child: _isLoading
               ? Center(
                   child: Container(
-                    padding: const EdgeInsets.all(32),
+                    padding: ResponsiveUtils.getResponsivePadding(context),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveUtils.getResponsiveBorderRadius(
+                          context,
+                          mobile: 20,
+                        ),
+                      ),
                     ),
                     child: const Column(
                       mainAxisSize: MainAxisSize.min,
@@ -354,25 +359,44 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                   ),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: ResponsiveUtils.getResponsivePadding(context),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        const SizedBox(height: 20),
+                        SizedBox(
+                          height: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 20,
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: ResponsiveUtils.getResponsivePadding(
+                            context,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.getResponsiveBorderRadius(
+                                context,
+                                mobile: 16,
+                              ),
+                            ),
                           ),
                           child: Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: ResponsiveUtils.getResponsivePadding(
+                                  context,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.brand,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveUtils.getResponsiveBorderRadius(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                  ),
                                 ),
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -396,7 +420,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 24,
+                                ),
+                              ),
                               // Simplified shipping form fields
                               _buildTextField(
                                 controller: _fullNameController,
@@ -407,7 +436,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                     : null,
                                 textInputAction: TextInputAction.next,
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 12,
+                                ),
+                              ),
                               _buildTextField(
                                 controller: _phoneController,
                                 label: 'رقم الهاتف',
@@ -439,7 +473,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                 },
                                 textInputAction: TextInputAction.next,
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 12,
+                                ),
+                              ),
                               _buildTextField(
                                 controller: _addressController,
                                 label: 'العنوان الكامل',
@@ -451,12 +490,24 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                 textInputAction: TextInputAction.done,
                                 maxLines: 3,
                               ),
-                              const SizedBox(height: 24),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 24,
+                                ),
+                              ),
                               Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: ResponsiveUtils.getResponsivePadding(
+                                  context,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.brandLight,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveUtils.getResponsiveBorderRadius(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                  ),
                                   border: Border.all(
                                     color: AppColors.brandMuted,
                                     width: 1,
@@ -469,7 +520,13 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                       color: AppColors.brand,
                                       size: 24,
                                     ),
-                                    const SizedBox(width: 12),
+                                    SizedBox(
+                                      width:
+                                          ResponsiveUtils.getResponsiveSpacing(
+                                            context,
+                                            mobile: 12,
+                                          ),
+                                    ),
                                     const Expanded(
                                       child: Text(
                                         'اضغط للانتقال إلى صفحة الدفع الآمنة',
@@ -486,7 +543,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 32),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 32,
+                                ),
+                              ),
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
@@ -497,21 +559,40 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                     begin: Alignment.centerLeft,
                                     end: Alignment.centerRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveUtils.getResponsiveBorderRadius(
+                                      context,
+                                      mobile: 16,
+                                    ),
+                                  ),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: _isLoading || !_hasCartItems
                                       ? null
                                       : _handleCompleteOrder,
                                   style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(60),
+                                    minimumSize: Size.fromHeight(
+                                      ResponsiveUtils.getResponsiveHeight(
+                                        context,
+                                        mobile: 60,
+                                      ),
+                                    ),
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(
+                                        ResponsiveUtils.getResponsiveBorderRadius(
+                                          context,
+                                          mobile: 16,
+                                        ),
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                    padding: EdgeInsets.symmetric(
+                                      vertical:
+                                          ResponsiveUtils.getResponsiveSpacing(
+                                            context,
+                                            mobile: 16,
+                                          ),
                                     ),
                                   ),
                                   child: _isLoading
@@ -522,17 +603,27 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                               ),
                                           strokeWidth: 2,
                                         )
-                                      : const Row(
+                                      : Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
                                             Icon(
                                               FeatherIcons.creditCard,
                                               color: Colors.white,
-                                              size: 24,
+                                              size:
+                                                  ResponsiveUtils.getResponsiveIconSize(
+                                                    context,
+                                                    mobile: 24,
+                                                  ),
                                             ),
-                                            SizedBox(width: 12),
-                                            Text(
+                                            SizedBox(
+                                              width:
+                                                  ResponsiveUtils.getResponsiveSpacing(
+                                                    context,
+                                                    mobile: 12,
+                                                  ),
+                                            ),
+                                            const Text(
                                               'الانتقال إلى الدفع',
                                               style: TextStyle(
                                                 fontSize: 18,
@@ -549,12 +640,24 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(
+                          height: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 24,
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.all(20),
+                          padding: ResponsiveUtils.getResponsivePadding(
+                            context,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.getResponsiveBorderRadius(
+                                context,
+                                mobile: 16,
+                              ),
+                            ),
                             border: Border.all(
                               color: AppColors.brandMuted,
                               width: 1,
@@ -565,10 +668,20 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: EdgeInsets.all(
+                                      ResponsiveUtils.getResponsiveSpacing(
+                                        context,
+                                        mobile: 8,
+                                      ),
+                                    ),
                                     decoration: BoxDecoration(
                                       color: AppColors.brandLight,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(
+                                        ResponsiveUtils.getResponsiveBorderRadius(
+                                          context,
+                                          mobile: 12,
+                                        ),
+                                      ),
                                     ),
                                     child: Icon(
                                       FeatherIcons.shield,
@@ -576,7 +689,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                       size: 20,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: ResponsiveUtils.getResponsiveSpacing(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                  ),
                                   const Expanded(
                                     child: Text(
                                       'معلومات الدفع الآمن',
@@ -592,7 +710,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 16,
+                                ),
+                              ),
                               Row(
                                 children: [
                                   Icon(
@@ -600,7 +723,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                     color: AppColors.brand,
                                     size: 20,
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: ResponsiveUtils.getResponsiveSpacing(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                  ),
                                   const Expanded(
                                     child: Text(
                                       'سيتم توجيهك إلى صفحة دفع آمنة لإتمام عملية الشراء',
@@ -615,7 +743,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 8,
+                                ),
+                              ),
                               Row(
                                 children: [
                                   Icon(
@@ -623,7 +756,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                     color: AppColors.brand,
                                     size: 20,
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: ResponsiveUtils.getResponsiveSpacing(
+                                      context,
+                                      mobile: 12,
+                                    ),
+                                  ),
                                   const Expanded(
                                     child: Text(
                                       'جميع المعاملات مشفرة ومؤمنة بالكامل',
