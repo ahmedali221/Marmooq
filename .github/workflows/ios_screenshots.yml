@@ -1,0 +1,83 @@
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      initial_route:
+        description: "Initial route to open (e.g., /register)"
+        required: false
+        default: "/register"
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter doctor
+        run: flutter doctor -v | sed -n '1,200p'
+
+      - name: Fetch dependencies
+        run: flutter pub get
+
+      - name: Create .env
+        run: |
+          if [ ! -f .env ]; then
+            echo "SHOPIFY_STOREFRONT_TOKEN=${SHOPIFY_STOREFRONT_TOKEN:-REPLACE_ME}" > .env
+          fi
+
+      - name: Build iOS for Simulator
+        run: flutter build ios --simulator --no-codesign --dart-define=APP_INITIAL_ROUTE=${{ github.event.inputs.initial_route }}
+
+      - name: Boot Simulators
+        run: |
+          xcrun simctl boot "iPhone 11 Pro Max" || true
+          xcrun simctl boot "iPad Pro (12.9-inch) (6th generation)" || true
+          open -a Simulator
+          sleep 10
+
+      - name: Install app on iPhone 11 Pro Max
+        run: |
+          IOS_APP_PATH=$(ls build/ios/iphonesimulator/*.app | head -n1)
+          xcrun simctl install "iPhone 11 Pro Max" "$IOS_APP_PATH"
+
+      - name: Install app on iPad Pro 12.9
+        run: |
+          IOS_APP_PATH=$(ls build/ios/iphonesimulator/*.app | head -n1)
+          xcrun simctl install "iPad Pro (12.9-inch) (6th generation)" "$IOS_APP_PATH"
+
+      - name: Launch app and set clean status bars
+        env:
+          BUNDLE_ID: com.marmooq.new
+        run: |
+          xcrun simctl status_bar "iPhone 11 Pro Max" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
+          xcrun simctl status_bar "iPad Pro (12.9-inch) (6th generation)" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 || true
+          xcrun simctl launch "iPhone 11 Pro Max" $BUNDLE_ID || true
+          xcrun simctl launch "iPad Pro (12.9-inch) (6th generation)" $BUNDLE_ID || true
+          sleep 5
+
+      - name: Take screenshots
+        run: |
+          mkdir -p screenshots
+          xcrun simctl io "iPhone 11 Pro Max" screenshot ./screenshots/iphone_65_01.png
+          xcrun simctl io "iPad Pro (12.9-inch) (6th generation)" screenshot ./screenshots/ipad_129_01.png
+
+      - name: Upload screenshots artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: screenshots
+
+      - name: Clear status bars
+        run: |
+          xcrun simctl status_bar "iPhone 11 Pro Max" clear || true
+          xcrun simctl status_bar "iPad Pro (12.9-inch) (6th generation)" clear || true
+
+

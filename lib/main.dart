@@ -51,11 +51,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const String initialRouteOverride = String.fromEnvironment(
+      'APP_INITIAL_ROUTE',
+      defaultValue: '/',
+    );
     final cartRepository = CartRepository();
     final shipmentRepository = ShipmentRepository();
 
     final GoRouter router = GoRouter(
-      initialLocation: '/',
+      initialLocation: initialRouteOverride,
       routes: [
         GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
         GoRoute(

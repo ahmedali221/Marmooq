@@ -34,6 +34,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     context.read<AuthBloc>().add(AuthInitialize());
+    _firstNameController.text = 'Demo';
+    _lastNameController.text = 'User';
+    _emailController.text = 'demo@marmooq.com';
+    _phoneController.text = '55555555';
+    _passwordController.text = 'Demo@12345';
+    _confirmPasswordController.text = 'Demo@12345';
+    _acceptsMarketing = true;
   }
 
   @override
