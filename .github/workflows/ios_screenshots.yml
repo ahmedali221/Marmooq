@@ -39,13 +39,23 @@ jobs:
       - name: Boot Simulators
         shell: bash
         run: |
+          set -euo pipefail
           echo "Xcode version:" && xcodebuild -version
           echo "Available runtimes:" && xcrun simctl list runtimes
           echo "Available device types:" && xcrun simctl list devicetypes
 
           # Pick latest available iOS runtime
-          RUNTIME=$(xcrun simctl list runtimes | awk -F'[() ]+' '/iOS .*(Available|available)/ {print $NF}' | tail -n1)
-          echo "Using runtime: $RUNTIME"
+          # Extract an iOS runtime identifier like com.apple.CoreSimulator.SimRuntime.iOS-17-5
+          RUNTIME=$(xcrun simctl list runtimes | sed -n 's/.*- \(com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]*\) (Available).*/\1/p' | tail -n1)
+          if [ -z "$RUNTIME" ]; then
+            RUNTIME=$(xcrun simctl list runtimes | sed -n 's/.*- \(com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]*\) (available).*/\1/p' | tail -n1)
+          fi
+          echo "Using runtime identifier: ${RUNTIME:-<none>}"
+          if [ -z "${RUNTIME:-}" ]; then
+            echo "No available iOS runtime found" >&2
+            xcrun simctl list runtimes
+            exit 1
+          fi
 
           # Ensure target devices exist; create if missing
           IPHONE_NAME="iPhone 11 Pro Max"
