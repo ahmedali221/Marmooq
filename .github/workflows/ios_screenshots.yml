@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       initial_route:
-        description: "Initial route to open (e.g., /register)"
+        description: "Initial route to open (e.g., /products)"
         required: false
         default: "/products"
 
@@ -65,7 +65,7 @@ jobs:
           echo "Available device types:" && xcrun simctl list devicetypes
 
           # Select the latest iOS runtime
-          IOS_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and .name | startswith("iOS")) | .identifier' | sort -V | tail -n1)
+          IOS_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and (.name | type == "string" and startswith("iOS"))) | .identifier' | sort -V | tail -n1)
           if [ -z "$IOS_RUNTIME" ]; then
             echo "No available iOS runtime found" >&2
             exit 1
@@ -73,7 +73,7 @@ jobs:
           echo "Using iOS runtime: $IOS_RUNTIME"
 
           # Select the latest watchOS runtime
-          WATCH_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and .name | startswith("watchOS")) | .identifier' | sort -V | tail -n1)
+          WATCH_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and (.name | type == "string" and startswith("watchOS"))) | .identifier' | sort -V | tail -n1)
           if [ -z "$WATCH_RUNTIME" ]; then
             echo "No available watchOS runtime found, proceeding without Watch support" >&2
             WATCH_RUNTIME=""
@@ -83,24 +83,28 @@ jobs:
 
           # iPhone setup - 6.5" display
           IPHONE_NAME="iPhone 11 Pro Max"
+          IPHONE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max"
           if ! xcrun simctl list devicetypes | grep -q "$IPHONE_NAME"; then
             echo "$IPHONE_NAME not available; falling back to iPhone XS Max"
             IPHONE_NAME="iPhone XS Max"
+            IPHONE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-XS-Max"
           fi
           if ! xcrun simctl list devices | grep -q "$IPHONE_NAME ("; then
             echo "Creating $IPHONE_NAME"
-            xcrun simctl create "$IPHONE_NAME" "com.apple.CoreSimulator.SimDeviceType.$IPHONE_NAME" "$IOS_RUNTIME"
+            xcrun simctl create "$IPHONE_NAME" "$IPHONE_TYPE" "$IOS_RUNTIME"
           fi
 
           # iPad setup - 13" display
           IPAD_NAME="iPad Pro 13-inch (M4)"
-          if ! xcrun simctl list devicetypes | grep -q "$IPAD_NAME"; then
+          IPAD_TYPE="com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4-8GB"
+          if ! xcrun simctl list devicetypes | grep -q "iPad-Pro-13-inch-M4"; then
             echo "$IPAD_NAME not available; falling back to iPad Pro (12.9-inch) (6th generation)"
             IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
+            IPAD_TYPE="com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation-8GB"
           fi
           if ! xcrun simctl list devices | grep -q "$IPAD_NAME ("; then
             echo "Creating $IPAD_NAME"
-            xcrun simctl create "$IPAD_NAME" "com.apple.CoreSimulator.SimDeviceType.$IPAD_NAME" "$IOS_RUNTIME"
+            xcrun simctl create "$IPAD_NAME" "$IPAD_TYPE" "$IOS_RUNTIME"
           fi
 
           # Boot iOS devices
@@ -111,24 +115,6 @@ jobs:
           xcrun simctl bootstatus "$IPAD_NAME" -b || true
           sleep 10
 
-          # Watch devices
-          WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 45mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
-          declare -A WATCH_UDIDS
-          for model in "${WATCH_MODELS[@]}"; do
-            if [ -n "$WATCH_RUNTIME" ]; then
-              if ! xcrun simctl list devices | grep -q "$model ("; then
-                echo "Creating $model"
-                DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.${model// /_}"
-                xcrun simctl create "$model" "$DEVICETYPE" "$WATCH_RUNTIME"
-              fi
-              xcrun simctl boot "$model" || true
-              udid=$(xcrun simctl list devices --json | jq -r ".devices.\"$WATCH_RUNTIME\"[] | select(.name==\"$model\") | .udid")
-              WATCH_UDIDS["$model"]="$udid"
-              echo "Watch $model UDID: $udid"
-              echo "WATCH_${model// /_}_UDID=$udid" >> $GITHUB_ENV
-            fi
-          done
-
           # Get iOS UDIDs
           IPHONE_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPHONE_NAME\") | .udid")
           IPAD_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPAD_NAME\") | .udid")
@@ -136,6 +122,33 @@ jobs:
           echo "iPad UDID: $IPAD_UDID"
           echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
           echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
+
+          # Watch devices (only if Watch app is built and watchOS runtime exists)
+          if [ -n "${WATCH_APP_PATH:-}" ] && [ -n "$WATCH_RUNTIME" ]; then
+            WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 46mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
+            declare -A WATCH_UDIDS
+            for model in "${WATCH_MODELS[@]}"; do
+              case "$model" in
+                "Apple Watch Ultra 3 - 49mm") DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Ultra-3-49mm" ;;
+                "Apple Watch Series 11 - 46mm") DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-11-46mm" ;;
+                "Apple Watch Series 9 - 45mm") DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-9-45mm" ;;
+                "Apple Watch Series 6 - 44mm") DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-6-44mm" ;;
+                "Apple Watch Series 3 - 42mm") DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-3-42mm" ;;
+              esac
+              if ! xcrun simctl list devices | grep -q "$model ("; then
+                echo "Creating $model"
+                xcrun simctl create "$model" "$DEVICETYPE" "$WATCH_RUNTIME" || {
+                  echo "Failed to create $model, skipping" >&2
+                  continue
+                }
+              fi
+              xcrun simctl boot "$model" || true
+              udid=$(xcrun simctl list devices --json | jq -r ".devices.\"$WATCH_RUNTIME\"[] | select(.name==\"$model\") | .udid")
+              WATCH_UDIDS["$model"]="$udid"
+              echo "Watch $model UDID: $udid"
+              echo "WATCH_${model// /_}_UDID=$udid" >> $GITHUB_ENV
+            done
+          fi
 
           echo "All devices booted"
 
@@ -160,11 +173,11 @@ jobs:
           xcrun simctl install "$IPAD_UDID" "$IOS_APP_PATH"
 
       - name: Install Watch apps (if built)
-        if: env.WATCH_APP_PATH != ''
+        if: env.WATCH_APP_PATH != '' && env.WATCH_RUNTIME != ''
         shell: bash
         run: |
           WATCH_BUNDLE_ID="com.marmooq.new.watchkitapp"
-          WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 45mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
+          WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 46mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
           for model in "${WATCH_MODELS[@]}"; do
             udid_var="WATCH_${model// /_}_UDID"
             udid=${!udid_var}
@@ -185,14 +198,16 @@ jobs:
           xcrun simctl status_bar "$IPAD_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 || true
           xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || true
           xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || true
-          WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 45mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
-          for model in "${WATCH_MODELS[@]}"; do
-            udid_var="WATCH_${model// /_}_UDID"
-            udid=${!udid_var}
-            if [ -n "$udid" ]; then
-              xcrun simctl launch "$udid" $WATCH_BUNDLE_ID || true
-            fi
-          done
+          if [ -n "${WATCH_APP_PATH:-}" ] && [ -n "${WATCH_RUNTIME:-}" ]; then
+            WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 46mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
+            for model in "${WATCH_MODELS[@]}"; do
+              udid_var="WATCH_${model// /_}_UDID"
+              udid=${!udid_var}
+              if [ -n "$udid" ]; then
+                xcrun simctl launch "$udid" $WATCH_BUNDLE_ID || true
+              fi
+            done
+          fi
           sleep 10
 
       - name: Take screenshots
@@ -204,18 +219,20 @@ jobs:
             xcrun simctl io "$IPAD_UDID" screenshot "./screenshots/ipad_13_0$i.png"
             sleep 2
           done
-          WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 45mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
-          for model in "${WATCH_MODELS[@]}"; do
-            udid_var="WATCH_${model// /_}_UDID"
-            udid=${!udid_var}
-            if [ -n "$udid" ]; then
-              model_slug=$(echo "$model" | tr ' ()' '---' | tr -d '[:space:]')
-              for i in {1..3}; do
-                xcrun simctl io "$udid" screenshot "./screenshots/watch_${model_slug}_0$i.png"
-                sleep 2
-              done
-            fi
-          done
+          if [ -n "${WATCH_APP_PATH:-}" ] && [ -n "${WATCH_RUNTIME:-}" ]; then
+            WATCH_MODELS=("Apple Watch Ultra 3 - 49mm" "Apple Watch Series 11 - 46mm" "Apple Watch Series 9 - 45mm" "Apple Watch Series 6 - 44mm" "Apple Watch Series 3 - 42mm")
+            for model in "${WATCH_MODELS[@]}"; do
+              udid_var="WATCH_${model// /_}_UDID"
+              udid=${!udid_var}
+              if [ -n "$udid" ]; then
+                model_slug=$(echo "$model" | tr ' ()' '---' | tr -d '[:space:]')
+                for i in {1..3}; do
+                  xcrun simctl io "$udid" screenshot "./screenshots/watch_${model_slug}_0$i.png"
+                  sleep 2
+                done
+              fi
+            done
+          fi
 
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
