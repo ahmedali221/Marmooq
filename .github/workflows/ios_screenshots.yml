@@ -76,7 +76,21 @@ jobs:
           xcrun simctl boot "$IPHONE_NAME" || true
           xcrun simctl boot "$IPAD_NAME" || true
           open -a Simulator || true
-          sleep 15
+          # Wait until boot completes
+          xcrun simctl bootstatus "$IPHONE_NAME" -b || true
+          xcrun simctl bootstatus "$IPAD_NAME" -b || true
+          sleep 5
+
+          echo "Devices listing:"
+          xcrun simctl list devices
+
+          # Export UDIDs for later steps
+          export IPHONE_UDID=$(xcrun simctl list devices | awk -v name="$IPHONE_NAME" -F'[()]' '$0 ~ name" (" {print $2; exit}')
+          export IPAD_UDID=$(xcrun simctl list devices | awk -v name="$IPAD_NAME" -F'[()]' '$0 ~ name" (" {print $2; exit}')
+          echo "Resolved iPhone UDID: $IPHONE_UDID"
+          echo "Resolved iPad UDID: $IPAD_UDID"
+          echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
+          echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
 
       - name: Install app on iPhone
         shell: bash
@@ -86,8 +100,9 @@ jobs:
           # Match name from previous step
           IPHONE_NAME="iPhone 11 Pro Max"
           if ! xcrun simctl list devices | grep -q "$IPHONE_NAME ("; then IPHONE_NAME="iPhone 14 Pro Max"; fi
-          xcrun simctl uninstall "$IPHONE_NAME" com.marmooq.new || true
-          xcrun simctl install "$IPHONE_NAME" "$IOS_APP_PATH"
+          TARGET=${IPHONE_UDID:-$IPHONE_NAME}
+          xcrun simctl uninstall "$TARGET" com.marmooq.new || true
+          xcrun simctl install "$TARGET" "$IOS_APP_PATH"
 
       - name: Install app on iPad Pro 12.9
         shell: bash
@@ -96,8 +111,9 @@ jobs:
           echo "Installing app: $IOS_APP_PATH"
           IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
           if ! xcrun simctl list devices | grep -q "$IPAD_NAME ("; then IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"; fi
-          xcrun simctl uninstall "$IPAD_NAME" com.marmooq.new || true
-          xcrun simctl install "$IPAD_NAME" "$IOS_APP_PATH"
+          TARGET=${IPAD_UDID:-$IPAD_NAME}
+          xcrun simctl uninstall "$TARGET" com.marmooq.new || true
+          xcrun simctl install "$TARGET" "$IOS_APP_PATH"
 
       - name: Launch app and set clean status bars
         env:
@@ -106,20 +122,24 @@ jobs:
         run: |
           IPHONE_NAME="iPhone 11 Pro Max"; xcrun simctl list devices | grep -q "$IPHONE_NAME (" || IPHONE_NAME="iPhone 14 Pro Max"
           IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"; xcrun simctl list devices | grep -q "$IPAD_NAME (" || IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
-          xcrun simctl status_bar "$IPHONE_NAME" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
-          xcrun simctl status_bar "$IPAD_NAME" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 || true
-          xcrun simctl launch "$IPHONE_NAME" $BUNDLE_ID || true
-          xcrun simctl launch "$IPAD_NAME" $BUNDLE_ID || true
+          IPHONE_TARGET=${IPHONE_UDID:-$IPHONE_NAME}
+          IPAD_TARGET=${IPAD_UDID:-$IPAD_NAME}
+          xcrun simctl status_bar "$IPHONE_TARGET" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
+          xcrun simctl status_bar "$IPAD_TARGET" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 || true
+          xcrun simctl launch "$IPHONE_TARGET" $BUNDLE_ID || true
+          xcrun simctl launch "$IPAD_TARGET" $BUNDLE_ID || true
           sleep 5
 
       - name: Take screenshots
         shell: bash
         run: |
           mkdir -p screenshots
-          IPHONE_NAME="iPhone 11 Pro Max"; xcrun simctl list devices | grep -q "$IPHONE_NAME (" || IPHONE_NAME="iPhone 14 Pro Max"
-          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"; xcrun simctl list devices | grep -q "$IPAD_NAME (" || IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
-          xcrun simctl io "$IPHONE_NAME" screenshot ./screenshots/iphone_65_01.png
-          xcrun simctl io "$IPAD_NAME" screenshot ./screenshots/ipad_129_01.png
+          IPHONE_TARGET=${IPHONE_UDID:-"iPhone 11 Pro Max"}
+          xcrun simctl list devices | grep -q "$IPHONE_TARGET" || IPHONE_TARGET="iPhone 14 Pro Max"
+          IPAD_TARGET=${IPAD_UDID:-"iPad Pro (12.9-inch) (6th generation)"}
+          xcrun simctl list devices | grep -q "$IPAD_TARGET" || IPAD_TARGET="iPad Pro (12.9-inch) (5th generation)"
+          xcrun simctl io "$IPHONE_TARGET" screenshot ./screenshots/iphone_65_01.png
+          xcrun simctl io "$IPAD_TARGET" screenshot ./screenshots/ipad_129_01.png
 
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
