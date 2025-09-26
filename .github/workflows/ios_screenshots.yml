@@ -22,7 +22,7 @@ jobs:
           channel: stable
 
       - name: Flutter doctor
-        run: flutter doctor -v | sed -n '1,200p'
+        run: flutter doctor -v | head -n 200
 
       - name: Fetch dependencies
         run: flutter pub get
@@ -30,11 +30,14 @@ jobs:
       - name: Create .env
         run: |
           if [ ! -f .env ]; then
-            echo "SHOPIFY_STOREFRONT_TOKEN=${SHOPIFY_STOREFRONT_TOKEN:-REPLACE_ME}" > .env
+            echo "SHOPIFY_STOREFRONT_TOKEN=${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}" > .env
           fi
 
       - name: Build iOS for Simulator
         run: flutter build ios --simulator --no-codesign --dart-define=APP_INITIAL_ROUTE=${{ github.event.inputs.initial_route }}
+
+      - name: Build watchOS for Simulator
+        run: flutter build watchos --simulator --dart-define=APP_INITIAL_ROUTE=${{ github.event.inputs.initial_route }}
 
       - name: Boot Simulators
         shell: bash
@@ -44,109 +47,189 @@ jobs:
           echo "Available runtimes:" && xcrun simctl list runtimes
           echo "Available device types:" && xcrun simctl list devicetypes
 
-          # Pick latest available iOS runtime
-          # Extract an iOS runtime identifier like com.apple.CoreSimulator.SimRuntime.iOS-18-6
-          RUNTIME=$(xcrun simctl list runtimes | sed -n 's/.*- \(com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]*\).*/\1/p' | tail -n1)
-          echo "Using runtime identifier: ${RUNTIME:-<none>}"
-          if [ -z "${RUNTIME:-}" ]; then
+          # Select the latest iOS runtime
+          IOS_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and .name | startswith("iOS")) | .identifier' | sort -V | tail -n1)
+          if [ -z "$IOS_RUNTIME" ]; then
             echo "No available iOS runtime found" >&2
             xcrun simctl list runtimes
             exit 1
           fi
+          echo "Using iOS runtime identifier: $IOS_RUNTIME"
 
-          # Ensure target devices exist; create if missing
+          # Select the latest watchOS runtime
+          WATCH_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and .name | startswith("watchOS")) | .identifier' | sort -V | tail -n1)
+          if [ -z "$WATCH_RUNTIME" ]; then
+            echo "No available watchOS runtime found" >&2
+            xcrun simctl list runtimes
+            exit 1
+          fi
+          echo "Using watchOS runtime identifier: $WATCH_RUNTIME"
+
+          # Define target devices
           IPHONE_NAME="iPhone 11 Pro Max"
-          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
+          IPAD_NAME="iPad Pro 13-inch (M4)"
 
+          # Create iPhone simulator if it doesn't exist
           if ! xcrun simctl list devices | grep -q "$IPHONE_NAME ("; then
             echo "Creating $IPHONE_NAME"
-            if xcrun simctl list devicetypes | grep -q "$IPHONE_NAME"; then
-              xcrun simctl create "$IPHONE_NAME" "$IPHONE_NAME" "$RUNTIME"
+            DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.$IPHONE_NAME"
+            if xcrun simctl list devicetypes | grep -q "$DEVICETYPE"; then
+              xcrun simctl create "$IPHONE_NAME" "$DEVICETYPE" "$IOS_RUNTIME"
             else
-              echo "$IPHONE_NAME not available; falling back to iPhone 14 Pro Max (6.7-inch)"
-              IPHONE_NAME="iPhone 14 Pro Max"
-              xcrun simctl create "$IPHONE_NAME" "$IPHONE_NAME" "$RUNTIME"
+              echo "$IPHONE_NAME not available; falling back to iPhone XS Max"
+              IPHONE_NAME="iPhone XS Max"
+              xcrun simctl create "$IPHONE_NAME" "com.apple.CoreSimulator.SimDeviceType.iPhone-XS-Max" "$IOS_RUNTIME"
             fi
           fi
 
+          # Create iPad simulator if it doesn't exist
           if ! xcrun simctl list devices | grep -q "$IPAD_NAME ("; then
             echo "Creating $IPAD_NAME"
-            if xcrun simctl list devicetypes | grep -q "$IPAD_NAME"; then
-              xcrun simctl create "$IPAD_NAME" "$IPAD_NAME" "$RUNTIME"
+            DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.$IPAD_NAME"
+            if xcrun simctl list devicetypes | grep -q "$DEVICETYPE"; then
+              xcrun simctl create "$IPAD_NAME" "$DEVICETYPE" "$IOS_RUNTIME"
             else
-              echo "$IPAD_NAME not available; falling back to iPad Pro (12.9-inch) (5th generation)"
-              IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
-              xcrun simctl create "$IPAD_NAME" "$IPAD_NAME" "$RUNTIME"
+              echo "$IPAD_NAME not available; falling back to iPad Pro (12.9-inch) (6th generation)"
+              IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
+              xcrun simctl create "$IPAD_NAME" "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-inch-6th-generation" "$IOS_RUNTIME"
             fi
           fi
 
+          # Boot iOS simulators
           xcrun simctl boot "$IPHONE_NAME" || true
           xcrun simctl boot "$IPAD_NAME" || true
           open -a Simulator || true
-          # Wait until boot completes
           xcrun simctl bootstatus "$IPHONE_NAME" -b || true
           xcrun simctl bootstatus "$IPAD_NAME" -b || true
-          sleep 5
+          sleep 10
+
+          # Get iPhone UDID for pairing watches
+          IPHONE_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPHONE_NAME\") | .udid")
+          echo "Resolved iPhone UDID: $IPHONE_UDID"
+          echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
+
+          # Define watch devices (larger sizes where applicable)
+          declare -A WATCH_NAMES
+          WATCH_NAMES["ultra3"]="Apple Watch Ultra 3 - 49mm"
+          WATCH_NAMES["series11"]="Apple Watch Series 11 - 45mm"
+          WATCH_NAMES["series9"]="Apple Watch Series 9 - 45mm"
+          WATCH_NAMES["series6"]="Apple Watch Series 6 - 44mm"
+          WATCH_NAMES["series3"]="Apple Watch Series 3 - 42mm"
+
+          # Create watch simulators paired to iPhone
+          WATCH_UDIDS=()
+          for key in "${!WATCH_NAMES[@]}"; do
+            WATCH_NAME="${WATCH_NAMES[$key]}"
+            if ! xcrun simctl list devices | grep -q "$WATCH_NAME ("; then
+              echo "Creating $WATCH_NAME paired to iPhone"
+              DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.${WATCH_NAME// /_}"
+              if xcrun simctl list devicetypes | grep -q "$DEVICETYPE"; then
+                WATCH_UDID=$(xcrun simctl create "$WATCH_NAME" "$DEVICETYPE" "$WATCH_RUNTIME" "$IPHONE_UDID")
+              else
+                echo "$WATCH_NAME not available; falling back to similar device"
+                case $key in
+                  "ultra3") FALLBACK="Apple Watch Ultra - 49mm" ;;
+                  "series11") FALLBACK="Apple Watch Series 10 - 45mm" ;;
+                  "series9") FALLBACK="Apple Watch Series 9 - 45mm" ;;
+                  "series6") FALLBACK="Apple Watch Series 6 - 44mm" ;;
+                  "series3") FALLBACK="Apple Watch Series 3 - 42mm" ;;
+                esac
+                DEVICETYPE="com.apple.CoreSimulator.SimDeviceType.${FALLBACK// /_}"
+                WATCH_UDID=$(xcrun simctl create "$FALLBACK" "$DEVICETYPE" "$WATCH_RUNTIME" "$IPHONE_UDID")
+                WATCH_NAMES[$key]="$FALLBACK"
+              fi
+              WATCH_UDIDS+=("$WATCH_UDID")
+            else
+              WATCH_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$WATCH_RUNTIME\"[] | select(.name==\"${WATCH_NAMES[$key]}\") | .udid")
+              WATCH_UDIDS+=("$WATCH_UDID")
+            fi
+            echo "${key^^}_UDID=$WATCH_UDID" >> $GITHUB_ENV
+            xcrun simctl boot "$WATCH_NAME" || true
+            sleep 5
+          done
+
+          # Get iPad UDID
+          IPAD_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPAD_NAME\") | .udid")
+          echo "Resolved iPad UDID: $IPAD_UDID"
+          echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
 
           echo "Devices listing:"
           xcrun simctl list devices
 
-          # Export UDIDs for later steps
-          export IPHONE_UDID=$(xcrun simctl list devices | awk -v name="$IPHONE_NAME" -F'[()]' '$0 ~ name" (" {print $2; exit}')
-          export IPAD_UDID=$(xcrun simctl list devices | awk -v name="$IPAD_NAME" -F'[()]' '$0 ~ name" (" {print $2; exit}')
-          echo "Resolved iPhone UDID: $IPHONE_UDID"
-          echo "Resolved iPad UDID: $IPAD_UDID"
-          echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
-          echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
-
-      - name: Install app on iPhone
+      - name: Install app on iPhone and iPad
         shell: bash
         run: |
-          IOS_APP_PATH=$(ls build/ios/iphonesimulator/*.app | head -n1)
-          echo "Installing app: $IOS_APP_PATH"
-          # Match name from previous step
-          IPHONE_NAME="iPhone 11 Pro Max"
-          if ! xcrun simctl list devices | grep -q "$IPHONE_NAME ("; then IPHONE_NAME="iPhone 14 Pro Max"; fi
-          TARGET=${IPHONE_UDID:-$IPHONE_NAME}
-          xcrun simctl uninstall "$TARGET" com.marmooq.new || true
-          xcrun simctl install "$TARGET" "$IOS_APP_PATH"
+          IOS_APP_PATH=$(find build/ios/iphonesimulator -name "*.app" | head -n1)
+          echo "Installing iOS app: $IOS_APP_PATH"
+          if [ -z "$IOS_APP_PATH" ]; then
+            echo "No .app file found in build/ios/iphonesimulator" >&2
+            exit 1
+          fi
+          xcrun simctl uninstall "$IPHONE_UDID" com.marmooq.new || true
+          xcrun simctl install "$IPHONE_UDID" "$IOS_APP_PATH"
+          xcrun simctl uninstall "$IPAD_UDID" com.marmooq.new || true
+          xcrun simctl install "$IPAD_UDID" "$IOS_APP_PATH"
 
-      - name: Install app on iPad Pro 12.9
+      - name: Install watchOS app on Watches
         shell: bash
         run: |
-          IOS_APP_PATH=$(ls build/ios/iphonesimulator/*.app | head -n1)
-          echo "Installing app: $IOS_APP_PATH"
-          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
-          if ! xcrun simctl list devices | grep -q "$IPAD_NAME ("; then IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"; fi
-          TARGET=${IPAD_UDID:-$IPAD_NAME}
-          xcrun simctl uninstall "$TARGET" com.marmooq.new || true
-          xcrun simctl install "$TARGET" "$IOS_APP_PATH"
+          WATCH_APP_PATH=$(find build/watchos -name "*.watchkitapp" | head -n1)
+          echo "Installing watchOS app: $WATCH_APP_PATH"
+          if [ -z "$WATCH_APP_PATH" ]; then
+            echo "No .watchkitapp file found in build/watchos" >&2
+            exit 1
+          fi
+          WATCH_BUNDLE_ID="com.marmooq.new.watchkitapp"  # Adjust if different
+          for udid in ${ULTRA3_UDID} ${SERIES11_UDID} ${SERIES9_UDID} ${SERIES6_UDID} ${SERIES3_UDID}; do
+            if [ -n "$udid" ]; then
+              xcrun simctl uninstall "$udid" "$WATCH_BUNDLE_ID" || true
+              xcrun simctl install "$udid" "$WATCH_APP_PATH"
+            fi
+          done
 
-      - name: Launch app and set clean status bars
+      - name: Launch apps and set clean status bars
         env:
           BUNDLE_ID: com.marmooq.new
+          WATCH_BUNDLE_ID: com.marmooq.new.watchkitapp  # Adjust if different
         shell: bash
         run: |
-          IPHONE_NAME="iPhone 11 Pro Max"; xcrun simctl list devices | grep -q "$IPHONE_NAME (" || IPHONE_NAME="iPhone 14 Pro Max"
-          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"; xcrun simctl list devices | grep -q "$IPAD_NAME (" || IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
-          IPHONE_TARGET=${IPHONE_UDID:-$IPHONE_NAME}
-          IPAD_TARGET=${IPAD_UDID:-$IPAD_NAME}
-          xcrun simctl status_bar "$IPHONE_TARGET" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
-          xcrun simctl status_bar "$IPAD_TARGET" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 || true
-          xcrun simctl launch "$IPHONE_TARGET" $BUNDLE_ID || true
-          xcrun simctl launch "$IPAD_TARGET" $BUNDLE_ID || true
-          sleep 5
+          # Status bar for iPhone and iPad
+          xcrun simctl status_bar "$IPHONE_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
+          xcrun simctl status_bar "$IPAD_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 || true
+          # Launch iOS apps
+          xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || true
+          xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || true
+          # Launch watch apps (launches with paired iPhone)
+          for udid in ${ULTRA3_UDID} ${SERIES11_UDID} ${SERIES9_UDID} ${SERIES6_UDID} ${SERIES3_UDID}; do
+            if [ -n "$udid" ]; then
+              xcrun simctl launch "$udid" $WATCH_BUNDLE_ID || true
+            fi
+          done
+          sleep 15
 
       - name: Take screenshots
         shell: bash
         run: |
           mkdir -p screenshots
-          IPHONE_TARGET=${IPHONE_UDID:-"iPhone 11 Pro Max"}
-          xcrun simctl list devices | grep -q "$IPHONE_TARGET" || IPHONE_TARGET="iPhone 14 Pro Max"
-          IPAD_TARGET=${IPAD_UDID:-"iPad Pro (12.9-inch) (6th generation)"}
-          xcrun simctl list devices | grep -q "$IPAD_TARGET" || IPAD_TARGET="iPad Pro (12.9-inch) (5th generation)"
-          xcrun simctl io "$IPHONE_TARGET" screenshot ./screenshots/iphone_65_01.png
-          xcrun simctl io "$IPAD_TARGET" screenshot ./screenshots/ipad_129_01.png
+          # iPhone and iPad screenshots
+          for i in {1..3}; do
+            xcrun simctl io "$IPHONE_UDID" screenshot "./screenshots/iphone_65_0$i.png"
+            xcrun simctl io "$IPAD_UDID" screenshot "./screenshots/ipad_13_0$i.png"
+            sleep 3
+          done
+          # Watch screenshots
+          watches=("ULTRA3" "SERIES11" "SERIES9" "SERIES6" "SERIES3")
+          for watch in "${watches[@]}"; do
+            udid_var="${watch}_UDID"
+            udid="${!udid_var}"
+            if [ -n "$udid" ]; then
+              watch_name=$(echo $watch | tr '[:upper:]' '[:lower:]' | sed 's/^./\u&/')
+              for i in {1..3}; do
+                xcrun simctl io "$udid" screenshot "./screenshots/watch_${watch_name,,}_0$i.png"
+                sleep 3
+              done
+            fi
+          done
 
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
@@ -156,7 +239,5 @@ jobs:
 
       - name: Clear status bars
         run: |
-          xcrun simctl status_bar "iPhone 11 Pro Max" clear || true
-          xcrun simctl status_bar "iPad Pro (12.9-inch) (6th generation)" clear || true
-
-
+          xcrun simctl status_bar "$IPHONE_UDID" clear || true
+          xcrun simctl status_bar "$IPAD_UDID" clear || true
