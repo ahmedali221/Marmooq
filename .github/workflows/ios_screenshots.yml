@@ -11,7 +11,7 @@ on:
 jobs:
   screenshots:
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,37 +37,89 @@ jobs:
         run: flutter build ios --simulator --no-codesign --dart-define=APP_INITIAL_ROUTE=${{ github.event.inputs.initial_route }}
 
       - name: Boot Simulators
+        shell: bash
         run: |
-          xcrun simctl boot "iPhone 11 Pro Max" || true
-          xcrun simctl boot "iPad Pro (12.9-inch) (6th generation)" || true
-          open -a Simulator
-          sleep 10
+          echo "Xcode version:" && xcodebuild -version
+          echo "Available runtimes:" && xcrun simctl list runtimes
+          echo "Available device types:" && xcrun simctl list devicetypes
 
-      - name: Install app on iPhone 11 Pro Max
+          # Pick latest available iOS runtime
+          RUNTIME=$(xcrun simctl list runtimes | awk -F'[() ]+' '/iOS .*(Available|available)/ {print $NF}' | tail -n1)
+          echo "Using runtime: $RUNTIME"
+
+          # Ensure target devices exist; create if missing
+          IPHONE_NAME="iPhone 11 Pro Max"
+          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
+
+          if ! xcrun simctl list devices | grep -q "$IPHONE_NAME ("; then
+            echo "Creating $IPHONE_NAME"
+            if xcrun simctl list devicetypes | grep -q "$IPHONE_NAME"; then
+              xcrun simctl create "$IPHONE_NAME" "$IPHONE_NAME" "$RUNTIME"
+            else
+              echo "$IPHONE_NAME not available; falling back to iPhone 14 Pro Max (6.7-inch)"
+              IPHONE_NAME="iPhone 14 Pro Max"
+              xcrun simctl create "$IPHONE_NAME" "$IPHONE_NAME" "$RUNTIME"
+            fi
+          fi
+
+          if ! xcrun simctl list devices | grep -q "$IPAD_NAME ("; then
+            echo "Creating $IPAD_NAME"
+            if xcrun simctl list devicetypes | grep -q "$IPAD_NAME"; then
+              xcrun simctl create "$IPAD_NAME" "$IPAD_NAME" "$RUNTIME"
+            else
+              echo "$IPAD_NAME not available; falling back to iPad Pro (12.9-inch) (5th generation)"
+              IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
+              xcrun simctl create "$IPAD_NAME" "$IPAD_NAME" "$RUNTIME"
+            fi
+          fi
+
+          xcrun simctl boot "$IPHONE_NAME" || true
+          xcrun simctl boot "$IPAD_NAME" || true
+          open -a Simulator || true
+          sleep 15
+
+      - name: Install app on iPhone
+        shell: bash
         run: |
           IOS_APP_PATH=$(ls build/ios/iphonesimulator/*.app | head -n1)
-          xcrun simctl install "iPhone 11 Pro Max" "$IOS_APP_PATH"
+          echo "Installing app: $IOS_APP_PATH"
+          # Match name from previous step
+          IPHONE_NAME="iPhone 11 Pro Max"
+          if ! xcrun simctl list devices | grep -q "$IPHONE_NAME ("; then IPHONE_NAME="iPhone 14 Pro Max"; fi
+          xcrun simctl uninstall "$IPHONE_NAME" com.marmooq.new || true
+          xcrun simctl install "$IPHONE_NAME" "$IOS_APP_PATH"
 
       - name: Install app on iPad Pro 12.9
+        shell: bash
         run: |
           IOS_APP_PATH=$(ls build/ios/iphonesimulator/*.app | head -n1)
-          xcrun simctl install "iPad Pro (12.9-inch) (6th generation)" "$IOS_APP_PATH"
+          echo "Installing app: $IOS_APP_PATH"
+          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"
+          if ! xcrun simctl list devices | grep -q "$IPAD_NAME ("; then IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"; fi
+          xcrun simctl uninstall "$IPAD_NAME" com.marmooq.new || true
+          xcrun simctl install "$IPAD_NAME" "$IOS_APP_PATH"
 
       - name: Launch app and set clean status bars
         env:
           BUNDLE_ID: com.marmooq.new
+        shell: bash
         run: |
-          xcrun simctl status_bar "iPhone 11 Pro Max" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
-          xcrun simctl status_bar "iPad Pro (12.9-inch) (6th generation)" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 || true
-          xcrun simctl launch "iPhone 11 Pro Max" $BUNDLE_ID || true
-          xcrun simctl launch "iPad Pro (12.9-inch) (6th generation)" $BUNDLE_ID || true
+          IPHONE_NAME="iPhone 11 Pro Max"; xcrun simctl list devices | grep -q "$IPHONE_NAME (" || IPHONE_NAME="iPhone 14 Pro Max"
+          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"; xcrun simctl list devices | grep -q "$IPAD_NAME (" || IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
+          xcrun simctl status_bar "$IPHONE_NAME" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
+          xcrun simctl status_bar "$IPAD_NAME" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 || true
+          xcrun simctl launch "$IPHONE_NAME" $BUNDLE_ID || true
+          xcrun simctl launch "$IPAD_NAME" $BUNDLE_ID || true
           sleep 5
 
       - name: Take screenshots
+        shell: bash
         run: |
           mkdir -p screenshots
-          xcrun simctl io "iPhone 11 Pro Max" screenshot ./screenshots/iphone_65_01.png
-          xcrun simctl io "iPad Pro (12.9-inch) (6th generation)" screenshot ./screenshots/ipad_129_01.png
+          IPHONE_NAME="iPhone 11 Pro Max"; xcrun simctl list devices | grep -q "$IPHONE_NAME (" || IPHONE_NAME="iPhone 14 Pro Max"
+          IPAD_NAME="iPad Pro (12.9-inch) (6th generation)"; xcrun simctl list devices | grep -q "$IPAD_NAME (" || IPAD_NAME="iPad Pro (12.9-inch) (5th generation)"
+          xcrun simctl io "$IPHONE_NAME" screenshot ./screenshots/iphone_65_01.png
+          xcrun simctl io "$IPAD_NAME" screenshot ./screenshots/ipad_129_01.png
 
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
