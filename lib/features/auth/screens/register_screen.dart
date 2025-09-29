@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +30,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _acceptsMarketing = false;
+  bool _acceptedTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -67,7 +71,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _register() {
-    if (_formKey.currentState?.validate() ?? false) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى الموافقة على الشروط والأحكام للمتابعة'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    () async {
+      // Request App Tracking Transparency on iOS
+      if (Platform.isIOS) {
+        try {
+          await AppTrackingTransparency.requestTrackingAuthorization();
+        } catch (_) {}
+      }
+
       final normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
         _phoneController.text,
       );
@@ -81,7 +107,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           acceptsMarketing: _acceptsMarketing,
         ),
       );
-    }
+    }();
   }
 
   void _navigateToLogin() {
@@ -246,6 +272,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ],
                               ),
                         SizedBox(height: isTablet ? 20 : 16),
+
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -370,6 +397,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 'أوافق على تلقي الاتصالات التسويقية من المتجر',
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(fontSize: isTablet ? 16 : 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: isTablet ? 12 : 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Checkbox(
+                              value: _acceptedTerms,
+                              onChanged: (value) {
+                                setState(() {
+                                  _acceptedTerms = value ?? false;
+                                });
+                              },
+                            ),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(fontSize: isTablet ? 16 : 14),
+                                  children: [
+                                    const TextSpan(text: 'أوافق على '),
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.baseline,
+                                      baseline: TextBaseline.alphabetic,
+                                      child: InkWell(
+                                        onTap: () async {
+                                          final uri = Uri.parse(
+                                            'https://offeraatkw.com/78080082156/policies/38744293612.html?locale=ar',
+                                          );
+                                          await launchUrl(
+                                            uri,
+                                            mode:
+                                                LaunchMode.externalApplication,
+                                          );
+                                        },
+                                        child: Text(
+                                          'الشروط والأحكام وسياسة الخصوصية',
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            fontSize: isTablet ? 16 : 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
