@@ -79,8 +79,8 @@ class _SplashScreenState extends State<SplashScreen>
             // Navigate to products if authenticated
             context.go('/products');
           } else if (state.status == AuthStatus.unauthenticated) {
-            // Navigate to login if not authenticated
-            context.go('/login');
+            // Allow unauthenticated users to browse products
+            context.go('/products');
           }
         },
         child: Container(

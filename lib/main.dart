@@ -23,14 +23,20 @@ import 'package:marmooq/features/shipment/view/shipmentPage.dart';
 import 'package:marmooq/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(); // uses .env by default
 
+  // Request App Tracking Transparency authorization on iOS before any tracking.
+  await _requestTrackingAuthorizationIfNeeded();
+
   ShopifyConfig.setConfig(
     storefrontAccessToken: dotenv.env['SHOPIFY_STOREFRONT_TOKEN']!,
+    adminAccessToken: dotenv.env['ADMIN_ACCESS_TOKEN']!,
     storeUrl: 'fagk1b-a1.myshopify.com',
     storefrontApiVersion: '2025-07',
     language: 'ar',
@@ -44,6 +50,27 @@ Future<void> main() async {
   }
 
   runApp(const MyApp());
+}
+
+Future<void> _requestTrackingAuthorizationIfNeeded() async {
+  if (!Platform.isIOS) return;
+  try {
+    final TrackingStatus currentStatus =
+        await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (currentStatus == TrackingStatus.notDetermined) {
+      await AppTrackingTransparency.requestTrackingAuthorization();
+    }
+
+    // Optionally fetch IDFA only after authorization is granted.
+    final TrackingStatus updatedStatus =
+        await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (updatedStatus == TrackingStatus.authorized) {
+      // Initialize any analytics/ads SDKs here in the future if added.
+      // Example: await _initializeTrackingSdks();
+    }
+  } catch (_) {
+    // Silently ignore errors to avoid startup crashes.
+  }
 }
 
 class MyApp extends StatelessWidget {

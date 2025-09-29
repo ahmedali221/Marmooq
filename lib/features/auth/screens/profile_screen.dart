@@ -11,6 +11,62 @@ import 'package:marmooq/core/widgets/standard_app_bar.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  void _confirmDeleteAccount(BuildContext context, String userId) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final screenSize = MediaQuery.of(ctx).size;
+        final isTablet = screenSize.width > 600;
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog.adaptive(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'حذف الحساب',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: const Text(
+              'سيتم حذف حسابك وجميع بياناته نهائياً. لا يمكن التراجع عن هذا الإجراء.',
+              style: TextStyle(fontFamily: 'Tajawal'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text(
+                  'إلغاء',
+                  style: TextStyle(fontFamily: 'Tajawal', color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  context.read<AuthBloc>().add(
+                    AuthDeleteAccount(userId: userId),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: Text(
+                  'تأكيد الحذف',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: isTablet ? 16 : 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
@@ -245,6 +301,38 @@ class ProfileScreen extends StatelessWidget {
                               fontSize: isTablet ? 18 : 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.orange[600],
+                              fontFamily: 'Tajawal',
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: isTablet ? 16 : 12),
+
+                      // Delete Account Button
+                      Container(
+                        margin: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 32 : 20,
+                        ),
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () {
+                            final id = user.id;
+                            if (id != null && id.isNotEmpty) {
+                              _confirmDeleteAccount(context, id);
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              vertical: isTablet ? 20 : 16,
+                            ),
+                          ),
+                          child: const Text(
+                            'حذف الحساب',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.red,
                               fontFamily: 'Tajawal',
                             ),
                           ),

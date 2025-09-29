@@ -62,5 +62,7 @@
 	<string>UIStatusBarStyleDefault</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use your device identifier to show relevant offers, measure campaign performance, and improve your shopping experience. We do not sell your data.</string>
 </dict>
 </plist>
