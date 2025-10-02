@@ -89,6 +89,17 @@ class ShopifyAuthService {
           ? null
           : ValidationUtils.normalizeKuwaitPhone(phone);
 
+      // Debug phone normalization
+      if (phone != null && phone.trim().isNotEmpty) {
+        debugPrint('Shopify user creation: Original phone: $phone');
+        debugPrint('Shopify user creation: Normalized phone: $normalizedPhone');
+        if (normalizedPhone == null || normalizedPhone.isEmpty) {
+          debugPrint(
+            'Shopify user creation: Phone normalization failed - phone will be null',
+          );
+        }
+      }
+
       final user = await _shopifyAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,

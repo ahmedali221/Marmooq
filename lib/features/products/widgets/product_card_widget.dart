@@ -1,13 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/models/src/cart/inputs/cart_line_update_input/cart_line_update_input.dart';
 import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
 import 'package:marmooq/features/cart/view_model/cart_events.dart';
 import 'package:marmooq/features/cart/view_model/cart_states.dart';
 import 'package:marmooq/features/products/model/product_model.dart';
-import 'package:marmooq/features/products/view/product_details_view.dart';
 
 class ProductCardWidget extends StatefulWidget {
   final Product product;
@@ -154,12 +154,7 @@ class _ProductCardWidgetState extends State<ProductCardWidget>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailsView(product: widget.product),
-          ),
-        );
+        context.go('/product-details', extra: widget.product);
       },
       child: Container(
         decoration: BoxDecoration(

@@ -38,13 +38,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     context.read<AuthBloc>().add(AuthInitialize());
-    _firstNameController.text = 'Demo';
-    _lastNameController.text = 'User';
-    _emailController.text = 'demo@marmooq.com';
-    _phoneController.text = '55555555';
-    _passwordController.text = 'Demo@12345';
-    _confirmPasswordController.text = 'Demo@12345';
-    _acceptsMarketing = true;
   }
 
   @override
@@ -114,6 +107,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
     context.go('/login');
   }
 
+  void _showErrorDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red, size: 28),
+                SizedBox(width: 8),
+                Text(
+                  'خطأ في التسجيل',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Text(errorMessage, style: const TextStyle(fontSize: 16)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text(
+                  'موافق',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -132,19 +169,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Navigate to products view after successful registration
               context.go('/products');
             } else if (state.hasError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.errorMessage ?? 'Registration failed'),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 4),
-                  action: SnackBarAction(
-                    label: 'إغلاق',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    },
-                  ),
-                ),
+              _showErrorDialog(
+                context,
+                state.errorMessage ?? 'Registration failed',
               );
             }
           },
@@ -272,7 +299,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ],
                               ),
                         SizedBox(height: isTablet ? 20 : 16),
-
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -301,6 +327,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
                             labelText: 'الهاتف (اختياري)',
+                            hintText: 'يجب أن يبدأ الرقم بـ 5 أو 6',
                             prefixIcon: const Icon(FeatherIcons.phone),
                             border: const OutlineInputBorder(),
                             contentPadding: EdgeInsets.symmetric(
@@ -310,8 +337,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           validator: (value) {
                             if (value != null && value.isNotEmpty) {
-                              if (!ValidationUtils.isValidKuwaitPhone(value)) {
-                                return 'يرجى إدخال رقم هاتف صالح';
+                              final normalized =
+                                  ValidationUtils.normalizeKuwaitPhone(value);
+                              if (!ValidationUtils.isValidKuwaitPhone(
+                                normalized,
+                              )) {
+                                return 'يرجى إدخال رقم هاتف صالح (يجب أن يبدأ بـ 5 أو 6 أو 9)';
                               }
                             }
                             return null;

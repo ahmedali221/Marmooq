@@ -7,10 +7,8 @@ class ValidationUtils {
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
 
-  /// Password validation regex for strong passwords.
-  static final RegExp _passwordRegex = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
-  );
+  /// Password validation regex for passwords with more than 6 characters.
+  static final RegExp _passwordRegex = RegExp(r'^.{7,}$');
 
   /// Validates email format.
   static bool isValidEmail(String email) {
@@ -18,15 +16,9 @@ class ValidationUtils {
     return _emailRegex.hasMatch(email.trim());
   }
 
-  /// Validates password strength according to security guidelines.
-  /// Requirements:
-  /// - At least 8 characters long
-  /// - Contains at least one lowercase letter
-  /// - Contains at least one uppercase letter
-  /// - Contains at least one digit
-  /// - Contains at least one special character
+  /// Validates password length (more than 6 characters).
   static bool isValidPassword(String password) {
-    if (password.isEmpty || password.length < 8) return false;
+    if (password.isEmpty) return false;
     return _passwordRegex.hasMatch(password);
   }
 
@@ -35,22 +27,10 @@ class ValidationUtils {
     if (password.isEmpty) {
       return 'Password is required';
     }
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+    if (!RegExp(r'^.{7,}$').hasMatch(password)) {
+      return 'Password must be more than 6 characters';
     }
-    if (!RegExp(r'[a-z]').hasMatch(password)) {
-      return 'Password must contain at least one lowercase letter';
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-    if (!RegExp(r'\d').hasMatch(password)) {
-      return 'Password must contain at least one digit';
-    }
-    if (!RegExp(r'[@$!%*?&]').hasMatch(password)) {
-      return 'Password must contain at least one special character ';
-    }
-    return 'Password is strong';
+    return 'Password is valid';
   }
 
   /// Validates name format (non-empty, reasonable length).
@@ -160,29 +140,29 @@ class ValidationUtils {
     return 'Phone is valid';
   }
 
-  /// Validates a Kuwait phone number.
+  /// Validates a Kuwait mobile phone number.
   /// Accepted inputs:
-  /// - Local 8-digit numbers (e.g., 5XXXXXXX, 6XXXXXXX, 9XXXXXXX)
-  /// - With country code +965 followed by 8 digits
+  /// - Local 8-digit mobile numbers starting with 5, 6, or 9 (e.g., 512345678)
+  /// - With country code +965 followed by 8 digits starting with 5, 6, or 9
   /// - With leading zeros/spaces/dashes which will be normalized
   static bool isValidKuwaitPhone(String phone) {
     if (phone.isEmpty) return true; // Optional field
     final normalized = normalizeKuwaitPhone(phone);
-    // E.164 for Kuwait must be +965 followed by 8 digits
-    final RegExp kwRegex = RegExp(r'^\+965[0-9]{8}$');
+    // E.164 for Kuwait mobile must be +965 followed by 8 digits starting with 5, 6, or 9
+    final RegExp kwRegex = RegExp(r'^\+965[569]\d{7}$');
     return kwRegex.hasMatch(normalized);
   }
 
   /// Normalizes any Kuwait phone input to E.164: +965XXXXXXXX
-  /// If input cannot be normalized, returns the trimmed original input.
+  /// If input cannot be normalized to a valid mobile number, returns the trimmed original input.
   static String normalizeKuwaitPhone(String phone) {
     if (phone.isEmpty) return '';
     var p = phone.trim();
     // Remove all non-digits except leading +
     p = p.replaceAll(RegExp(r'[^0-9+]'), '');
 
-    // If already E.164 +965XXXXXXXX
-    final RegExp e164Kw = RegExp(r'^\+965[0-9]{8}$');
+    // If already E.164 +965XXXXXXXX with valid mobile prefix
+    final RegExp e164Kw = RegExp(r'^\+965[5692]\d{7}$');
     if (e164Kw.hasMatch(p)) return p;
 
     // If starts with 00965 or 0965 → convert to +965
@@ -196,21 +176,27 @@ class ValidationUtils {
     if (p.startsWith('+965')) {
       var rest = p.substring(4);
       rest = rest.replaceAll(RegExp(r'^0+'), '');
-      if (rest.length == 8) return '+965' + rest;
+      if (rest.length == 8 && RegExp(r'^[569]\d{7}$').hasMatch(rest)) {
+        return '+965' + rest;
+      }
     }
 
-    // If local 8-digit number starting with valid mobile prefixes 5/6/9 or landline 2
+    // If local 8-digit number starting with valid mobile prefixes 5/6/9
     var digitsOnly = p.replaceAll(RegExp(r'[^0-9]'), '');
     digitsOnly = digitsOnly.replaceAll(
       RegExp(r'^965'),
       '',
-    ); // remove leading 965 if present
+    ); // Remove leading 965 if present
     digitsOnly = digitsOnly.replaceAll(
       RegExp(r'^0+'),
       '',
-    ); // remove leading zeros
-    if (digitsOnly.length == 8) {
-      return '+965' + digitsOnly;
+    ); // Remove leading zeros
+    if (digitsOnly.length >= 8) {
+      // Truncate to 8 digits if more, then check prefix
+      var localNumber = digitsOnly.substring(0, 8);
+      if (RegExp(r'^[569]\d{7}$').hasMatch(localNumber)) {
+        return '+965' + localNumber;
+      }
     }
 
     // Fallback: return trimmed original if unable to normalize

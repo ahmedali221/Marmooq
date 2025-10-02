@@ -18,6 +18,9 @@ import 'package:marmooq/features/products/view_model/products_bloc.dart';
 import 'package:marmooq/features/shipment/repository/shipment_repository.dart';
 import 'package:marmooq/features/shipment/view/orderConfirmationPage.dart';
 import 'package:marmooq/features/shipment/view/shipmentPage.dart';
+import 'package:marmooq/features/products/view/collection_details_view.dart';
+import 'package:marmooq/features/products/view/product_details_view.dart';
+import 'package:marmooq/features/products/model/product_model.dart' as local;
 // import 'package:marmooq/features/shipment/view_model/shipment_bloc.dart';
 
 import 'package:marmooq/splash_screen.dart';
@@ -115,6 +118,25 @@ class MyApp extends StatelessWidget {
         //   builder: (context, state) => const AddressesScreen(),
         // ),
         GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
+        GoRoute(
+          path: '/collection',
+          builder: (context, state) {
+            final Map<String, dynamic> extra =
+                state.extra as Map<String, dynamic>;
+            return CollectionDetailsView(
+              collectionName: extra['collectionName'] as String,
+              products: extra['products'] as List<local.Product>,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/product-details',
+          name: 'product-details',
+          builder: (context, state) {
+            final local.Product product = state.extra as local.Product;
+            return ProductDetailsView(product: product);
+          },
+        ),
         GoRoute(
           path: '/shipment',
           builder: (context, state) {

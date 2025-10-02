@@ -2,11 +2,6 @@ name: iOS Screenshots
 
 on:
   workflow_dispatch:
-    inputs:
-      initial_route:
-        description: "Initial route to open (e.g., /products)"
-        required: false
-        default: "/products"
 
 jobs:
   screenshots:
@@ -34,7 +29,7 @@ jobs:
           fi
 
       - name: Build iOS for Simulator
-        run: flutter build ios --simulator --no-codesign --dart-define=APP_INITIAL_ROUTE=${{ github.event.inputs.initial_route }}
+        run: flutter build ios --simulator --no-codesign
 
       - name: Build Watch App (if WatchKit target exists)
         shell: bash
@@ -203,8 +198,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p screenshots
-          PAGES=("${{ github.event.inputs.initial_route }}" "/login" "/register" "/profile" "/cart")
-          PAGE_NAMES=("products" "login" "register" "profile" "cart")
+          PAGES=("/profile" "/products" "/product-details" "/collection" "/cart")
+          PAGE_NAMES=("profile" "products" "product_details" "collection" "cart")
           
           echo "Capturing screenshots for pages: ${PAGES[*]}"
 
@@ -219,7 +214,7 @@ jobs:
             echo "Launching iOS apps with route $page"
             xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
             xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
-            sleep 5
+            sleep 8
             xcrun simctl io "$IPHONE_UDID" screenshot "./screenshots/iphone_65_${page_name}.png"
             xcrun simctl io "$IPAD_UDID" screenshot "./screenshots/ipad_13_${page_name}.png"
           done
@@ -243,7 +238,7 @@ jobs:
                   page_name="${PAGE_NAMES[$i]}"
                   echo "Launching Watch app on $model with route $page"
                   xcrun simctl launch "$udid" $WATCH_BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
-                  sleep 5
+                  sleep 8
                   xcrun simctl io "$udid" screenshot "./screenshots/watch_${model_slug}_${page_name}.png"
                 done
               fi

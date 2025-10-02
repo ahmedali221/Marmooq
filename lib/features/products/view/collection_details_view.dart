@@ -11,6 +11,9 @@ import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:marmooq/core/utils/responsive_utils.dart';
 
 class CollectionDetailsView extends StatefulWidget {
+  /// Route name for navigation
+  static const String routeName = '/collection';
+
   final String collectionName;
   final List<Product> products;
 
@@ -41,7 +44,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         appBar: StandardAppBar(
           backgroundColor: Colors.white,
           title: widget.collectionName,
-          onLeadingPressed: () => Navigator.of(context).pop(),
+          showLeading: true,
+          onLeadingPressed: () => context.go('/products'),
           actions: [_buildCartIcon()],
           elevation: 0,
           centerTitle: true,
@@ -62,15 +66,20 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            FeatherIcons.package, 
-            size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 80), 
+            FeatherIcons.package,
+            size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 80),
             color: Colors.grey[400],
           ),
-          SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+          ),
           Text(
             'لا توجد منتجات متاحة',
             style: TextStyle(
-              fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 18),
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                mobile: 18,
+              ),
               fontWeight: FontWeight.w500,
               color: Colors.grey,
               fontFamily: 'Tajawal',
@@ -87,10 +96,20 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
       mobile: GridView.builder(
         padding: ResponsiveUtils.getResponsivePadding(context),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(context),
-          childAspectRatio: ResponsiveUtils.getResponsiveGridChildAspectRatio(context),
-          crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-          mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+          crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(
+            context,
+          ),
+          childAspectRatio: ResponsiveUtils.getResponsiveGridChildAspectRatio(
+            context,
+          ),
+          crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(
+            context,
+            mobile: 12,
+          ),
+          mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(
+            context,
+            mobile: 16,
+          ),
         ),
         itemCount: _filteredProducts.length,
         cacheExtent: 500, // Cache more items for smoother scrolling
@@ -102,21 +121,36 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
       tablet: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: ResponsiveUtils.getResponsiveContainerWidth(context, tabletRatio: 0.9),
+            maxWidth: ResponsiveUtils.getResponsiveContainerWidth(
+              context,
+              tabletRatio: 0.9,
+            ),
           ),
           child: GridView.builder(
             padding: ResponsiveUtils.getResponsivePadding(context),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(context),
-              childAspectRatio: ResponsiveUtils.getResponsiveGridChildAspectRatio(context),
-              crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-              mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+              crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(
+                context,
+              ),
+              childAspectRatio:
+                  ResponsiveUtils.getResponsiveGridChildAspectRatio(context),
+              crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                mobile: 12,
+              ),
+              mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                mobile: 16,
+              ),
             ),
             itemCount: _filteredProducts.length,
             cacheExtent: 500,
             itemBuilder: (context, index) {
               final product = _filteredProducts[index];
-              return ProductCardWidget(key: ValueKey(product.id), product: product);
+              return ProductCardWidget(
+                key: ValueKey(product.id),
+                product: product,
+              );
             },
           ),
         ),
@@ -124,21 +158,36 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
       desktop: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: ResponsiveUtils.getResponsiveContainerWidth(context, desktopRatio: 0.8),
+            maxWidth: ResponsiveUtils.getResponsiveContainerWidth(
+              context,
+              desktopRatio: 0.8,
+            ),
           ),
           child: GridView.builder(
             padding: ResponsiveUtils.getResponsivePadding(context),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(context),
-              childAspectRatio: ResponsiveUtils.getResponsiveGridChildAspectRatio(context),
-              crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-              mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+              crossAxisCount: ResponsiveUtils.getResponsiveGridCrossAxisCount(
+                context,
+              ),
+              childAspectRatio:
+                  ResponsiveUtils.getResponsiveGridChildAspectRatio(context),
+              crossAxisSpacing: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                mobile: 12,
+              ),
+              mainAxisSpacing: ResponsiveUtils.getResponsiveSpacing(
+                context,
+                mobile: 16,
+              ),
             ),
             itemCount: _filteredProducts.length,
             cacheExtent: 500,
             itemBuilder: (context, index) {
               final product = _filteredProducts[index];
-              return ProductCardWidget(key: ValueKey(product.id), product: product);
+              return ProductCardWidget(
+                key: ValueKey(product.id),
+                product: product,
+              );
             },
           ),
         ),
@@ -159,61 +208,91 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
       builder: (context, itemCount) {
         return Material(
           color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(
-                ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+            ),
+            onTap: () => context.go('/cart'),
+            child: Container(
+              padding: EdgeInsets.all(
+                ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
               ),
-              onTap: () => context.go('/cart'),
-              child: Container(
-                padding: EdgeInsets.all(
-                  ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 25,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Icon(
                     FeatherIcons.shoppingBag,
                     color: Colors.black87,
-                    size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 22),
+                    size: ResponsiveUtils.getResponsiveIconSize(
+                      context,
+                      mobile: 22,
+                    ),
                   ),
                   if (itemCount > 0)
                     Positioned(
-                      right: -ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
-                      top: -ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
+                      right: -ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 4,
+                      ),
+                      top: -ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 4,
+                      ),
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 6),
-                          vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 2),
+                          horizontal: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 6,
+                          ),
+                          vertical: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 2,
+                          ),
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.brand,
                           borderRadius: BorderRadius.circular(
-                            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                            ResponsiveUtils.getResponsiveBorderRadius(
+                              context,
+                              mobile: 12,
+                            ),
                           ),
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         constraints: BoxConstraints(
-                          minWidth: ResponsiveUtils.getResponsiveWidth(context, mobile: 18),
-                          minHeight: ResponsiveUtils.getResponsiveHeight(context, mobile: 18),
+                          minWidth: ResponsiveUtils.getResponsiveWidth(
+                            context,
+                            mobile: 18,
+                          ),
+                          minHeight: ResponsiveUtils.getResponsiveHeight(
+                            context,
+                            mobile: 18,
+                          ),
                         ),
                         child: Text(
                           itemCount > 99 ? '99+' : itemCount.toString(),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 10),
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(
+                              context,
+                              mobile: 10,
+                            ),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,

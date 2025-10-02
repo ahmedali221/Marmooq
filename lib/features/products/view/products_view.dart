@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:marmooq/features/products/model/product_model.dart';
 import 'package:marmooq/features/products/view/collection_details_view.dart';
 import 'package:marmooq/features/products/view_model/products_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:marmooq/features/products/view_model/products_event.dart';
 import 'package:marmooq/features/products/view_model/products_state.dart';
 import 'package:marmooq/features/products/widgets/product_card_widget.dart';
@@ -861,18 +862,14 @@ class _ProductsViewState extends State<ProductsView>
             ),
             child: TextButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CollectionDetailsView(
-                      collectionName: collectionName,
-                      products: productsList
-                          .map(
-                            (p) => Product.fromJson(p as Map<String, dynamic>),
-                          )
-                          .toList(),
-                    ),
-                  ),
+                context.go(
+                  CollectionDetailsView.routeName,
+                  extra: {
+                    'collectionName': collectionName,
+                    'products': productsList
+                        .map((p) => Product.fromJson(p as Map<String, dynamic>))
+                        .toList(),
+                  },
                 );
               },
               child: Row(

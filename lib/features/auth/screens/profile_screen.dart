@@ -11,6 +11,19 @@ import 'package:marmooq/core/widgets/standard_app_bar.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  String _formatPhoneNumber(String? phone) {
+    if (phone == null || phone.isEmpty) {
+      return 'غير محدد';
+    }
+
+    // Remove +965 country code if present
+    if (phone.startsWith('+965')) {
+      return phone.substring(4).trim();
+    }
+
+    return phone;
+  }
+
   void _confirmDeleteAccount(BuildContext context, String userId) {
     showDialog(
       context: context,
@@ -271,7 +284,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       _buildMenuItem(
                         icon: FeatherIcons.phone,
-                        title: 'الهاتف: ${user.phone ?? 'غير محدد'}',
+                        title: 'الهاتف: ${_formatPhoneNumber(user.phone)}',
                         onTap: () {
                           // Navigate to phone settings
                         },
