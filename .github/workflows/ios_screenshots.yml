@@ -6,7 +6,7 @@ on:
 jobs:
   screenshots:
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,7 +17,7 @@ jobs:
           channel: stable
 
       - name: Flutter doctor
-        run: flutter doctor -v | head -n 200
+        run: flutter doctor -v | head -n 100
 
       - name: Fetch dependencies
         run: flutter pub get
@@ -31,33 +31,11 @@ jobs:
       - name: Build iOS for Simulator
         run: flutter build ios --simulator --no-codesign
 
-      - name: Build Watch App (if WatchKit target exists)
-        shell: bash
-        run: |
-          cd ios
-          if xcodebuild -list -workspace Runner.xcworkspace | grep -q "Runner-watchos"; then
-            echo "Building Watch app..."
-            xcodebuild clean -workspace Runner.xcworkspace -scheme Runner-watchos -sdk watchsimulator -configuration Debug
-            xcodebuild build -workspace Runner.xcworkspace -scheme Runner-watchos -sdk watchsimulator -configuration Debug
-            WATCH_APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" -path "*/watchsimulator/*" | grep -i watchkit | head -n1)
-            if [ -n "$WATCH_APP_PATH" ]; then
-              echo "Watch app built at: $WATCH_APP_PATH"
-              echo "WATCH_APP_PATH=$WATCH_APP_PATH" >> $GITHUB_ENV
-            else
-              echo "Watch app not found, skipping Watch builds" >&2
-            fi
-          else
-            echo "No WatchKit target found, skipping Watch builds" >&2
-          fi
-          cd ..
-
       - name: Boot Simulators
         shell: bash
         run: |
           set -euo pipefail
           echo "Xcode version:" && xcodebuild -version
-          echo "Available runtimes:" && xcrun simctl list runtimes
-          echo "Available device types:" && xcrun simctl list devicetypes
 
           # Select the latest iOS runtime
           IOS_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and (.name | type == "string" and startswith("iOS"))) | .identifier' | sort -V | tail -n1)
@@ -66,15 +44,6 @@ jobs:
             exit 1
           fi
           echo "Using iOS runtime: $IOS_RUNTIME"
-
-          # Select the latest watchOS runtime
-          WATCH_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and (.name | type == "string" and startswith("watchOS"))) | .identifier' | sort -V | tail -n1)
-          if [ -z "$WATCH_RUNTIME" ]; then
-            echo "No available watchOS runtime found, proceeding without Watch support" >&2
-            WATCH_RUNTIME=""
-          else
-            echo "Using watchOS runtime: $WATCH_RUNTIME"
-          fi
 
           # iPhone setup - 6.5" display
           IPHONE_NAME="iPhone 11 Pro Max"
@@ -108,7 +77,7 @@ jobs:
           open -a Simulator || true
           xcrun simctl bootstatus "$IPHONE_NAME" -b || true
           xcrun simctl bootstatus "$IPAD_NAME" -b || true
-          sleep 10
+          sleep 5
 
           # Get iOS UDIDs
           IPHONE_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPHONE_NAME\") | .udid")
@@ -118,42 +87,12 @@ jobs:
           echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
           echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
 
-          # Watch devices (only if Watch app is built and watchOS runtime exists)
-          if [ -n "${WATCH_APP_PATH:-}" ] && [ -n "$WATCH_RUNTIME" ]; then
-            WATCH_MODELS=(
-              "Apple Watch Ultra 3 - 49mm:com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Ultra-3-49mm:410x502"
-              "Apple Watch Series 11 - 46mm:com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-11-46mm:416x496"
-              "Apple Watch Series 9 - 45mm:com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-9-45mm:396x484"
-              "Apple Watch Series 6 - 44mm:com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-6-44mm:368x448"
-              "Apple Watch Series 3 - 42mm:com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-3-42mm:312x390"
-            )
-            declare -A WATCH_UDIDS
-            for model_entry in "${WATCH_MODELS[@]}"; do
-              IFS=':' read -r model DEVICETYPE RESOLUTION <<< "$model_entry"
-              if ! xcrun simctl list devices | grep -q "$model ("; then
-                echo "Creating $model"
-                xcrun simctl create "$model" "$DEVICETYPE" "$WATCH_RUNTIME" || {
-                  echo "Failed to create $model, skipping" >&2
-                  continue
-                }
-              fi
-              xcrun simctl boot "$model" || true
-              udid=$(xcrun simctl list devices --json | jq -r ".devices.\"$WATCH_RUNTIME\"[] | select(.name==\"$model\") | .udid")
-              WATCH_UDIDS["$model"]="$udid"
-              echo "Watch $model UDID: $udid (Resolution: $RESOLUTION)"
-              echo "WATCH_${model// /_}_UDID=$udid" >> $GITHUB_ENV
-            done
-          else
-            echo "Skipping Watch simulator creation due to missing Watch app or watchOS runtime"
-          fi
-
-          echo "All devices booted"
+          echo "Devices booted"
 
       - name: Install app on iPhone
         shell: bash
         run: |
           IOS_APP_PATH=$(find build/ios/iphonesimulator -name "*.app" | head -n1)
-          echo "Installing iOS app on iPhone: $IOS_APP_PATH"
           if [ -z "$IOS_APP_PATH" ]; then
             echo "No .app file found" >&2
             exit 1
@@ -165,36 +104,16 @@ jobs:
         shell: bash
         run: |
           IOS_APP_PATH=$(find build/ios/iphonesimulator -name "*.app" | head -n1)
-          echo "Installing iOS app on iPad: $IOS_APP_PATH"
+          if [ -z "$IOS_APP_PATH" ]; then
+            echo "No .app file found" >&2
+            exit 1
+          fi
           xcrun simctl uninstall "$IPAD_UDID" com.marmooq.new || true
           xcrun simctl install "$IPAD_UDID" "$IOS_APP_PATH"
-
-      - name: Install Watch apps (if built)
-        if: env.WATCH_APP_PATH != '' && env.WATCH_RUNTIME != ''
-        shell: bash
-        run: |
-          WATCH_BUNDLE_ID="com.marmooq.new.watchkitapp"
-          WATCH_MODELS=(
-            "Apple Watch Ultra 3 - 49mm"
-            "Apple Watch Series 11 - 46mm"
-            "Apple Watch Series 9 - 45mm"
-            "Apple Watch Series 6 - 44mm"
-            "Apple Watch Series 3 - 42mm"
-          )
-          for model in "${WATCH_MODELS[@]}"; do
-            udid_var="WATCH_${model// /_}_UDID"
-            udid=${!udid_var}
-            if [ -n "$udid" ]; then
-              echo "Installing Watch app on $model: $udid"
-              xcrun simctl uninstall "$udid" "$WATCH_BUNDLE_ID" || true
-              xcrun simctl install "$udid" "$WATCH_APP_PATH"
-            fi
-          done
 
       - name: Launch apps and take screenshots
         env:
           BUNDLE_ID: com.marmooq.new
-          WATCH_BUNDLE_ID: com.marmooq.new.watchkitapp
         shell: bash
         run: |
           mkdir -p screenshots
@@ -203,7 +122,7 @@ jobs:
           
           echo "Capturing screenshots for pages: ${PAGES[*]}"
 
-          # Set clean status bars for iOS devices
+          # Set clean status bars
           xcrun simctl status_bar "$IPHONE_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
           xcrun simctl status_bar "$IPAD_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 || true
 
@@ -211,41 +130,13 @@ jobs:
           for i in {0..4}; do
             page="${PAGES[$i]}"
             page_name="${PAGE_NAMES[$i]}"
-            echo "Launching iOS apps with route $page"
+            echo "Launching with route $page"
             xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
             xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
-            sleep 8
+            sleep 5
             xcrun simctl io "$IPHONE_UDID" screenshot "./screenshots/iphone_65_${page_name}.png"
             xcrun simctl io "$IPAD_UDID" screenshot "./screenshots/ipad_13_${page_name}.png"
           done
-
-          # Launch Watch apps and take screenshots (if built)
-          if [ -n "${WATCH_APP_PATH:-}" ] && [ -n "${WATCH_RUNTIME:-}" ]; then
-            WATCH_MODELS=(
-              "Apple Watch Ultra 3 - 49mm"
-              "Apple Watch Series 11 - 46mm"
-              "Apple Watch Series 9 - 45mm"
-              "Apple Watch Series 6 - 44mm"
-              "Apple Watch Series 3 - 42mm"
-            )
-            for model in "${WATCH_MODELS[@]}"; do
-              udid_var="WATCH_${model// /_}_UDID"
-              udid=${!udid_var}
-              if [ -n "$udid" ]; then
-                model_slug=$(echo "$model" | tr ' ()' '---' | tr -d '[:space:]')
-                for i in {0..4}; do
-                  page="${PAGES[$i]}"
-                  page_name="${PAGE_NAMES[$i]}"
-                  echo "Launching Watch app on $model with route $page"
-                  xcrun simctl launch "$udid" $WATCH_BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
-                  sleep 8
-                  xcrun simctl io "$udid" screenshot "./screenshots/watch_${model_slug}_${page_name}.png"
-                done
-              fi
-            done
-          else
-            echo "Skipping Watch screenshots due to missing Watch app or watchOS runtime"
-          fi
 
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
@@ -254,6 +145,7 @@ jobs:
           path: screenshots
 
       - name: Clear status bars
+        if: always()
         run: |
           xcrun simctl status_bar "$IPHONE_UDID" clear || true
           xcrun simctl status_bar "$IPAD_UDID" clear || true
