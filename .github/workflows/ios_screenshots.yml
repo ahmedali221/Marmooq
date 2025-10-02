@@ -111,7 +111,7 @@ jobs:
           xcrun simctl uninstall "$IPAD_UDID" com.marmooq.new || true
           xcrun simctl install "$IPAD_UDID" "$IOS_APP_PATH"
 
-      - name: Launch apps and take screenshots
+      - name: Launch apps and accept permissions
         env:
           BUNDLE_ID: com.marmooq.new
         shell: bash
@@ -125,6 +125,11 @@ jobs:
           # Set clean status bars
           xcrun simctl status_bar "$IPHONE_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
           xcrun simctl status_bar "$IPAD_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 || true
+
+          # Initial launch to accept permissions
+          xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || true
+          xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || true
+          sleep 10  # Increased sleep to allow permission dialog to appear and potentially auto-accept or timeout
 
           # Launch iOS apps and take screenshots for each page
           for i in {0..4}; do
