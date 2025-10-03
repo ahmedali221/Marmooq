@@ -22,7 +22,9 @@ jobs:
             echo "SHOPIFY_STOREFRONT_TOKEN=${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}" > .env
           fi
       - name: Build iOS for Simulator
-        run: flutter build ios --simulator --no-codesign
+        run: |
+          flutter build ios --simulator --no-codesign
+          ls -la build/ios/iphonesimulator/
       - name: Boot Simulators
         shell: bash
         run: |
@@ -65,7 +67,7 @@ jobs:
           open -a Simulator || true
           xcrun simctl bootstatus "$IPHONE_NAME" -b || true
           xcrun simctl bootstatus "$IPAD_NAME" -b || true
-          sleep 5
+          sleep 10
           # Get iOS UDIDs
           IPHONE_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPHONE_NAME\") | .udid")
           IPAD_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPAD_NAME\") | .udid")
@@ -84,6 +86,7 @@ jobs:
           fi
           xcrun simctl uninstall "$IPHONE_UDID" com.marmooq.new || true
           xcrun simctl install "$IPHONE_UDID" "$IOS_APP_PATH"
+          xcrun simctl listapps "$IPHONE_UDID" | grep com.marmooq.new || { echo "App not installed on iPhone"; exit 1; }
       - name: Install app on iPad
         shell: bash
         run: |
@@ -94,6 +97,7 @@ jobs:
           fi
           xcrun simctl uninstall "$IPAD_UDID" com.marmooq.new || true
           xcrun simctl install "$IPAD_UDID" "$IOS_APP_PATH"
+          xcrun simctl listapps "$IPAD_UDID" | grep com.marmooq.new || { echo "App not installed on iPad"; exit 1; }
       - name: Launch apps and accept permissions
         env:
           BUNDLE_ID: com.marmooq.new
@@ -107,17 +111,17 @@ jobs:
           # Set clean status bars
           xcrun simctl status_bar "$IPHONE_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
           xcrun simctl status_bar "$IPAD_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 || true
-          # Initial launch to accept permissions
-          xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || true
-          xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || true
-          sleep 30 # Increased sleep to handle permission dialog
+          # Initial launch to handle permissions
+          xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || { echo "Failed to launch on iPhone"; exit 1; }
+          xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || { echo "Failed to launch on iPad"; exit 1; }
+          sleep 40 # Increased sleep to allow permission dialog to timeout or auto-accept
           # Launch iOS apps and take screenshots for each page
           for i in {0..4}; do
             page="${PAGES[$i]}"
             page_name="${PAGE_NAMES[$i]}"
             echo "Launching with route $page"
-            xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
-            xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
+            xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || { echo "Launch failed for $page on iPhone"; exit 1; }
+            xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || { echo "Launch failed for $page on iPad"; exit 1; }
             sleep 5
             xcrun simctl io "$IPHONE_UDID" screenshot "./screenshots/iphone_65_${page_name}.png"
             xcrun simctl io "$IPAD_UDID" screenshot "./screenshots/ipad_13_${page_name}.png"
