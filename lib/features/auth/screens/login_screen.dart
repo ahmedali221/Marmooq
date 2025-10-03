@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:marmooq/features/auth/bloc/auth_bloc.dart';
 import 'package:marmooq/features/auth/bloc/auth_state.dart';
 import 'package:marmooq/core/utils/validation_utils.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
 
 /// Login screen for Shopify authentication
 class LoginScreen extends StatefulWidget {
@@ -69,7 +70,11 @@ class _LoginScreenState extends State<LoginScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(title: const Text('تسجيل الدخول'), centerTitle: true),
+        appBar: AppBar(
+          title: const Text('تسجيل الدخول'),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+        ),
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state.isAuthenticated) {
@@ -216,6 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ElevatedButton(
                           onPressed: state.isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
                               vertical: isTablet ? 20 : 16,
                             ),
@@ -229,6 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   'تسجيل الدخول',
                                   style: TextStyle(
                                     fontSize: isTablet ? 18 : 16,
+                                    color: AppColors.brand,
                                   ),
                                 ),
                         ),
@@ -244,7 +251,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _navigateToRegister,
                               child: Text(
                                 'إنشاء حساب',
-                                style: TextStyle(fontSize: isTablet ? 16 : 14),
+                                style: TextStyle(
+                                  fontSize: isTablet ? 16 : 14,
+                                  color: AppColors.brand,
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
                             ),
                           ],

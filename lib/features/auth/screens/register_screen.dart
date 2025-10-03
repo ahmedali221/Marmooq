@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:marmooq/features/auth/bloc/auth_bloc.dart';
 import 'package:marmooq/features/auth/bloc/auth_state.dart';
 import 'package:marmooq/core/utils/validation_utils.dart';
+import 'package:marmooq/core/constants/app_colors.dart';
 
 /// Registration screen for Shopify authentication
 class RegisterScreen extends StatefulWidget {
@@ -162,7 +163,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(title: const Text('إنشاء حساب'), centerTitle: true),
+        appBar: AppBar(
+          title: const Text('إنشاء حساب'),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+        ),
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state.isAuthenticated) {
@@ -201,6 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: TextStyle(
                             fontSize: isTablet ? 28 : 24,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.brand,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -468,9 +474,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         child: Text(
                                           'الشروط والأحكام وسياسة الخصوصية',
                                           style: TextStyle(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
+                                            color: AppColors.brand,
                                             decoration:
                                                 TextDecoration.underline,
                                             fontSize: isTablet ? 16 : 14,
@@ -488,6 +492,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ElevatedButton(
                           onPressed: state.isLoading ? null : _register,
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+
                             padding: EdgeInsets.symmetric(
                               vertical: isTablet ? 20 : 16,
                             ),
@@ -501,6 +507,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   'إنشاء حساب',
                                   style: TextStyle(
                                     fontSize: isTablet ? 18 : 16,
+                                    color: AppColors.brand,
                                   ),
                                 ),
                         ),
@@ -516,7 +523,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               onPressed: _navigateToLogin,
                               child: Text(
                                 'تسجيل الدخول',
-                                style: TextStyle(fontSize: isTablet ? 16 : 14),
+                                style: TextStyle(
+                                  fontSize: isTablet ? 16 : 14,
+                                  color: AppColors.brand,
+                                ),
                               ),
                             ),
                           ],

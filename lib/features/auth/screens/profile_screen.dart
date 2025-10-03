@@ -169,12 +169,16 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                    ),
                     onPressed: () => context.go('/login'),
                     child: Text(
                       'تسجيل الدخول',
                       style: TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: isTablet ? 16 : 14,
+                        color: AppColors.brand,
                       ),
                     ),
                   ),

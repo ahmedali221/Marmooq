@@ -315,7 +315,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
           backgroundColor: Colors.white,
           title: 'تفاصيل الشحن',
           onLeadingPressed: () => context.go('/cart'),
-          actions: [],
+          showLeading: true,
           elevation: 0,
           centerTitle: true,
         ),
