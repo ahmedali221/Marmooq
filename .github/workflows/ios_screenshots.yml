@@ -1,8 +1,6 @@
 name: iOS Screenshots
-
 on:
   workflow_dispatch:
-
 jobs:
   screenshots:
     runs-on: macos-latest
@@ -10,33 +8,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-
       - name: Flutter doctor
         run: flutter doctor -v | head -n 100
-
       - name: Fetch dependencies
         run: flutter pub get
-
       - name: Create .env
         run: |
           if [ ! -f .env ]; then
             echo "SHOPIFY_STOREFRONT_TOKEN=${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}" > .env
           fi
-
       - name: Build iOS for Simulator
-        run: flutter build ios --simulator --no-codesign
-
+        run: |
+          flutter build ios --simulator --no-codesign
+          ls -la build/ios/iphonesimulator/
       - name: Boot Simulators
         shell: bash
         run: |
           set -euo pipefail
           echo "Xcode version:" && xcodebuild -version
-
           # Select the latest iOS runtime
           IOS_RUNTIME=$(xcrun simctl list runtimes --json | jq -r '.runtimes[] | select(.isAvailable and (.name | type == "string" and startswith("iOS"))) | .identifier' | sort -V | tail -n1)
           if [ -z "$IOS_RUNTIME" ]; then
@@ -44,7 +37,6 @@ jobs:
             exit 1
           fi
           echo "Using iOS runtime: $IOS_RUNTIME"
-
           # iPhone setup - 6.5" display
           IPHONE_NAME="iPhone 11 Pro Max"
           IPHONE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max"
@@ -57,7 +49,6 @@ jobs:
             echo "Creating $IPHONE_NAME"
             xcrun simctl create "$IPHONE_NAME" "$IPHONE_TYPE" "$IOS_RUNTIME"
           fi
-
           # iPad setup - 13" display
           IPAD_NAME="iPad Pro 13-inch (M4)"
           IPAD_TYPE="com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M4-8GB"
@@ -70,15 +61,13 @@ jobs:
             echo "Creating $IPAD_NAME"
             xcrun simctl create "$IPAD_NAME" "$IPAD_TYPE" "$IOS_RUNTIME"
           fi
-
           # Boot iOS devices
           xcrun simctl boot "$IPHONE_NAME" || true
           xcrun simctl boot "$IPAD_NAME" || true
           open -a Simulator || true
           xcrun simctl bootstatus "$IPHONE_NAME" -b || true
           xcrun simctl bootstatus "$IPAD_NAME" -b || true
-          sleep 5
-
+          sleep 10
           # Get iOS UDIDs
           IPHONE_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPHONE_NAME\") | .udid")
           IPAD_UDID=$(xcrun simctl list devices --json | jq -r ".devices.\"$IOS_RUNTIME\"[] | select(.name==\"$IPAD_NAME\") | .udid")
@@ -86,9 +75,7 @@ jobs:
           echo "iPad UDID: $IPAD_UDID"
           echo "IPHONE_UDID=$IPHONE_UDID" >> $GITHUB_ENV
           echo "IPAD_UDID=$IPAD_UDID" >> $GITHUB_ENV
-
           echo "Devices booted"
-
       - name: Install app on iPhone
         shell: bash
         run: |
@@ -99,7 +86,7 @@ jobs:
           fi
           xcrun simctl uninstall "$IPHONE_UDID" com.marmooq.new || true
           xcrun simctl install "$IPHONE_UDID" "$IOS_APP_PATH"
-
+          xcrun simctl listapps "$IPHONE_UDID" | grep com.marmooq.new || { echo "App not installed on iPhone"; exit 1; }
       - name: Install app on iPad
         shell: bash
         run: |
@@ -110,7 +97,7 @@ jobs:
           fi
           xcrun simctl uninstall "$IPAD_UDID" com.marmooq.new || true
           xcrun simctl install "$IPAD_UDID" "$IOS_APP_PATH"
-
+          xcrun simctl listapps "$IPAD_UDID" | grep com.marmooq.new || { echo "App not installed on iPad"; exit 1; }
       - name: Launch apps and accept permissions
         env:
           BUNDLE_ID: com.marmooq.new
@@ -119,36 +106,31 @@ jobs:
           mkdir -p screenshots
           PAGES=("/profile" "/products" "/product-details" "/collection" "/cart")
           PAGE_NAMES=("profile" "products" "product_details" "collection" "cart")
-          
+         
           echo "Capturing screenshots for pages: ${PAGES[*]}"
-
           # Set clean status bars
           xcrun simctl status_bar "$IPHONE_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularMode active || true
           xcrun simctl status_bar "$IPAD_UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 || true
-
-          # Initial launch to accept permissions
-          xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || true
-          xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || true
-          sleep 10  # Increased sleep to allow permission dialog to appear and potentially auto-accept or timeout
-
+          # Initial launch to handle permissions
+          xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID || { echo "Failed to launch on iPhone"; exit 1; }
+          xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID || { echo "Failed to launch on iPad"; exit 1; }
+          sleep 40 # Increased sleep to allow permission dialog to timeout or auto-accept
           # Launch iOS apps and take screenshots for each page
           for i in {0..4}; do
             page="${PAGES[$i]}"
             page_name="${PAGE_NAMES[$i]}"
             echo "Launching with route $page"
-            xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
-            xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || true
+            xcrun simctl launch "$IPHONE_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || { echo "Launch failed for $page on iPhone"; exit 1; }
+            xcrun simctl launch "$IPAD_UDID" $BUNDLE_ID --args --dart-define=APP_INITIAL_ROUTE="$page" || { echo "Launch failed for $page on iPad"; exit 1; }
             sleep 5
             xcrun simctl io "$IPHONE_UDID" screenshot "./screenshots/iphone_65_${page_name}.png"
             xcrun simctl io "$IPAD_UDID" screenshot "./screenshots/ipad_13_${page_name}.png"
           done
-
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-screenshots
           path: screenshots
-
       - name: Clear status bars
         if: always()
         run: |
