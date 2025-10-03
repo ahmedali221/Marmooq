@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: isTablet ? 40 : 24),
                         // Logo or brand image could go here
                         Image.asset(
-                          'assets/marmooq_logo.png',
+                          'assets/marmouq.PNG',
                           height: isTablet ? 100 : 80,
                           fit: BoxFit.contain,
                         ),

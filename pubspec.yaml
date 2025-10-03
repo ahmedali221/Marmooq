@@ -65,6 +65,7 @@ dev_dependencies:
   bloc_test: ^9.1.7
   mockito: ^5.4.4
   build_runner: ^2.4.8
+  flutter_native_splash: ^2.4.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -77,9 +78,10 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/marmooq_logo.png"
+  image_path_android: "assets/playstore.png"
+  image_path_ios: "assets/appstore.png"
   android_adaptive_icon_background: "#000000"
-  android_adaptive_icon_foreground: "assets/marmooq_logo.png"
+  android_adaptive_icon_foreground: "assets/playstore.png"
  
 
 # For information on the generic Dart part of this file, see the
@@ -123,3 +125,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#F6FBFC"
+  image: assets/marmouq.PNG
+  android_12:
+    color: "#F6FBFC"
+    image: assets/marmouq.PNG
+  web: false

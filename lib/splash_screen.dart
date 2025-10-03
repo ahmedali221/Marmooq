@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           child: Center(
                             child: Image.asset(
-                              'assets/marmooq_logo.png',
+                              'assets/marmouq.PNG',
                               width: isTablet ? 100 : 80,
                               height: isTablet ? 100 : 80,
                               fit: BoxFit.contain,
