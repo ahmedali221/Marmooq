@@ -229,6 +229,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     decoration: InputDecoration(
                                       labelText: 'الاسم الأول',
                                       border: const OutlineInputBorder(),
+                                      focusedBorder: const OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: AppColors.brand,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      floatingLabelStyle: const TextStyle(
+                                        color: AppColors.brand,
+                                      ),
                                       contentPadding: EdgeInsets.symmetric(
                                         horizontal: 16,
                                         vertical: isTablet ? 20 : 16,
@@ -247,6 +256,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     decoration: InputDecoration(
                                       labelText: 'الاسم الأخير',
                                       border: const OutlineInputBorder(),
+                                      focusedBorder: const OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: AppColors.brand,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      floatingLabelStyle: const TextStyle(
+                                        color: AppColors.brand,
+                                      ),
                                       contentPadding: EdgeInsets.symmetric(
                                         horizontal: 16,
                                         vertical: isTablet ? 20 : 16,
@@ -269,6 +287,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       decoration: InputDecoration(
                                         labelText: 'الاسم الأول',
                                         border: const OutlineInputBorder(),
+                                        focusedBorder: const OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: AppColors.brand,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        floatingLabelStyle: const TextStyle(
+                                          color: AppColors.brand,
+                                        ),
                                         contentPadding: EdgeInsets.symmetric(
                                           horizontal: 16,
                                           vertical: isTablet ? 20 : 16,
@@ -289,6 +316,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       decoration: InputDecoration(
                                         labelText: 'الاسم الأخير',
                                         border: const OutlineInputBorder(),
+                                        focusedBorder: const OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: AppColors.brand,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        floatingLabelStyle: const TextStyle(
+                                          color: AppColors.brand,
+                                        ),
                                         contentPadding: EdgeInsets.symmetric(
                                           horizontal: 16,
                                           vertical: isTablet ? 20 : 16,
@@ -312,6 +348,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             labelText: 'البريد الإلكتروني',
                             prefixIcon: const Icon(FeatherIcons.mail),
                             border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.brand,
+                                width: 2,
+                              ),
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              color: AppColors.brand,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,
@@ -336,6 +381,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             hintText: 'يجب أن يبدأ الرقم بـ 5 أو 6',
                             prefixIcon: const Icon(FeatherIcons.phone),
                             border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.brand,
+                                width: 2,
+                              ),
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              color: AppColors.brand,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,
@@ -362,6 +416,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             labelText: 'كلمة المرور',
                             prefixIcon: const Icon(FeatherIcons.lock),
                             border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.brand,
+                                width: 2,
+                              ),
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              color: AppColors.brand,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,
@@ -395,6 +458,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             labelText: 'تأكيد كلمة المرور',
                             prefixIcon: const Icon(FeatherIcons.lock),
                             border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.brand,
+                                width: 2,
+                              ),
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              color: AppColors.brand,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,

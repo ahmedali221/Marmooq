@@ -150,6 +150,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             labelText: 'البريد الإلكتروني',
                             prefixIcon: const Icon(FeatherIcons.mail),
                             border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.brand,
+                                width: 2,
+                              ),
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              color: AppColors.brand,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,
@@ -173,6 +182,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             labelText: 'كلمة المرور',
                             prefixIcon: const Icon(FeatherIcons.lock),
                             border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.brand,
+                                width: 2,
+                              ),
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              color: AppColors.brand,
+                            ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,
