@@ -10,13 +10,27 @@ class ProductsRepository {
   factory ProductsRepository() => _instance;
   ProductsRepository._internal();
 
+  // Simple in-memory cache to avoid repeated network calls
+  List<Map<String, dynamic>>? _cachedCollectionsResult;
+  DateTime? _cacheTimestamp;
+  final Duration _cacheTtl = const Duration(minutes: 10);
+
+  // Limit concurrent collection product fetches to avoid rate limits
+  static const int _maxConcurrentRequests = 3;
+
   Future<Either<ProductFailure, List<Map<String, dynamic>>>> getProducts({
     bool forceRefresh = false,
     int page = 1,
     int limit = 20,
   }) async {
     try {
-      log('Fetching ALL products data from API');
+      // Return cached result when valid and not forcing refresh
+      if (!forceRefresh &&
+          _cachedCollectionsResult != null &&
+          _cacheTimestamp != null &&
+          DateTime.now().difference(_cacheTimestamp!) < _cacheTtl) {
+        return right(_cachedCollectionsResult!);
+      }
 
       final shopifyStore = ShopifyStore.instance;
 
@@ -27,21 +41,20 @@ class ProductsRepository {
         return left(NoProductsFailure());
       }
 
-      log('Fetched ${collections.length} collections from API');
-
-      // Process all collections to get ALL products
+      // Process collections in limited-concurrency batches
       final List<Map<String, dynamic>> collectionResults = [];
-
-      for (final collection in collections) {
-        final result = await _fetchAllCollectionProducts(
-          collection,
-          shopifyStore,
+      for (var i = 0; i < collections.length; i += _maxConcurrentRequests) {
+        final batch = collections.skip(i).take(_maxConcurrentRequests).toList();
+        final futures = batch.map(
+          (collection) => _fetchAllCollectionProducts(collection, shopifyStore),
         );
-        if ((result['products'] as List).isNotEmpty) {
-          collectionResults.add(result);
+        final results = await Future.wait(futures);
+        for (final result in results) {
+          if ((result['products'] as List).isNotEmpty) {
+            collectionResults.add(result);
+          }
         }
-
-        // Small delay to prevent rate limiting
+        // Small delay between batches to reduce chance of rate limiting
         await Future.delayed(const Duration(milliseconds: 100));
       }
 
@@ -49,12 +62,12 @@ class ProductsRepository {
         return left(NoProductsFailure());
       }
 
-      log(
-        'Successfully fetched products for ${collectionResults.length} collections',
-      );
+      // Cache results
+      _cachedCollectionsResult = collectionResults;
+      _cacheTimestamp = DateTime.now();
+
       return right(collectionResults);
     } catch (e) {
-      log('Error fetching products: $e');
       return left(ServerFailure(e.toString()));
     }
   }
@@ -64,10 +77,8 @@ class ProductsRepository {
     final shopifyStore = ShopifyStore.instance;
 
     try {
-      // Use getNProducts with BEST_SELLING sort for better performance
       return await shopifyStore.getAllCollections();
     } catch (e) {
-      log('Error fetching collections: $e');
       rethrow;
     }
   }
@@ -80,39 +91,32 @@ class ProductsRepository {
     final collectionId = collection.id.split('/').last;
 
     try {
-      log('Fetching ALL products for collection: ${collection.title}');
-
       final List<Map<String, dynamic>> allProducts = [];
       String? cursor;
-      int totalFetched = 0;
       int attempts = 0;
-      const int maxAttempts =
-          100; // Increased limit to handle large collections
+      const int maxAttempts = 100;
 
       while (attempts < maxAttempts) {
         attempts++;
 
         try {
-          // Fetch products with cursor-based pagination - no limit on batch size
+          // Fetch products with cursor-based pagination
           final products = await shopifyStore
               .getXProductsAfterCursorWithinCollection(
                 collection.id,
-                250, // Maximum allowed by Shopify API
+                250,
                 startCursor: cursor,
               );
 
           if (products == null || products.isEmpty) {
-            log('No more products found for collection ${collection.title}');
             break;
           }
 
-          // Process products
           final productList = products.map((product) {
             final gid = product.id;
             final id = int.tryParse(gid.split('/').last) ?? 0;
             final price = product.price;
 
-            // Optimize image processing - only take first 3 images
             final images = product.images
                 .take(3)
                 .map((image) => image.originalSrc)
@@ -131,34 +135,23 @@ class ProductsRepository {
           }).toList();
 
           allProducts.addAll(productList);
-          totalFetched += productList.length;
 
-          log(
-            'Fetched ${productList.length} products for ${collection.title} (total: $totalFetched)',
-          );
-
-          // Check if we got fewer products than requested (end of collection)
+          // If fewer than page size, we've reached the end
           if (productList.length < 250) {
-            log('Reached end of collection ${collection.title}');
             break;
           }
 
-          // Update cursor for next batch
+          // Update cursor
           if (products.isNotEmpty) {
             cursor = products.last.id;
           }
 
-          // Small delay to prevent rate limiting
           await Future.delayed(const Duration(milliseconds: 50));
-        } catch (e) {
-          log('Error fetching batch for collection ${collection.title}: $e');
+        } catch (_) {
+          // Stop on batch error to avoid infinite loops; return what we have
           break;
         }
       }
-
-      log(
-        'Successfully fetched ${allProducts.length} products for collection ${collection.title}',
-      );
 
       return {
         'collectionId': collectionId,
@@ -166,8 +159,7 @@ class ProductsRepository {
         'products': allProducts,
         'totalCount': allProducts.length,
       };
-    } catch (e) {
-      log('Error fetching products for collection ${collection.title}: $e');
+    } catch (_) {
       return {
         'collectionId': collectionId,
         'collectionName': collection.title,
@@ -177,18 +169,12 @@ class ProductsRepository {
     }
   }
 
-  // Load more products - now just calls getProducts since we fetch all at once
+  // Load more products - kept for compatibility
   Future<Either<ProductFailure, List<Map<String, dynamic>>>> loadMoreProducts({
     int page = 1,
     int limit = 20,
   }) async {
-    try {
-      // Since we now fetch all products at once, this method just calls getProducts
-      return await getProducts(forceRefresh: true);
-    } catch (e) {
-      log('Error loading more products: $e');
-      return left(ServerFailure(e.toString()));
-    }
+    return await getProducts(forceRefresh: true);
   }
 
   // Search products
@@ -214,7 +200,7 @@ class ProductsRepository {
       final productList = products.map((product) {
         final gid = product.id;
         final id = int.tryParse(gid.split('/').last) ?? 0;
-        final price = product.price; // Price is already in KWD
+        final price = product.price;
 
         final images = product.images
             .take(3)

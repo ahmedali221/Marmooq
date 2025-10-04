@@ -162,7 +162,7 @@ class ValidationUtils {
     p = p.replaceAll(RegExp(r'[^0-9+]'), '');
 
     // If already E.164 +965XXXXXXXX with valid mobile prefix
-    final RegExp e164Kw = RegExp(r'^\+965[5692]\d{7}$');
+    final RegExp e164Kw = RegExp(r'^\+965[569]\d{7}$');
     if (e164Kw.hasMatch(p)) return p;
 
     // If starts with 00965 or 0965 → convert to +965

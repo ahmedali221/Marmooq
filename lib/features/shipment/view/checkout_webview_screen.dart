@@ -1,0 +1,1093 @@
+import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:marmooq/features/shipment/models/checkout_models.dart';
+import 'package:marmooq/features/cart/repository/cart_repository.dart';
+import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
+import 'package:marmooq/features/cart/view_model/cart_events.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+
+class CheckoutWebViewScreen extends StatefulWidget {
+  final String checkoutUrl;
+  final String checkoutId;
+  final dynamic totalPrice;
+  final bool silentMode; // if true, keep UI hidden and auto-confirm
+
+  const CheckoutWebViewScreen({
+    super.key,
+    required this.checkoutUrl,
+    required this.checkoutId,
+    required this.totalPrice,
+    this.silentMode = false,
+  });
+
+  @override
+  State<CheckoutWebViewScreen> createState() => _CheckoutWebViewScreenState();
+}
+
+class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+  String _currentUrl = '';
+  bool _checkoutCompleted = false;
+  Timer? _timeoutTimer;
+  bool _startedAutoFlow = false;
+  bool _showWebView = false; // Fallback to show WebView if stuck
+  Timer? _stuckTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeWebView();
+
+    // Set up timeout timer for checkout completion (30 minutes)
+    _timeoutTimer = Timer(const Duration(minutes: 30), () {
+      if (!_checkoutCompleted && mounted) {
+        _showTimeoutDialog();
+      }
+    });
+
+    // Only set a stuck timer when NOT running in silent mode. In silent mode
+    // we avoid revealing the WebView or any UI to the user.
+    if (!widget.silentMode) {
+      _stuckTimer = Timer(const Duration(minutes: 1), () {
+        if (!_checkoutCompleted && mounted) {
+          setState(() {
+            _showWebView = true;
+          });
+          print(
+            'Checkout appears stuck, showing WebView for manual completion',
+          );
+        }
+      });
+    }
+  }
+
+  void _initializeWebView() {
+    print('Initializing WebViewController');
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..addJavaScriptChannel(
+        'CheckoutListener',
+        onMessageReceived: (JavaScriptMessage message) {
+          print('JavaScript message received: ${message.message}');
+          try {
+            // Handle checkout completion message from JavaScript
+            if (message.message.contains('checkout_complete')) {
+              final messageParts = message.message.split(':');
+              final completionUrl = messageParts.length > 1
+                  ? messageParts[1]
+                  : _currentUrl;
+
+              _handleSuccessfulCompletion(completionUrl);
+            }
+          } catch (e) {
+            print('Error processing JavaScript message: $e');
+          }
+        },
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            print('WebView progress: $progress%');
+            if (progress == 100) {
+              setState(() {
+                _isLoading = false;
+              });
+              // Inject console error handling after page loads
+              _injectConsoleErrorHandler();
+            }
+          },
+          onPageStarted: (String url) {
+            print('Page started: $url');
+            setState(() {
+              _isLoading = true;
+              _currentUrl = url;
+            });
+          },
+          onPageFinished: (String url) {
+            print('Page finished: $url');
+            setState(() {
+              _isLoading = false;
+              _currentUrl = url;
+            });
+
+            // Check if checkout is completed
+            _checkCheckoutCompletion(url);
+
+            // Inject console monitoring after page finishes loading
+            _injectConsoleErrorHandler();
+
+            // If running invisibly, try to auto-confirm the order flow
+            if (widget.silentMode) {
+              _attemptAutoConfirm();
+              // Try again after a delay
+              Future.delayed(const Duration(seconds: 5), () {
+                if (!_checkoutCompleted && mounted) {
+                  _attemptAutoConfirm();
+                }
+              });
+            }
+          },
+          onWebResourceError: (WebResourceError error) {
+            print('Web resource error: ${error.description}');
+            _handleNonCriticalError(error);
+          },
+        ),
+      );
+
+    print('Loading WebView with URL: ${widget.checkoutUrl}');
+    _controller.loadRequest(Uri.parse(widget.checkoutUrl));
+  }
+
+  void _injectConsoleErrorHandler() {
+    // Inject JavaScript to handle console errors and warnings gracefully
+    _controller.runJavaScript('''
+      (function() {
+        // Store original console methods
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const originalLog = console.log;
+        
+        // Override console.error to handle known non-critical errors
+        console.error = function(...args) {
+          const message = args.join(' ');
+          
+          // Handle Meta Pixel errors gracefully
+          if (message.includes('Meta Pixel') || 
+              message.includes('invalid parameter') ||
+              message.includes('CLXFaLvT.js')) {
+            console.log('Handled Meta Pixel error:', message);
+            return; // Suppress the error
+          }
+          
+          // Handle OpenTelemetry metrics export errors
+          if (message.includes('OpenTelemetry') || 
+              message.includes('metrics export')) {
+            console.log('Handled OpenTelemetry error:', message);
+            return; // Suppress the error
+          }
+          
+          // Handle BreadcrumbsPluginFetchError and Failed to fetch
+          if (message.includes('BreadcrumbsPluginFetchError') || 
+              message.includes('OpenTelemetry') || 
+              message.includes('Failed to fetch')) {
+            console.log('Handled Shopify error: ' + message);
+            return;
+          }
+          
+          // Call original error for other cases
+          originalError.apply(console, args);
+        };
+        
+        // Override console.warn to handle known warnings
+        console.warn = function(...args) {
+          const message = args.join(' ');
+          
+          // Handle Google Maps API loading warnings
+          if (message.includes('Google Maps') || 
+              message.includes('goo.gle/js-api-loading') ||
+              message.includes('maps.googleapis.com')) {
+            console.log('Handled Google Maps warning:', message);
+            return; // Suppress the warning
+          }
+          
+          // Handle Google Maps Marker deprecation
+          if (message.includes('google.maps.Marker') || 
+              message.includes('deprecated') ||
+              message.includes('AdvancedMarkerElement')) {
+            console.log('Handled Maps Marker deprecation:', message);
+            return; // Suppress the warning
+          }
+          
+          // Handle ImageReader_JNI buffer warnings
+          if (message.includes('ImageReader_JNI') || 
+              message.includes('buffer acquisition')) {
+            console.log('Handled ImageReader warning:', message);
+            return; // Suppress the warning
+          }
+          
+          // Call original warn for other cases
+          originalWarn.apply(console, args);
+        };
+        
+        // Monitor for checkout completion indicators
+         const checkCompletion = () => {
+           console.log('Checking for checkout completion...');
+           console.log('Current URL:', window.location.href);
+           console.log('Page title:', document.title);
+           
+           // Check for success indicators in the page
+           const successSelectors = [
+             '.checkout-success',
+             '[data-checkout-complete]',
+             '.order-confirmation',
+             '.thank-you',
+             '.order-success',
+             '[data-order-complete]',
+             '.step__footer__continue-btn:contains("Thank you")',
+             '.step__footer:contains("Thank you")',
+             '.order-summary',
+             '.order-confirmation-page'
+           ];
+           
+           let foundSuccessElement = false;
+           for (const selector of successSelectors) {
+             if (document.querySelector(selector)) {
+               console.log('Found success element:', selector);
+               foundSuccessElement = true;
+               break;
+             }
+           }
+           
+           // Check URL patterns
+           const successUrlPatterns = [
+             'thank_you',
+             'thank-you',
+             'orders/',
+             'checkout/complete',
+             'order-confirmation',
+             'success'
+           ];
+           
+           let foundSuccessUrl = false;
+           for (const pattern of successUrlPatterns) {
+             if (window.location.href.includes(pattern)) {
+               console.log('Found success URL pattern:', pattern);
+               foundSuccessUrl = true;
+               break;
+             }
+           }
+           
+           // Check page title
+           const successTitlePatterns = [
+             'Thank you',
+             'Order confirmation',
+             'Order complete',
+             'Success',
+             'تم إتمام الطلب'
+           ];
+           
+           let foundSuccessTitle = false;
+           for (const pattern of successTitlePatterns) {
+             if (document.title.includes(pattern)) {
+               console.log('Found success title pattern:', pattern);
+               foundSuccessTitle = true;
+               break;
+             }
+           }
+           
+           if (foundSuccessElement || foundSuccessUrl || foundSuccessTitle) {
+             console.log('Checkout completion detected!');
+             // Notify Flutter about successful completion
+             if (window.CheckoutListener && window.CheckoutListener.postMessage) {
+               window.CheckoutListener.postMessage('checkout_complete:' + window.location.href);
+             }
+           }
+         };
+        
+        // Check completion on DOM changes
+        const observer = new MutationObserver(() => {
+          checkCompletion();
+          
+          // Also check for Shopify-specific success elements
+          if (document.querySelector('.step__footer') && 
+              document.querySelector('.step__footer').textContent.includes('Thank you')) {
+            if (window.CheckoutListener && window.CheckoutListener.postMessage) {
+              window.CheckoutListener.postMessage('checkout_complete:shopify_thank_you');
+            }
+          }
+        });
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+        
+        // Periodic check as fallback
+        setInterval(checkCompletion, 2000);
+        
+        // Initial check
+        setTimeout(checkCompletion, 1000);
+      })();
+    ''');
+  }
+
+  // Attempt to auto-complete the checkout without showing UI.
+  // This script tries common Shopify checkout flows:
+  // - selects COD if present
+  // - clicks primary action buttons across steps
+  // - waits between actions to allow navigation
+  Future<void> _attemptAutoConfirm() async {
+    if (_startedAutoFlow || _checkoutCompleted) return;
+    _startedAutoFlow = true;
+
+    const String script = r'''
+      (async function(){
+        function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+        function clickIf(selector){
+          const el = document.querySelector(selector);
+          if(el){ el.click(); return true; }
+          return false;
+        }
+        function fillIf(selector, value){
+          const el = document.querySelector(selector);
+          if(el){ 
+            el.value = value; 
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+            el.dispatchEvent(new Event('change', {bubbles: true}));
+            return true; 
+          }
+          return false;
+        }
+        function selectIf(selector, value){
+          const el = document.querySelector(selector);
+          if(el){ 
+            el.value = value; 
+            el.dispatchEvent(new Event('change', {bubbles: true}));
+            return true; 
+          }
+          return false;
+        }
+
+        console.log('Starting Shopify checkout auto-confirm process...');
+        
+        // Wait for page to be fully loaded
+        await wait(3000);
+        
+        // Step 1: Fill shipping information fields
+        console.log('Filling shipping information...');
+        
+        // Fill email field
+        fillIf('input[name="checkout[email]"]', 'ahmed@ahme.com');
+        fillIf('input[type="email"]', 'ahmed@ahme.com');
+        
+        // Fill name fields
+        fillIf('input[name="checkout[shipping_address][first_name]"]', 'ahmed');
+        fillIf('input[name="checkout[shipping_address][last_name]"]', 'ali');
+        fillIf('input[placeholder*="الاسم"]', 'ahmed ali');
+        fillIf('input[placeholder*="Name"]', 'ahmed ali');
+        
+        // Fill address fields
+        fillIf('input[name="checkout[shipping_address][address1]"]', 'kuwait');
+        fillIf('input[placeholder*="العنوان"]', 'kuwait');
+        fillIf('input[placeholder*="Address"]', 'kuwait');
+        
+        // Fill city
+        fillIf('input[name="checkout[shipping_address][city]"]', 'Kuwait City');
+        fillIf('input[placeholder*="القطعة"]', 'Kuwait City');
+        fillIf('input[placeholder*="City"]', 'Kuwait City');
+        
+        // Fill zip code
+        fillIf('input[name="checkout[shipping_address][zip]"]', '00000');
+        fillIf('input[placeholder*="منزل"]', '00000');
+        fillIf('input[placeholder*="Zip"]', '00000');
+        
+        // Fill phone
+        fillIf('input[name="checkout[shipping_address][phone]"]', '+96555574123');
+        fillIf('input[type="tel"]', '+96555574123');
+        
+        await wait(2000);
+        
+        // Step 2: Select shipping method (Free Delivery)
+        console.log('Selecting shipping method...');
+        const shippingSelectors = [
+          'input[value*="free" i]',
+          'input[value*="توصيل مجاني" i]',
+          'input[value*="standard" i]',
+          'input[name*="shipping"]',
+          'input[type="radio"][name*="shipping"]'
+        ];
+        
+        let shippingSelected = false;
+        for (const selector of shippingSelectors) {
+          if (clickIf(selector)) {
+            console.log('Shipping method selected with selector:', selector);
+            shippingSelected = true;
+            break;
+          }
+        }
+        
+        if (shippingSelected) await wait(1500);
+        
+        // Step 3: Select payment method (Cash on Delivery)
+        console.log('Selecting payment method...');
+        const paymentSelectors = [
+          'input[value*="cod" i]',
+          'input[value*="cash on delivery" i]',
+          'input[value*="الدفع عند الاستلام" i]',
+          'input[value*="cash_on_delivery" i]',
+          'input[name*="payment"]',
+          'input[type="radio"][name*="payment"]'
+        ];
+        
+        let paymentSelected = false;
+        for (const selector of paymentSelectors) {
+          if (clickIf(selector)) {
+            console.log('Payment method selected with selector:', selector);
+            paymentSelected = true;
+            break;
+          }
+        }
+        
+        if (paymentSelected) await wait(1500);
+        
+        // Step 4: Click continue/complete buttons
+        console.log('Looking for continue buttons...');
+        const continueSelectors = [
+          'button[name="button"]',
+          'button[type="submit"]',
+          'button[data-continue-button]',
+          'button.primary',
+          'button[class*="continue"]',
+          'button[class*="submit"]',
+          'input[type="submit"]',
+          'button:contains("Continue")',
+          'button:contains("Submit")',
+          'button:contains("Place order")',
+          'button:contains("Complete order")',
+          'button:contains("Complete")',
+          'button:contains("Pay")',
+          'button:contains("إتمام")',
+          'button:contains("متابعة")'
+        ];
+        
+        let continueClicked = false;
+        for (const selector of continueSelectors) {
+          if (clickIf(selector)) {
+            console.log('Continue button clicked with selector:', selector);
+            continueClicked = true;
+            break;
+          }
+        }
+        
+        if (continueClicked) await wait(3000);
+        
+        // Step 5: If still on checkout page, try alternative approaches
+        if (window.location.href.includes('/checkouts/') && !window.location.href.includes('/thank_you')) {
+          console.log('Still on checkout page, trying alternative approaches...');
+          
+          // Try clicking any visible buttons with text
+          const allButtons = document.querySelectorAll('button, input[type="submit"], input[type="button"]');
+          for (const btn of allButtons) {
+            if (btn.offsetParent !== null && btn.textContent.trim()) {
+              console.log('Trying button:', btn.textContent.trim());
+              btn.click();
+              await wait(2000);
+              break;
+            }
+          }
+          
+          // Try form submission
+          const forms = document.querySelectorAll('form');
+          for (const form of forms) {
+            if (form.offsetParent !== null) {
+              console.log('Trying form submission');
+              form.submit();
+              await wait(2000);
+              break;
+            }
+          }
+        }
+        
+        console.log('Auto-confirm process completed');
+      })();
+    ''';
+
+    try {
+      await _controller.runJavaScriptReturningResult(script);
+    } catch (e) {
+      print('Auto-confirm script error: $e');
+    }
+  }
+
+  void _handleNonCriticalError(WebResourceError error) {
+    // List of non-critical error patterns to ignore
+    final nonCriticalPatterns = [
+      'Meta Pixel',
+      'CLXFaLvT.js',
+      'web-pixel',
+      'OpenTelemetry',
+      'maps.googleapis.com',
+      'ImageReader_JNI',
+      'buffer acquisition',
+    ];
+
+    // Check if this is a non-critical error
+    final isNonCritical = nonCriticalPatterns.any(
+      (pattern) => error.description.contains(pattern),
+    );
+
+    if (isNonCritical) {
+      // Handle non-critical errors silently
+      return;
+    }
+
+    // Show error dialog only for critical errors
+    _showErrorDialog('خطأ في تحميل الصفحة: ${error.description}');
+  }
+
+  void _checkCheckoutCompletion(String url) {
+    // Check for Shopify checkout completion patterns
+    if (url.contains('/thank_you') ||
+        url.contains('/orders/') ||
+        url.contains('/checkout/complete') ||
+        url.contains('status=complete') ||
+        url.contains('/checkouts/') && url.contains('/thank_you') ||
+        url.contains('checkout/complete') ||
+        url.contains('thank-you')) {
+      // Checkout completed successfully - show success dialog and close view
+      _handleSuccessfulCompletion(url);
+    } else if (url.contains('/cart') ||
+        url.contains('cancelled') ||
+        url.contains('cancel')) {
+      // Checkout was cancelled
+      Navigator.of(context).pop(CheckoutResult.cancelled());
+    }
+
+    // Additional check for success indicators in the URL parameters
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      final queryParams = uri.queryParameters;
+      if (queryParams.containsKey('order_id') ||
+          queryParams.containsKey('checkout_token') ||
+          queryParams.containsKey('orderId') ||
+          queryParams['status'] == 'success' ||
+          queryParams['status'] == 'complete' ||
+          queryParams['state'] == 'success') {
+        _handleSuccessfulCompletion(url);
+      }
+    }
+  }
+
+  void _handleSuccessfulCompletion(String completionUrl) {
+    if (_checkoutCompleted) return; // Prevent multiple completions
+
+    _checkoutCompleted = true;
+    _timeoutTimer?.cancel();
+    _stuckTimer?.cancel();
+
+    // Clear the cart after successful checkout completion
+    _clearCartAfterSuccessfulOrder();
+
+    // If running silently, immediately return success to the caller without
+    // showing any dialogs. Otherwise show the success dialog as before.
+    if (widget.silentMode) {
+      if (mounted) {
+        Navigator.of(context).pop(
+          CheckoutResult.success(
+            url: completionUrl,
+            checkoutId: widget.checkoutId,
+            totalPrice: widget.totalPrice,
+            autoRedirect: true,
+          ),
+        );
+      }
+    } else {
+      _showSuccessDialog(completionUrl);
+    }
+  }
+
+  Future<void> _clearCartAfterSuccessfulOrder() async {
+    try {
+      final cartRepository = CartRepository();
+      // Clear current cart and create a new empty one for future use
+      await cartRepository.clearCartAndCreateNew();
+      // Emit cart cleared event to update all listeners (including products view)
+      if (mounted) {
+        context.read<CartBloc>().add(const CartClearedEvent());
+      }
+    } catch (e) {
+      // Don't block the success flow if cart clearing fails
+    }
+  }
+
+  void _showSuccessDialog(String completionUrl) {
+    // Normal interactive flow: show a dialog. In silent mode we shouldn't
+    // display dialogs (handled earlier in _handleSuccessfulCompletion).
+    if (widget.silentMode) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        // Auto-close the dialog and webview after 3 seconds
+        Timer(const Duration(seconds: 3), () {
+          if (mounted) {
+            Navigator.of(context).pop(); // Close dialog
+            Navigator.of(context).pop(
+              CheckoutResult.success(
+                url: completionUrl,
+                checkoutId: widget.checkoutId,
+                totalPrice: widget.totalPrice,
+                autoRedirect: true,
+              ),
+            ); // Close checkout view and return to shipment page
+          }
+        });
+
+        return AlertDialog.adaptive(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1B8EA3), Color(0xFF1E9DB2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'تم إتمام الطلب بنجاح!',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 18,
+                  ),
+                  textDirection: TextDirection.rtl,
+                ),
+              ],
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xFFE6F7FA),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Color(0xFFB7E6EF)),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      color: Color(0xFF1E9DB2),
+                      size: 48,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'شكراً لك! تم إتمام عملية الدفع بنجاح.',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني المسجل.',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'سيتم إغلاق النافذة تلقائياً خلال ثوانٍ...',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop(
+                    CheckoutResult.success(
+                      url: completionUrl,
+                      checkoutId: widget.checkoutId,
+                      totalPrice: widget.totalPrice,
+                      autoRedirect: true,
+                    ),
+                  ); // Close checkout view
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text(
+                  'العودة إلى المتجر الآن',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textDirection: TextDirection.rtl,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    // In silent mode return error immediately without showing UI. Otherwise
+    // show an interactive error dialog as before.
+    if (widget.silentMode) {
+      if (mounted) Navigator.of(context).pop(CheckoutResult.error(message));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text(
+          'خطأ',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          message,
+          textDirection: TextDirection.rtl,
+          style: const TextStyle(fontFamily: 'Tajawal'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(CheckoutResult.error(message));
+            },
+            child: const Text(
+              'إغلاق',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: 'Tajawal'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Hide the AppBar entirely when running in silent mode so the user
+      // doesn't see any checkout UI.
+      appBar: widget.silentMode
+          ? null
+          : AppBar(
+              title: const Text(
+                'إتمام الدفع',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Tajawal',
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+                textDirection: TextDirection.rtl,
+              ),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF00695C), Color(0xFF26A69A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              elevation: 8,
+              shadowColor: Colors.teal.withOpacity(0.3),
+              centerTitle: true,
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () {
+                  _showExitConfirmation();
+                },
+              ),
+              actions: [
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator.adaptive(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                if (_showWebView && !_checkoutCompleted)
+                  IconButton(
+                    icon: const Icon(Icons.check_circle, color: Colors.white),
+                    onPressed: () {
+                      _showManualCompletionDialog();
+                    },
+                    tooltip: 'Mark as completed',
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () {
+                    _controller.reload();
+                  },
+                ),
+              ],
+            ),
+      body: Stack(
+        children: [
+          // Always keep the WebView mounted so background JS can run, but
+          // when in silent mode keep it invisible and non-interactive.
+          Opacity(
+            opacity: widget.silentMode
+                ? 0.0
+                : ((widget.silentMode && !_showWebView) ? 0.0 : 1.0),
+            child: IgnorePointer(
+              ignoring: widget.silentMode && !_showWebView,
+              child: WebViewWidget(controller: _controller),
+            ),
+          ),
+
+          // Only show interactive loaders/UI when not in silent mode.
+          if (!widget.silentMode) ...[
+            if (_isLoading)
+              Container(
+                color: Colors.white,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator.adaptive(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00695C),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'جاري تحميل صفحة الدفع...',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 16,
+                          color: Color(0xFF00695C),
+                        ),
+                        textDirection: TextDirection.rtl,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (widget.silentMode && !_checkoutCompleted && !_showWebView)
+              // Full-screen loader so user never sees checkout screens
+              Container(
+                color: Colors.white,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator.adaptive(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF00695C),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'جاري إتمام الطلب بشكل آمن...',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 16,
+                        color: Color(0xFF00695C),
+                      ),
+                      textDirection: TextDirection.rtl,
+                    ),
+                    if (_showWebView) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'تم تفعيل الوضع اليدوي لإتمام الطلب',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 14,
+                          color: Color(0xFF00695C),
+                        ),
+                        textDirection: TextDirection.rtl,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showTimeoutDialog() {
+    // If running silently, return timeout result without showing dialogs.
+    if (widget.silentMode) {
+      if (mounted) Navigator.of(context).pop(CheckoutResult.timeout());
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text(
+          'انتهت مهلة الدفع',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'انتهت المهلة المحددة لإتمام عملية الدفع. يرجى المحاولة مرة أخرى.',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(CheckoutResult.timeout());
+            },
+            child: const Text(
+              'موافق',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: 'Tajawal'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    _stuckTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showManualCompletionDialog() {
+    // In silent mode don't prompt the user; assume manual completion will be
+    // handled by other means. For safety, treat this as a no-op or direct
+    // completion if asked by caller.
+    if (widget.silentMode) {
+      _handleSuccessfulCompletion(_currentUrl);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text(
+          'تأكيد إتمام الطلب',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'هل تم إتمام عملية الدفع بنجاح في صفحة الدفع؟',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'إلغاء',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: 'Tajawal'),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleSuccessfulCompletion(_currentUrl);
+            },
+            child: const Text(
+              'نعم، تم الإتمام',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.green),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExitConfirmation() {
+    // Silent flows should not show confirmation dialogs; just cancel the
+    // checkout silently.
+    if (widget.silentMode) {
+      if (mounted) Navigator.of(context).pop(CheckoutResult.cancelled());
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text(
+          'تأكيد الخروج',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'هل أنت متأكد من أنك تريد الخروج من صفحة الدفع؟ سيتم إلغاء العملية.',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(fontFamily: 'Tajawal'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'إلغاء',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: 'Tajawal'),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(CheckoutResult.cancelled());
+            },
+            child: const Text(
+              'خروج',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(fontFamily: 'Tajawal', color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

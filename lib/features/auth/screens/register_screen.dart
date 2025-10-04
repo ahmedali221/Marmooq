@@ -377,8 +377,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
-                            labelText: 'الهاتف (اختياري)',
-                            hintText: 'يجب أن يبدأ الرقم بـ 5 أو 6',
+                            labelText: 'رقم الهاتف',
+                            hintText: 'يجب أن يبدأ الرقم بـ 5 أو 6 أو 9',
                             prefixIcon: const Icon(FeatherIcons.phone),
                             border: const OutlineInputBorder(),
                             focusedBorder: const OutlineInputBorder(
@@ -396,14 +396,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                           validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final normalized =
-                                  ValidationUtils.normalizeKuwaitPhone(value);
-                              if (!ValidationUtils.isValidKuwaitPhone(
-                                normalized,
-                              )) {
-                                return 'يرجى إدخال رقم هاتف صالح (يجب أن يبدأ بـ 5 أو 6 أو 9)';
-                              }
+                            if (value == null || value.isEmpty) {
+                              return 'يرجى إدخال رقم الهاتف';
+                            }
+                            if (!ValidationUtils.isValidKuwaitPhone(value)) {
+                              return 'يرجى إدخال رقم هاتف صالح (يجب أن يبدأ بـ 5 أو 6 أو 9)';
                             }
                             return null;
                           },

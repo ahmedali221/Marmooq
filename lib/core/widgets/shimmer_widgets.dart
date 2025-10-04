@@ -33,10 +33,11 @@ class ShimmerWidgets {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Image shimmer
           Container(
-            height: ResponsiveUtils.getResponsiveHeight(context, mobile: 180),
+            height: ResponsiveUtils.getResponsiveHeight(context, mobile: 160),
             decoration: BoxDecoration(
               color: Colors.grey[300],
               borderRadius: BorderRadius.only(
@@ -55,68 +56,73 @@ class ShimmerWidgets {
               ),
             ),
           ),
-          Padding(
-            padding: ResponsiveUtils.getResponsivePadding(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title shimmer
-                Container(
-                  height: ResponsiveUtils.getResponsiveHeight(
-                    context,
-                    mobile: 16,
+          Flexible(
+            child: Padding(
+              padding: EdgeInsets.all(
+                ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title shimmer
+                  Container(
+                    height: ResponsiveUtils.getResponsiveHeight(
+                      context,
+                      mobile: 14,
+                    ),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(4),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 6,
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: ResponsiveUtils.getResponsiveSpacing(
-                    context,
-                    mobile: 8,
+                  // Price shimmer
+                  Container(
+                    height: ResponsiveUtils.getResponsiveHeight(
+                      context,
+                      mobile: 12,
+                    ),
+                    width: ResponsiveUtils.getResponsiveWidth(
+                      context,
+                      mobile: 70,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                ),
-                // Price shimmer
-                Container(
-                  height: ResponsiveUtils.getResponsiveHeight(
-                    context,
-                    mobile: 14,
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 8,
+                    ),
                   ),
-                  width: ResponsiveUtils.getResponsiveWidth(
-                    context,
-                    mobile: 80,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                SizedBox(
-                  height: ResponsiveUtils.getResponsiveSpacing(
-                    context,
-                    mobile: 12,
-                  ),
-                ),
-                // Button shimmer
-                Container(
-                  height: ResponsiveUtils.getResponsiveHeight(
-                    context,
-                    mobile: 36,
-                  ),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(
-                      ResponsiveUtils.getResponsiveBorderRadius(
-                        context,
-                        mobile: 8,
+                  // Button shimmer
+                  Container(
+                    height: ResponsiveUtils.getResponsiveHeight(
+                      context,
+                      mobile: 32,
+                    ),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveUtils.getResponsiveBorderRadius(
+                          context,
+                          mobile: 8,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
