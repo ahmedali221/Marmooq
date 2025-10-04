@@ -9,6 +9,7 @@ import 'package:marmooq/core/widgets/standard_app_bar.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:marmooq/core/utils/responsive_utils.dart';
+import 'package:marmooq/core/widgets/shimmer_widgets.dart';
 
 class CollectionDetailsView extends StatefulWidget {
   /// Route name for navigation
@@ -29,11 +30,23 @@ class CollectionDetailsView extends StatefulWidget {
 
 class _CollectionDetailsViewState extends State<CollectionDetailsView> {
   List<Product> _filteredProducts = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredProducts = widget.products;
+    _initializeProducts();
+  }
+
+  void _initializeProducts() async {
+    // Simulate loading delay
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) {
+      setState(() {
+        _filteredProducts = widget.products;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -52,11 +65,19 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         ),
         body: Container(
           color: Colors.grey[50],
-          child: _filteredProducts.isEmpty
+          child: _isLoading
+              ? _buildLoadingState()
+              : _filteredProducts.isEmpty
               ? _buildEmptyState()
               : _buildProductsGrid(),
         ),
       ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return ShimmerWidgets.shimmerBase(
+      child: ShimmerWidgets.gridShimmer(context, itemCount: 6),
     );
   }
 

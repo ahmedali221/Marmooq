@@ -13,6 +13,7 @@ import 'package:marmooq/core/services/security_service.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:marmooq/core/utils/responsive_utils.dart';
+import 'package:marmooq/core/widgets/shimmer_widgets.dart';
 
 class ProductDetailsView extends StatefulWidget {
   final Product product;
@@ -114,10 +115,16 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                               color: Colors.white,
                               borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(
-                                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+                                  ResponsiveUtils.getResponsiveBorderRadius(
+                                    context,
+                                    mobile: 24,
+                                  ),
                                 ),
                                 topRight: Radius.circular(
-                                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
+                                  ResponsiveUtils.getResponsiveBorderRadius(
+                                    context,
+                                    mobile: 24,
+                                  ),
                                 ),
                               ),
                               boxShadow: [
@@ -131,10 +138,22 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             ),
                             child: Padding(
                               padding: EdgeInsets.fromLTRB(
-                                ResponsiveUtils.getResponsiveSpacing(context, mobile: 20),
-                                ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
-                                ResponsiveUtils.getResponsiveSpacing(context, mobile: 20),
-                                ResponsiveUtils.getResponsiveSpacing(context, mobile: 100),
+                                ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 20,
+                                ),
+                                ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 24,
+                                ),
+                                ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 20,
+                                ),
+                                ResponsiveUtils.getResponsiveSpacing(
+                                  context,
+                                  mobile: 100,
+                                ),
                               ), // Added bottom padding for cart icon
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,12 +161,24 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                                   // Product Name and Price
                                   _buildProductHeader(),
 
-                                  SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
+                                  SizedBox(
+                                    height:
+                                        ResponsiveUtils.getResponsiveSpacing(
+                                          context,
+                                          mobile: 12,
+                                        ),
+                                  ),
 
                                   // Product Description
                                   _buildProductDescription(),
 
-                                  SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24)),
+                                  SizedBox(
+                                    height:
+                                        ResponsiveUtils.getResponsiveSpacing(
+                                          context,
+                                          mobile: 24,
+                                        ),
+                                  ),
 
                                   // Action Buttons
                                   _buildActionButtons(),
@@ -197,24 +228,43 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     ),
                     child: Icon(
                       FeatherIcons.image,
-                      size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 48),
+                      size: ResponsiveUtils.getResponsiveIconSize(
+                        context,
+                        mobile: 48,
+                      ),
                       color: Colors.grey[600],
                     ),
                   ),
-                  SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 16,
+                    ),
+                  ),
                   Text(
                     'لا توجد صور متاحة',
                     style: TextStyle(
-                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context,
+                        mobile: 16,
+                      ),
                       color: Colors.grey[600],
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 4)),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 4,
+                    ),
+                  ),
                   Text(
                     'سيتم إضافة الصور قريباً',
                     style: TextStyle(
-                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 12), 
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context,
+                        mobile: 12,
+                      ),
                       color: Colors.grey[500],
                     ),
                   ),
@@ -238,10 +288,16 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
                 bottomRight: Radius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
               ),
               boxShadow: [
@@ -256,10 +312,16 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             child: ClipRRect(
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
                 bottomRight: Radius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 16,
+                  ),
                 ),
               ),
               child: CarouselSlider.builder(
@@ -321,7 +383,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   );
                 },
                 options: CarouselOptions(
-                  height: ResponsiveUtils.getResponsiveHeight(context, mobile: 300),
+                  height: ResponsiveUtils.getResponsiveHeight(
+                    context,
+                    mobile: 300,
+                  ),
                   viewportFraction: 1.0,
                   enableInfiniteScroll: true,
                   autoPlay: false,
@@ -361,7 +426,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     }
                   },
                   child: Container(
-                    padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
+                    padding: EdgeInsets.all(
+                      ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       shape: BoxShape.circle,
@@ -377,7 +444,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     child: Icon(
                       FeatherIcons.chevronLeft,
                       color: Colors.grey[700],
-                      size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 16),
+                      size: ResponsiveUtils.getResponsiveIconSize(
+                        context,
+                        mobile: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -405,7 +475,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     }
                   },
                   child: Container(
-                    padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
+                    padding: EdgeInsets.all(
+                      ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       shape: BoxShape.circle,
@@ -421,7 +493,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     child: Icon(
                       FeatherIcons.chevronRight,
                       color: Colors.grey[700],
-                      size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 16),
+                      size: ResponsiveUtils.getResponsiveIconSize(
+                        context,
+                        mobile: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -450,18 +525,33 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
+                        horizontal: ResponsiveUtils.getResponsiveSpacing(
+                          context,
+                          mobile: 4,
+                        ),
                       ),
-                      width: _currentImageIndex == index 
-                          ? ResponsiveUtils.getResponsiveWidth(context, mobile: 28) 
-                          : ResponsiveUtils.getResponsiveWidth(context, mobile: 8),
-                      height: ResponsiveUtils.getResponsiveHeight(context, mobile: 8),
+                      width: _currentImageIndex == index
+                          ? ResponsiveUtils.getResponsiveWidth(
+                              context,
+                              mobile: 28,
+                            )
+                          : ResponsiveUtils.getResponsiveWidth(
+                              context,
+                              mobile: 8,
+                            ),
+                      height: ResponsiveUtils.getResponsiveHeight(
+                        context,
+                        mobile: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: _currentImageIndex == index
                             ? Colors.white
                             : Colors.white.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(
-                          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 4),
+                          ResponsiveUtils.getResponsiveBorderRadius(
+                            context,
+                            mobile: 4,
+                          ),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -485,13 +575,22 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               right: 20,
               child: Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-                  vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+                  horizontal: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 12,
+                  ),
+                  vertical: ResponsiveUtils.getResponsiveSpacing(
+                    context,
+                    mobile: 8,
+                  ),
                 ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
                   borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      mobile: 20,
+                    ),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -506,16 +605,27 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      FeatherIcons.image, 
-                      color: Colors.white, 
-                      size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 14),
+                      FeatherIcons.image,
+                      color: Colors.white,
+                      size: ResponsiveUtils.getResponsiveIconSize(
+                        context,
+                        mobile: 14,
+                      ),
                     ),
-                    SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 6)),
+                    SizedBox(
+                      width: ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 6,
+                      ),
+                    ),
                     Text(
                       '${_currentImageIndex + 1} / ${widget.product.images.length}',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 12),
+                        fontSize: ResponsiveUtils.getResponsiveFontSize(
+                          context,
+                          mobile: 12,
+                        ),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -560,9 +670,12 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               icon: Icon(
                 FeatherIcons.chevronLeft,
                 color: Colors.black87,
-                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
+                size: ResponsiveUtils.getResponsiveIconSize(
+                  context,
+                  mobile: 20,
+                ),
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.go('/products'),
             ),
           ),
 
@@ -606,40 +719,69 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             borderRadius: BorderRadius.circular(20),
             onTap: () => context.go('/cart'),
             child: Container(
-              padding: EdgeInsets.all(ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
+              padding: EdgeInsets.all(
+                ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+              ),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Icon(
                     FeatherIcons.shoppingBag,
                     color: Colors.black87,
-                    size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 20),
+                    size: ResponsiveUtils.getResponsiveIconSize(
+                      context,
+                      mobile: 20,
+                    ),
                   ),
                   if (itemCount > 0)
                     Positioned(
-                      right: -ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
-                      top: -ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
+                      right: -ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 4,
+                      ),
+                      top: -ResponsiveUtils.getResponsiveSpacing(
+                        context,
+                        mobile: 4,
+                      ),
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: ResponsiveUtils.getResponsiveSpacing(context, mobile: 4),
-                          vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 2),
+                          horizontal: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 4,
+                          ),
+                          vertical: ResponsiveUtils.getResponsiveSpacing(
+                            context,
+                            mobile: 2,
+                          ),
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.brand,
                           borderRadius: BorderRadius.circular(
-                            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 8),
+                            ResponsiveUtils.getResponsiveBorderRadius(
+                              context,
+                              mobile: 8,
+                            ),
                           ),
                           border: Border.all(color: Colors.white, width: 1),
                         ),
                         constraints: BoxConstraints(
-                          minWidth: ResponsiveUtils.getResponsiveWidth(context, mobile: 16),
-                          minHeight: ResponsiveUtils.getResponsiveHeight(context, mobile: 16),
+                          minWidth: ResponsiveUtils.getResponsiveWidth(
+                            context,
+                            mobile: 16,
+                          ),
+                          minHeight: ResponsiveUtils.getResponsiveHeight(
+                            context,
+                            mobile: 16,
+                          ),
                         ),
                         child: Text(
                           itemCount > 99 ? '99+' : itemCount.toString(),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 8),
+                            fontSize: ResponsiveUtils.getResponsiveFontSize(
+                              context,
+                              mobile: 8,
+                            ),
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -664,7 +806,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           child: Text(
             widget.product.name,
             style: TextStyle(
-              fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 22),
+              fontSize: ResponsiveUtils.getResponsiveFontSize(
+                context,
+                mobile: 22,
+              ),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
               height: 1.2,
@@ -672,12 +817,17 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             textAlign: TextAlign.right,
           ),
         ),
-        SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16)),
+        SizedBox(
+          width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+        ),
         // Price
         Text(
           '${widget.product.price.toStringAsFixed(2)} د.ك',
           style: TextStyle(
-            fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 20),
+            fontSize: ResponsiveUtils.getResponsiveFontSize(
+              context,
+              mobile: 20,
+            ),
             fontWeight: FontWeight.bold,
             color: AppColors.brand,
           ),
@@ -703,27 +853,40 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           Row(
             children: [
               Icon(
-                FeatherIcons.fileText, 
-                color: AppColors.brand, 
-                size: ResponsiveUtils.getResponsiveIconSize(context, mobile: 18),
+                FeatherIcons.fileText,
+                color: AppColors.brand,
+                size: ResponsiveUtils.getResponsiveIconSize(
+                  context,
+                  mobile: 18,
+                ),
               ),
-              SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8)),
+              SizedBox(
+                width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+              ),
               Text(
                 'وصف المنتج',
                 style: TextStyle(
-                  fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                  fontSize: ResponsiveUtils.getResponsiveFontSize(
+                    context,
+                    mobile: 16,
+                  ),
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
             ],
           ),
-          SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+          ),
           if (widget.product.description.isNotEmpty)
             Text(
               widget.product.description,
               style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 14,
+                ),
                 color: Colors.grey[700],
                 height: 1.5,
               ),
@@ -733,7 +896,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
             Text(
               'لا يوجد وصف متاح لهذا المنتج حالياً.',
               style: TextStyle(
-                fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 14),
+                fontSize: ResponsiveUtils.getResponsiveFontSize(
+                  context,
+                  mobile: 14,
+                ),
                 color: Colors.grey[500],
                 fontStyle: FontStyle.italic,
               ),
@@ -780,9 +946,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
       String cartId;
 
       if (cartState is CartInitialized) {
-        cartId = cartState.cart.id!;
+        cartId = cartState.cart.id;
       } else if (cartState is CartSuccess) {
-        cartId = cartState.cart.id!;
+        cartId = cartState.cart.id;
       } else {
         // Create a new cart if none exists
         context.read<CartBloc>().add(const CreateCartEvent());
@@ -792,9 +958,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         final newCartState = context.read<CartBloc>().state;
 
         if (newCartState is CartInitialized) {
-          cartId = newCartState.cart.id!;
+          cartId = newCartState.cart.id;
         } else if (newCartState is CartSuccess) {
-          cartId = newCartState.cart.id!;
+          cartId = newCartState.cart.id;
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -946,7 +1112,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
               decoration: BoxDecoration(
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                  ResponsiveUtils.getResponsiveBorderRadius(
+                    context,
+                    mobile: 12,
+                  ),
                 ),
                 border: Border.all(
                   color: Colors.grey[300] ?? Colors.grey,
@@ -957,7 +1126,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      mobile: 12,
+                    ),
                   ),
                   onTap: _isAddingToCart
                       ? null
@@ -968,8 +1140,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
 
                           try {
                             // Check if product is available (has a valid variant ID)
-                            if (widget.product.variantId == null ||
-                                widget.product.variantId.isEmpty) {
+                            if (widget.product.variantId.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: const Row(
@@ -1001,9 +1172,9 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                             String cartId;
 
                             if (cartState is CartInitialized) {
-                              cartId = cartState.cart.id ?? '';
+                              cartId = cartState.cart.id;
                             } else if (cartState is CartSuccess) {
-                              cartId = cartState.cart.id ?? '';
+                              cartId = cartState.cart.id;
                             } else {
                               // Create a new cart if none exists
                               context.read<CartBloc>().add(
@@ -1190,15 +1361,23 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                 ),
               ),
             ),
-            SizedBox(width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12)),
+            SizedBox(
+              width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+            ),
             // Buy Now Button (Main button)
             Expanded(
               child: Container(
-                height: ResponsiveUtils.getResponsiveHeight(context, mobile: 50),
+                height: ResponsiveUtils.getResponsiveHeight(
+                  context,
+                  mobile: 50,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.brand,
                   borderRadius: BorderRadius.circular(
-                    ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      mobile: 12,
+                    ),
                   ),
                 ),
                 child: ElevatedButton(
@@ -1213,7 +1392,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                     shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
-                        ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+                        ResponsiveUtils.getResponsiveBorderRadius(
+                          context,
+                          mobile: 12,
+                        ),
                       ),
                     ),
                     elevation: 0,
@@ -1221,7 +1403,10 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
                   child: Text(
                     _isAddingToCart ? 'جاري المعالجة...' : 'اشتري الآن',
                     style: TextStyle(
-                      fontSize: ResponsiveUtils.getResponsiveFontSize(context, mobile: 16),
+                      fontSize: ResponsiveUtils.getResponsiveFontSize(
+                        context,
+                        mobile: 16,
+                      ),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1243,7 +1428,7 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(FeatherIcons.arrowRight, color: Colors.black),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.go('/products'),
           ),
           title: const Text(
             'تحميل المنتج...',
@@ -1257,64 +1442,8 @@ class _ProductDetailsViewState extends State<ProductDetailsView> {
         ),
         body: Container(
           color: Colors.grey[50],
-          child: Column(
-            children: [
-              // Loading image placeholder
-              Container(
-                height: 300,
-                color: Colors.grey[200],
-                child: const Center(
-                  child: CircularProgressIndicator.adaptive(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Loading content placeholder
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 24,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        height: 20,
-                        width: 150,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        height: 60,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        height: 50,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          child: ShimmerWidgets.shimmerBase(
+            child: ShimmerWidgets.productDetailsShimmer(context),
           ),
         ),
       ),

@@ -15,6 +15,7 @@ import 'package:feather_icons/feather_icons.dart';
 import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:marmooq/core/widgets/standard_app_bar.dart';
 import 'package:marmooq/core/utils/responsive_utils.dart';
+import 'package:marmooq/core/widgets/shimmer_widgets.dart';
 
 class ProductsView extends StatefulWidget {
   const ProductsView({super.key});
@@ -330,179 +331,47 @@ class _ProductsViewState extends State<ProductsView>
     );
   }
 
-  Widget _buildCartIcon() {
-    return BlocSelector<CartBloc, CartState, int>(
-      selector: (state) {
-        if (state is CartSuccess) {
-          return state.cart.lines.length;
-        } else if (state is CartInitialized) {
-          return state.cart.lines.length;
-        }
-        return 0;
-      },
-      builder: (context, itemCount) {
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(
-              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 25),
-            ),
-            onTap: () {
-              // Cart navigation is handled by bottom navigation
-            },
-            child: Container(
-              padding: EdgeInsets.all(
-                ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(
-                  ResponsiveUtils.getResponsiveBorderRadius(
-                    context,
-                    mobile: 25,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    FeatherIcons.shoppingBag,
-                    color: Colors.black87,
-                    size: ResponsiveUtils.getResponsiveIconSize(
-                      context,
-                      mobile: 22,
-                    ),
-                  ),
-                  if (itemCount > 0)
-                    Positioned(
-                      right: -ResponsiveUtils.getResponsiveSpacing(
-                        context,
-                        mobile: 4,
-                      ),
-                      top: -ResponsiveUtils.getResponsiveSpacing(
-                        context,
-                        mobile: 4,
-                      ),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: ResponsiveUtils.getResponsiveSpacing(
-                            context,
-                            mobile: 6,
-                          ),
-                          vertical: ResponsiveUtils.getResponsiveSpacing(
-                            context,
-                            mobile: 2,
-                          ),
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.brand,
-                          borderRadius: BorderRadius.circular(
-                            ResponsiveUtils.getResponsiveBorderRadius(
-                              context,
-                              mobile: 12,
-                            ),
-                          ),
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        constraints: BoxConstraints(
-                          minWidth: ResponsiveUtils.getResponsiveWidth(
-                            context,
-                            mobile: 18,
-                          ),
-                          minHeight: ResponsiveUtils.getResponsiveHeight(
-                            context,
-                            mobile: 18,
-                          ),
-                        ),
-                        child: Text(
-                          itemCount > 99 ? '99+' : itemCount.toString(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: ResponsiveUtils.getResponsiveFontSize(
-                              context,
-                              mobile: 10,
-                            ),
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   // _buildSearchBar removed, integrated into bottom
 
   Widget _buildLoadingState() {
-    return Center(
+    return SingleChildScrollView(
       child: Column(
-        spacing: 10,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: ResponsiveUtils.getResponsivePadding(context),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(
-                ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 24),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.brand.withOpacity(0.15),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                SizedBox(
-                  width: ResponsiveUtils.getResponsiveWidth(
-                    context,
-                    mobile: 50,
-                  ),
-                  height: ResponsiveUtils.getResponsiveHeight(
-                    context,
-                    mobile: 50,
-                  ),
-                  child: CircularProgressIndicator.adaptive(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
-                    strokeWidth: 4,
-                  ),
-                ),
-                SizedBox(
-                  height: ResponsiveUtils.getResponsiveSpacing(
-                    context,
-                    mobile: 20,
-                  ),
-                ),
-                Text(
-                  'جاري تحميل المنتجات...',
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.getResponsiveFontSize(
-                      context,
-                      mobile: 18,
-                    ),
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
+          // Simulate 3 collections with shimmer
+          ...List.generate(3, (index) => _buildCollectionShimmer()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCollectionShimmer() {
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ShimmerWidgets.shimmerBase(
+            child: ShimmerWidgets.collectionHeaderShimmer(context),
+          ),
+          ShimmerWidgets.horizontalListShimmer(context),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
           ),
         ],
       ),
@@ -727,6 +596,8 @@ class _ProductsViewState extends State<ProductsView>
             final String collectionName =
                 collection['collectionName'] ?? 'مجموعة غير مسماة';
             final List<dynamic> productsList = collection['products'] ?? [];
+            final int totalCount =
+                collection['totalCount'] ?? productsList.length;
 
             if (productsList.isEmpty) return const SizedBox.shrink();
 
@@ -759,7 +630,11 @@ class _ProductsViewState extends State<ProductsView>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCollectionHeader(collectionName, productsList),
+                  _buildCollectionHeader(
+                    collectionName,
+                    productsList,
+                    totalCount,
+                  ),
                   _buildProductsHorizontalList(previewProducts),
                   SizedBox(
                     height: ResponsiveUtils.getResponsiveSpacing(
@@ -797,6 +672,7 @@ class _ProductsViewState extends State<ProductsView>
   Widget _buildCollectionHeader(
     String collectionName,
     List<dynamic> productsList,
+    int totalCount,
   ) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -830,7 +706,7 @@ class _ProductsViewState extends State<ProductsView>
                   ),
                 ),
                 Text(
-                  '${productsList.length} منتج',
+                  '$totalCount منتج',
                   style: TextStyle(
                     fontSize: ResponsiveUtils.getResponsiveFontSize(
                       context,
