@@ -146,60 +146,94 @@ class ValidationUtils {
   /// - With country code +965 followed by 8 digits starting with 5, 6, or 9
   /// - With leading zeros/spaces/dashes which will be normalized
   static bool isValidKuwaitPhone(String phone) {
-    if (phone.isEmpty) return true; // Optional field
+    print('[ValidationUtils] isValidKuwaitPhone called with: "$phone"');
+    if (phone.isEmpty) {
+      print(
+        '[ValidationUtils] Phone is empty, returning true (optional field)',
+      );
+      return true; // Optional field
+    }
     final normalized = normalizeKuwaitPhone(phone);
+    print('[ValidationUtils] Normalized phone: "$normalized"');
     // E.164 for Kuwait mobile must be +965 followed by 8 digits starting with 5, 6, or 9
     final RegExp kwRegex = RegExp(r'^\+965[569]\d{7}$');
-    return kwRegex.hasMatch(normalized);
+    final isValid = kwRegex.hasMatch(normalized);
+    print('[ValidationUtils] Regex match result: $isValid');
+    return isValid;
   }
 
   /// Normalizes any Kuwait phone input to E.164: +965XXXXXXXX
   /// If input cannot be normalized to a valid mobile number, returns the trimmed original input.
   static String normalizeKuwaitPhone(String phone) {
-    if (phone.isEmpty) return '';
+    print('[ValidationUtils] normalizeKuwaitPhone called with: "$phone"');
+    if (phone.isEmpty) {
+      print('[ValidationUtils] Phone is empty, returning empty string');
+      return '';
+    }
     var p = phone.trim();
+    print('[ValidationUtils] After trim: "$p"');
     // Remove all non-digits except leading +
     p = p.replaceAll(RegExp(r'[^0-9+]'), '');
+    print('[ValidationUtils] After removing non-digits: "$p"');
 
     // If already E.164 +965XXXXXXXX with valid mobile prefix
     final RegExp e164Kw = RegExp(r'^\+965[569]\d{7}$');
-    if (e164Kw.hasMatch(p)) return p;
+    if (e164Kw.hasMatch(p)) {
+      print('[ValidationUtils] Already E.164 format, returning: "$p"');
+      return p;
+    }
 
     // If starts with 00965 or 0965 → convert to +965
     if (p.startsWith('00965')) {
       p = '+965' + p.substring(5);
+      print('[ValidationUtils] Converted 00965 to: "$p"');
     } else if (p.startsWith('0965')) {
       p = '+965' + p.substring(4);
+      print('[ValidationUtils] Converted 0965 to: "$p"');
     }
 
     // If starts with +965 but has extra leading zero(s)
     if (p.startsWith('+965')) {
       var rest = p.substring(4);
+      print('[ValidationUtils] +965 prefix found, rest: "$rest"');
       rest = rest.replaceAll(RegExp(r'^0+'), '');
+      print('[ValidationUtils] After removing leading zeros: "$rest"');
       if (rest.length == 8 && RegExp(r'^[569]\d{7}$').hasMatch(rest)) {
-        return '+965' + rest;
+        final result = '+965' + rest;
+        print('[ValidationUtils] Valid 8-digit mobile, returning: "$result"');
+        return result;
       }
     }
 
     // If local 8-digit number starting with valid mobile prefixes 5/6/9
     var digitsOnly = p.replaceAll(RegExp(r'[^0-9]'), '');
+    print('[ValidationUtils] Digits only: "$digitsOnly"');
     digitsOnly = digitsOnly.replaceAll(
       RegExp(r'^965'),
       '',
     ); // Remove leading 965 if present
+    print('[ValidationUtils] After removing 965 prefix: "$digitsOnly"');
     digitsOnly = digitsOnly.replaceAll(
       RegExp(r'^0+'),
       '',
     ); // Remove leading zeros
+    print('[ValidationUtils] After removing leading zeros: "$digitsOnly"');
     if (digitsOnly.length >= 8) {
       // Truncate to 8 digits if more, then check prefix
       var localNumber = digitsOnly.substring(0, 8);
+      print('[ValidationUtils] Local number (8 digits): "$localNumber"');
       if (RegExp(r'^[569]\d{7}$').hasMatch(localNumber)) {
-        return '+965' + localNumber;
+        final result = '+965' + localNumber;
+        print('[ValidationUtils] Valid local mobile, returning: "$result"');
+        return result;
       }
     }
 
     // Fallback: return trimmed original if unable to normalize
-    return phone.trim();
+    final fallback = phone.trim();
+    print(
+      '[ValidationUtils] Fallback: returning original trimmed: "$fallback"',
+    );
+    return fallback;
   }
 }

@@ -88,16 +88,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
         } catch (_) {}
       }
 
+      // Debug phone number processing
+      final originalPhone = _phoneController.text;
+      print('[RegisterScreen] Original phone input: "$originalPhone"');
+
       final normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
         _phoneController.text,
       );
+      print('[RegisterScreen] Normalized phone: "$normalizedPhone"');
+
+      final phoneToSend = normalizedPhone.isEmpty ? null : normalizedPhone;
+      print('[RegisterScreen] Phone to send to AuthBloc: $phoneToSend');
+
       context.read<AuthBloc>().add(
         AuthRegister(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          phone: normalizedPhone.isEmpty ? null : normalizedPhone,
+          phone: phoneToSend,
           acceptsMarketing: _acceptsMarketing,
         ),
       );

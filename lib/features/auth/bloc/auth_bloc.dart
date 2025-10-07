@@ -168,6 +168,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   /// Register a new user
   Future<void> _onRegister(AuthRegister event, Emitter<AuthState> emit) async {
+    print('[AuthBloc] _onRegister called with phone: "${event.phone}"');
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final user = await _authService.createUserWithEmailAndPassword(
@@ -179,6 +180,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         acceptsMarketing: event.acceptsMarketing,
       );
 
+      print('[AuthBloc] User created successfully: ${user.email}');
+      print('[AuthBloc] User phone from response: "${user.phone}"');
+
       // Verify authentication was successful
       final isAuthenticated = await _authService.isAuthenticated();
       if (isAuthenticated) {
@@ -187,8 +191,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.error('Registration verification failed'));
       }
     } on AuthException catch (e) {
+      print('[AuthBloc] AuthException during registration: ${e.message}');
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {
+      print('[AuthBloc] Unexpected error during registration: $e');
       emit(AuthState.error('An unexpected error occurred during registration'));
     }
   }

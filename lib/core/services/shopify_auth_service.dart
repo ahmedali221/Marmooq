@@ -85,28 +85,91 @@ class ShopifyAuthService {
     bool? acceptsMarketing,
   }) async {
     try {
+      print('[ShopifyAuthService] createUserWithEmailAndPassword called');
+      print('[ShopifyAuthService] Original phone parameter: "$phone"');
+
       final normalizedPhone = (phone == null || phone.trim().isEmpty)
           ? null
           : ValidationUtils.normalizeKuwaitPhone(phone);
 
       // Debug phone normalization
       if (phone != null && phone.trim().isNotEmpty) {
-        debugPrint('Shopify user creation: Original phone: $phone');
-        debugPrint('Shopify user creation: Normalized phone: $normalizedPhone');
+        print('[ShopifyAuthService] Phone normalization - Original: "$phone"');
+        print(
+          '[ShopifyAuthService] Phone normalization - Normalized: "$normalizedPhone"',
+        );
         if (normalizedPhone == null || normalizedPhone.isEmpty) {
-          debugPrint(
-            'Shopify user creation: Phone normalization failed - phone will be null',
+          print(
+            '[ShopifyAuthService] Phone normalization failed - phone will be null',
           );
         }
+      } else {
+        print(
+          '[ShopifyAuthService] Phone is null or empty, skipping normalization',
+        );
       }
 
-      final user = await _shopifyAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        phone: normalizedPhone,
-        acceptsMarketing: acceptsMarketing,
+      print(
+        '[ShopifyAuthService] Calling Shopify createUserWithEmailAndPassword',
+      );
+      print(
+        '[ShopifyAuthService] Phone being sent to Shopify: "$normalizedPhone"',
+      );
+
+      // Try creating user without phone first to test if phone is the issue
+      ShopifyUser user;
+      if (normalizedPhone != null && normalizedPhone.isNotEmpty) {
+        print(
+          '[ShopifyAuthService] Attempting registration with phone: "$normalizedPhone"',
+        );
+        try {
+          user = await _shopifyAuth.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+            firstName: firstName,
+            lastName: lastName,
+            phone: normalizedPhone,
+            acceptsMarketing: acceptsMarketing,
+          );
+        } catch (phoneError) {
+          print(
+            '[ShopifyAuthService] Registration with phone failed: $phoneError',
+          );
+          print(
+            '[ShopifyAuthService] Attempting registration without phone...',
+          );
+          // Try without phone
+          user = await _shopifyAuth.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+            firstName: firstName,
+            lastName: lastName,
+            phone: null, // Try without phone
+            acceptsMarketing: acceptsMarketing,
+          );
+          print(
+            '[ShopifyAuthService] Registration without phone succeeded, will update phone later',
+          );
+        }
+      } else {
+        print(
+          '[ShopifyAuthService] No phone provided, creating user without phone',
+        );
+        user = await _shopifyAuth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+          firstName: firstName,
+          lastName: lastName,
+          phone: null,
+          acceptsMarketing: acceptsMarketing,
+        );
+      }
+
+      print(
+        '[ShopifyAuthService] User created by Shopify - Email: ${user.email}',
+      );
+      print(
+        '[ShopifyAuthService] User created by Shopify - Phone: "${user.phone}"',
       );
 
       // Ensure we have a valid access token after registration
@@ -147,12 +210,16 @@ class ShopifyAuthService {
         }
 
         // Update additional fields if provided (now with token)
+        // Also try to add phone if registration with phone failed initially
         if (firstName != null ||
             lastName != null ||
             normalizedPhone != null ||
             acceptsMarketing != null) {
           try {
             final customer = ShopifyCustomer.instance;
+            print(
+              '[ShopifyAuthService] Attempting to update customer profile with phone: "$normalizedPhone"',
+            );
             await customer.customerUpdate(
               firstName: firstName,
               lastName: lastName,
@@ -160,6 +227,7 @@ class ShopifyAuthService {
               acceptsMarketing: acceptsMarketing,
               customerAccessToken: accessToken,
             );
+            print('[ShopifyAuthService] Customer profile updated successfully');
 
             // Verify phone persisted; retry once if needed
             if (normalizedPhone != null) {
@@ -178,6 +246,7 @@ class ShopifyAuthService {
               } catch (e) {}
             }
           } catch (e) {
+            print('[ShopifyAuthService] Profile update failed: $e');
             // Don't fail registration if profile update fails
           }
         }
@@ -186,11 +255,8 @@ class ShopifyAuthService {
       // Store user data securely (refresh to get latest fields)
       final refreshed =
           await _shopifyAuth.currentUser(forceRefresh: true) ?? user;
-      debugPrint(
-        '[AuthService] Refreshed user after signup: email=' +
-            (refreshed.email ?? '(null)') +
-            ', phone=' +
-            (refreshed.phone ?? '(empty)'),
+      print(
+        '[ShopifyAuthService] Refreshed user after signup: email=${refreshed.email ?? '(null)'}, phone="${refreshed.phone ?? '(empty)'}"',
       );
       final userData = <String, dynamic>{
         'email': refreshed.email,
@@ -200,16 +266,30 @@ class ShopifyAuthService {
         'id': refreshed.id,
       };
       await SecurityService.syncUserDataWithShopify(userData);
-      debugPrint(
-        '[AuthService] Synced user data to storage: ' + userData.toString(),
-      );
+      print('[ShopifyAuthService] Synced user data to storage: $userData');
 
       // Generate a new session ID for this registration
       await SecurityService.generateSessionId();
 
+      print('[ShopifyAuthService] Registration completed successfully');
       return user;
     } catch (e) {
-      debugPrint('Shopify user creation error: $e');
+      print('[ShopifyAuthService] Registration error: $e');
+      print('[ShopifyAuthService] Error type: ${e.runtimeType}');
+      print('[ShopifyAuthService] Error toString: ${e.toString()}');
+
+      // Try to extract more detailed error information
+      if (e.toString().contains('customerUserErrors')) {
+        print('[ShopifyAuthService] Customer user errors detected');
+        // Try to parse the error message more specifically
+        final errorString = e.toString();
+        if (errorString.contains('محتوى Phone غير صالح')) {
+          print(
+            '[ShopifyAuthService] Phone validation failed - phone number format issue',
+          );
+        }
+      }
+
       throw AuthException.fromShopifyError(e);
     }
   }
