@@ -14,6 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:marmooq/core/utils/validation_utils.dart';
 import 'package:marmooq/core/widgets/standard_app_bar.dart';
 import 'package:marmooq/core/utils/responsive_utils.dart';
+import 'package:marmooq/core/services/shopify_auth_service.dart';
 
 class ShippingDetailsScreen extends StatefulWidget {
   final String customerAccessToken;
@@ -59,7 +60,37 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
   void initState() {
     super.initState();
     _fetchCartLineItems();
+    _loadUserData();
     _countryController.text = _selectedCountry;
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final authService = ShopifyAuthService.instance;
+      final user = await authService.currentUser();
+
+      if (user != null && mounted) {
+        // Set full name
+        if (user.firstName != null || user.lastName != null) {
+          final firstName = user.firstName ?? '';
+          final lastName = user.lastName ?? '';
+          _fullNameController.text = '$firstName $lastName'.trim();
+        }
+
+        // Set phone number (remove +965 prefix if present for display)
+        if (user.phone != null && user.phone!.isNotEmpty) {
+          String phone = user.phone!;
+          // Remove +965 prefix if present
+          if (phone.startsWith('+965')) {
+            phone = phone.substring(4);
+          }
+          _phoneController.text = phone;
+        }
+      }
+    } catch (e) {
+      // Silently fail - user can manually enter data
+      debugPrint('Failed to load user data: $e');
+    }
   }
 
   @override
@@ -170,6 +201,12 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
 
       final webUrl = checkout.webUrl;
       if (webUrl.isNotEmpty) {
+        // Format phone number with +965 prefix
+        String formattedPhone = _phoneController.text.trim();
+        if (!formattedPhone.startsWith('+965')) {
+          formattedPhone = '+965$formattedPhone';
+        }
+
         // Build prefilled checkout URL with shipping details
         final prefilledUrl = _checkoutService.buildPrefilledCheckoutUrl(
           baseCheckoutUrl: webUrl,
@@ -182,7 +219,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
           province: _provinceController.text,
           country: _countryController.text,
           zip: _zipController.text,
-          phone: _phoneController.text,
+          phone: formattedPhone,
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -419,11 +456,11 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                                   if (digits.length != 8) {
                                     return 'رقم الهاتف يجب أن يتكون من 8 أرقام';
                                   }
-                                  final full = '+965' + digits;
+                                  // Validate just the 8 digits (without +965 prefix)
                                   if (!ValidationUtils.isValidKuwaitPhone(
-                                    full,
+                                    digits,
                                   )) {
-                                    return 'يرجى إدخال رقم كويتي صالح';
+                                    return 'يرجى إدخال رقم كويتي صالح (يبدأ بـ 5 أو 6 أو 9)';
                                   }
                                   return null;
                                 },

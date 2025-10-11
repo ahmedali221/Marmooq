@@ -297,21 +297,15 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         // Step 4: Click continue/complete buttons
         console.log('Looking for continue buttons...');
         const continueSelectors = [
+          '#checkout-pay-button',
+          'button#checkout-pay-button',
           'button[name="button"]',
           'button[type="submit"]',
           'button[data-continue-button]',
           'button.primary',
           'button[class*="continue"]',
           'button[class*="submit"]',
-          'input[type="submit"]',
-          'button:contains("Continue")',
-          'button:contains("Submit")',
-          'button:contains("Place order")',
-          'button:contains("Complete order")',
-          'button:contains("Complete")',
-          'button:contains("Pay")',
-          'button:contains("إتمام")',
-          'button:contains("متابعة")'
+          'input[type="submit"]'
         ];
         
         let continueClicked = false;

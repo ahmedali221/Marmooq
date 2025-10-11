@@ -88,17 +88,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         } catch (_) {}
       }
 
-      // Debug phone number processing
-      final originalPhone = _phoneController.text;
-      print('[RegisterScreen] Original phone input: "$originalPhone"');
-
+      // Normalize phone number and add +965 prefix
       final normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
         _phoneController.text,
       );
-      print('[RegisterScreen] Normalized phone: "$normalizedPhone"');
-
-      final phoneToSend = normalizedPhone.isEmpty ? null : normalizedPhone;
-      print('[RegisterScreen] Phone to send to AuthBloc: $phoneToSend');
 
       context.read<AuthBloc>().add(
         AuthRegister(
@@ -106,7 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          phone: phoneToSend,
+          phone: normalizedPhone,
           acceptsMarketing: _acceptsMarketing,
         ),
       );
@@ -385,9 +378,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
+                          maxLength: 8,
                           decoration: InputDecoration(
                             labelText: 'رقم الهاتف',
-                            hintText: 'يجب أن يبدأ الرقم بـ 5 أو 6 أو 9',
+                            hintText: '8 أرقام تبدأ بـ 5 أو 6 أو 9',
                             prefixIcon: const Icon(FeatherIcons.phone),
                             border: const OutlineInputBorder(),
                             focusedBorder: const OutlineInputBorder(
@@ -403,13 +397,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               horizontal: 16,
                               vertical: isTablet ? 20 : 16,
                             ),
+                            counterText: '', // Hide character counter
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'يرجى إدخال رقم الهاتف';
                             }
                             if (!ValidationUtils.isValidKuwaitPhone(value)) {
-                              return 'يرجى إدخال رقم هاتف صالح (يجب أن يبدأ بـ 5 أو 6 أو 9)';
+                              return 'يرجى إدخال رقم هاتف صالح (8 أرقام تبدأ بـ 5 أو 6 أو 9)';
                             }
                             return null;
                           },

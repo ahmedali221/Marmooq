@@ -1,6 +1,5 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:marmooq/core/services/auth_exception.dart';
 import 'package:marmooq/features/auth/bloc/auth_state.dart';
 import 'package:marmooq/core/services/shopify_auth_service.dart';
@@ -29,17 +28,17 @@ class AuthSignIn extends AuthEvent {
 class AuthRegister extends AuthEvent {
   final String email;
   final String password;
-  final String? firstName;
-  final String? lastName;
-  final String? phone;
+  final String firstName;
+  final String lastName;
+  final String phone;
   final bool? acceptsMarketing;
 
   AuthRegister({
     required this.email,
     required this.password,
-    this.firstName,
-    this.lastName,
-    this.phone,
+    required this.firstName,
+    required this.lastName,
+    required this.phone,
     this.acceptsMarketing,
   });
 
@@ -114,7 +113,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignIn>(_onSignIn);
     on<AuthRegister>(_onRegister);
     on<AuthSignOut>(_onSignOut);
-    on<AuthResetPassword>(_onResetPassword);
     on<AuthDeleteAccount>(_onDeleteAccount);
     on<AuthUpdateProfile>(_onUpdateProfile);
   }
@@ -168,7 +166,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   /// Register a new user
   Future<void> _onRegister(AuthRegister event, Emitter<AuthState> emit) async {
-    print('[AuthBloc] _onRegister called with phone: "${event.phone}"');
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final user = await _authService.createUserWithEmailAndPassword(
@@ -176,12 +173,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         firstName: event.firstName,
         lastName: event.lastName,
-        phone: event.phone,
+        phone:
+            event.phone, // Phone already has +965 prefix from register screen
         acceptsMarketing: event.acceptsMarketing,
       );
-
-      print('[AuthBloc] User created successfully: ${user.email}');
-      print('[AuthBloc] User phone from response: "${user.phone}"');
 
       // Verify authentication was successful
       final isAuthenticated = await _authService.isAuthenticated();
@@ -191,10 +186,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.error('Registration verification failed'));
       }
     } on AuthException catch (e) {
-      print('[AuthBloc] AuthException during registration: ${e.message}');
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {
-      print('[AuthBloc] Unexpected error during registration: $e');
       emit(AuthState.error('An unexpected error occurred during registration'));
     }
   }
@@ -206,29 +199,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthState.unauthenticated());
     } catch (e) {
       emit(AuthState.error('An error occurred during sign out'));
-    }
-  }
-
-  /// Reset password
-  Future<void> _onResetPassword(
-    AuthResetPassword event,
-    Emitter<AuthState> emit,
-  ) async {
-    try {
-      await _authService.sendPasswordResetEmail(email: event.email);
-      emit(
-        state.copyWith(
-          status: AuthStatus.unauthenticated,
-          errorMessage: null,
-          errorCode: null,
-        ),
-      );
-    } on AuthException catch (e) {
-      emit(AuthState.error(e.message, code: e.code));
-    } catch (e) {
-      emit(
-        AuthState.error('An error occurred while sending password reset email'),
-      );
     }
   }
 
