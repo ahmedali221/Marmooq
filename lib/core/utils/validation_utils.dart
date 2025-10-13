@@ -141,7 +141,8 @@ class ValidationUtils {
   }
 
   /// Validates a Kuwait mobile phone number.
-  /// Only accepts 8-digit numbers starting with 5, 6, or 9
+  /// Only accepts EXACTLY 8-digit numbers starting with 5, 6, or 9
+  /// Example: 50001325 ✅  |  60001325 ✅  |  90001325 ✅
   static bool isValidKuwaitPhone(String phone) {
     if (phone.isEmpty) {
       return false; // Phone is required
@@ -155,22 +156,36 @@ class ValidationUtils {
     return kwRegex.hasMatch(digitsOnly);
   }
 
-  /// Normalizes Kuwait phone input to E.164 format with +965 prefix
-  /// Input should be 8 digits starting with 5, 6, or 9
+  /// Normalizes Kuwait phone to E.164 format: +965 + (8 digits)
+  ///
+  /// Input:  8 digits starting with 5, 6, or 9 (example: "50001325")
+  /// Output: +965 + 8 digits (example: "+96550001325")
+  ///
+  /// Returns formatted phone or empty string if invalid
   static String normalizeKuwaitPhone(String phone) {
     if (phone.isEmpty) {
       return '';
     }
 
-    // Remove all non-digit characters
+    // Remove all non-digit characters to get clean digits
     final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
 
-    // Must be exactly 8 digits starting with 5, 6, or 9
-    if (RegExp(r'^[569]\d{7}$').hasMatch(digitsOnly)) {
-      return '+965$digitsOnly';
+    // Case 1: Already has 965 prefix → Extract and validate 8 digits
+    if (digitsOnly.length == 11 && digitsOnly.startsWith('965')) {
+      final kuwaitNumber = digitsOnly.substring(3); // Get last 8 digits
+      if (RegExp(r'^[569]\d{7}$').hasMatch(kuwaitNumber)) {
+        return '+965$kuwaitNumber'; // +965XXXXXXXX
+      }
+      return '';
     }
 
-    // Return empty string if invalid format
+    // Case 2: Just 8 digits → Validate and add +965 prefix
+    if (digitsOnly.length == 8 &&
+        RegExp(r'^[569]\d{7}$').hasMatch(digitsOnly)) {
+      return '+965$digitsOnly'; // +965XXXXXXXX
+    }
+
+    // Invalid format
     return '';
   }
 }

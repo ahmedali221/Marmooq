@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io' show Platform;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
@@ -88,10 +89,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
         } catch (_) {}
       }
 
-      // Normalize phone number and add +965 prefix
-      final normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
-        _phoneController.text,
-      );
+      // Normalize phone number if provided
+      String? normalizedPhone;
+      if (_phoneController.text.isNotEmpty) {
+        normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
+          _phoneController.text,
+        );
+
+        // Verify phone normalization succeeded
+        if (normalizedPhone.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('خطأ في تنسيق رقم الهاتف. يرجى التحقق من الرقم'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+      }
 
       context.read<AuthBloc>().add(
         AuthRegister(
@@ -99,7 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          phone: normalizedPhone,
+          phone: normalizedPhone ?? '',
           acceptsMarketing: _acceptsMarketing,
         ),
       );
@@ -377,10 +393,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         SizedBox(height: isTablet ? 20 : 16),
                         TextFormField(
                           controller: _phoneController,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.number,
                           maxLength: 8,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: InputDecoration(
-                            labelText: 'رقم الهاتف',
+                            labelText: 'رقم الهاتف (اختياري)',
                             hintText: '8 أرقام تبدأ بـ 5 أو 6 أو 9',
                             prefixIcon: const Icon(FeatherIcons.phone),
                             border: const OutlineInputBorder(),
@@ -400,11 +419,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             counterText: '', // Hide character counter
                           ),
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'يرجى إدخال رقم الهاتف';
-                            }
-                            if (!ValidationUtils.isValidKuwaitPhone(value)) {
-                              return 'يرجى إدخال رقم هاتف صالح (8 أرقام تبدأ بـ 5 أو 6 أو 9)';
+                            // Phone is optional, only validate if provided
+                            if (value != null && value.isNotEmpty) {
+                              if (!ValidationUtils.isValidKuwaitPhone(value)) {
+                                return 'يرجى إدخال رقم هاتف صالح (8 أرقام تبدأ بـ 5 أو 6 أو 9)';
+                              }
                             }
                             return null;
                           },

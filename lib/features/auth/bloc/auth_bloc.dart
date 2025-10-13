@@ -150,13 +150,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
 
-      // Verify authentication was successful
-      final isAuthenticated = await _authService.isAuthenticated();
-      if (isAuthenticated) {
-        emit(AuthState.authenticated(user));
-      } else {
-        emit(AuthState.error('Authentication verification failed'));
-      }
+      // If sign in succeeds, user is authenticated (token is stored)
+      emit(AuthState.authenticated(user));
     } on AuthException catch (e) {
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {
@@ -178,13 +173,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         acceptsMarketing: event.acceptsMarketing,
       );
 
-      // Verify authentication was successful
-      final isAuthenticated = await _authService.isAuthenticated();
-      if (isAuthenticated) {
-        emit(AuthState.authenticated(user));
-      } else {
-        emit(AuthState.error('Registration verification failed'));
-      }
+      // If registration succeeds, user is authenticated (token is stored)
+      emit(AuthState.authenticated(user));
     } on AuthException catch (e) {
       emit(AuthState.error(e.message, code: e.code));
     } catch (e) {

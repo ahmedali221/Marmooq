@@ -3,6 +3,7 @@ import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:marmooq/core/services/security_service.dart';
 import 'package:marmooq/core/utils/validation_utils.dart';
 import 'package:marmooq/core/services/auth_exception.dart';
+import 'package:marmooq/core/services/graphql_auth_service.dart';
 
 /// Service for handling Shopify authentication operations.
 class ShopifyAuthService {
@@ -20,7 +21,7 @@ class ShopifyAuthService {
   /// Static getter for the singleton instance
   static ShopifyAuthService get instance => _instance;
 
-  /// Sign in with email and password
+  /// Sign in with email and password using GraphQL
   /// Returns the ShopifyUser on success
   /// Throws an AuthException on failure
   Future<ShopifyUser> signInWithEmailAndPassword({
@@ -28,66 +29,105 @@ class ShopifyAuthService {
     required String password,
   }) async {
     try {
-      final user = await _shopifyAuth.signInWithEmailAndPassword(
+      // Use GraphQL for authentication
+      final result = await GraphQLAuthService.signIn(
         email: email,
         password: password,
       );
 
-      // Store the access token securely
-      final accessToken = await _shopifyAuth.currentCustomerAccessToken;
-      if (accessToken != null) {
-        await SecurityService.storeAccessToken(accessToken);
+      final accessToken = result['accessToken'] as String;
+      final expiresAtStr = result['expiresAt'] as String?;
+      final customerData = result['customer'] as Map<String, dynamic>;
 
-        // Store token expiration date if available
-        final tokenWithExpDate = await _shopifyAuth.accessTokenWithExpDate;
-        if (tokenWithExpDate?.expiresAt != null) {
-          await SecurityService.storeTokenExpirationDate(
-            tokenWithExpDate!.expiresAt!,
-          );
-        } else {
-          // Set default expiration to 24 hours if not provided
+      // Store the access token securely
+      await SecurityService.storeAccessToken(accessToken);
+
+      // Store token expiration date
+      if (expiresAtStr != null) {
+        try {
+          final expiresAt = DateTime.parse(expiresAtStr);
+          await SecurityService.storeTokenExpirationDate(expiresAt);
+        } catch (e) {
+          debugPrint('Error parsing expiration date: $e');
+          // Set default expiration to 24 hours if parsing fails
           final defaultExpiration = DateTime.now().add(
             const Duration(hours: 24),
           );
           await SecurityService.storeTokenExpirationDate(defaultExpiration);
         }
+      } else {
+        // Set default expiration to 24 hours if not provided
+        final defaultExpiration = DateTime.now().add(const Duration(hours: 24));
+        await SecurityService.storeTokenExpirationDate(defaultExpiration);
       }
 
       // Store user data securely
       final userData = <String, dynamic>{
-        'email': user.email,
-        'firstName': user.firstName,
-        'lastName': user.lastName,
-        'phone': user.phone,
-        'id': user.id,
+        'email': customerData['email'],
+        'firstName': customerData['firstName'],
+        'lastName': customerData['lastName'],
+        'phone': customerData['phone'],
+        'id': customerData['id'],
       };
       await SecurityService.syncUserDataWithShopify(userData);
 
       // Generate a new session ID for this login
       await SecurityService.generateSessionId();
 
+      // Create ShopifyUser from JSON
+      final user = ShopifyUser.fromJson(customerData);
       return user;
     } catch (e) {
-      throw AuthException.fromShopifyError(e);
+      if (e is AuthException) rethrow;
+      debugPrint('Sign in error: $e');
+      throw AuthException('Sign in failed: ${e.toString()}');
     }
   }
 
-  /// Create a new user account with email and password
-  /// Required fields: phone, firstName, lastName
-  /// Optional fields: acceptsMarketing
+  /// Create a new user account with email and password using GraphQL
+  /// Required fields: firstName, lastName
+  /// Optional fields: phone, acceptsMarketing
   /// Returns the ShopifyUser on success
   /// Throws an AuthException on failure
   Future<ShopifyUser> createUserWithEmailAndPassword({
     required String email,
     required String password,
-    required String phone,
+    String? phone, // Made optional
     required String firstName,
     required String lastName,
     bool? acceptsMarketing,
   }) async {
     try {
-      // Create user with all provided information including phone
-      final user = await _shopifyAuth.createUserWithEmailAndPassword(
+      // Validate phone format if provided
+      if (phone != null && phone.isNotEmpty) {
+        if (!phone.startsWith('+965')) {
+          throw AuthException(
+            'Invalid phone number format. Must be a Kuwait number with +965 prefix.',
+          );
+        }
+
+        // Ensure phone is exactly 12 characters: +965XXXXXXXX
+        if (phone.length != 12) {
+          throw AuthException(
+            'Invalid phone number format. Must be +965 followed by 8 digits.',
+          );
+        }
+
+        // Validate the 8 digits start with 5, 6, or 9
+        final phoneDigits = phone.substring(4); // Get the 8 digits after +965
+        if (!RegExp(r'^[569]\d{7}$').hasMatch(phoneDigits)) {
+          throw AuthException(
+            'Invalid phone number. Must start with 5, 6, or 9.',
+          );
+        }
+
+        debugPrint('[AuthService] Registering with phone: $phone');
+      } else {
+        debugPrint('[AuthService] Registering without phone');
+      }
+
+      // Use GraphQL for registration
+      final result = await GraphQLAuthService.signUp(
         email: email,
         password: password,
         firstName: firstName,
@@ -96,62 +136,60 @@ class ShopifyAuthService {
         acceptsMarketing: acceptsMarketing,
       );
 
-      // Ensure we have a valid access token after registration
-      String? accessToken = await _shopifyAuth.currentCustomerAccessToken;
-      // Retry a few times as token provisioning can lag right after creation
-      if (accessToken == null || accessToken.isEmpty) {
-        for (int attempt = 0; attempt < 4; attempt++) {
-          try {
-            await _shopifyAuth.signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
-          } catch (e) {
-            // Sign-in attempt failed, continue to next attempt
-          }
-          accessToken = await _shopifyAuth.currentCustomerAccessToken;
-          if (accessToken != null && accessToken.isNotEmpty) break;
-          await Future.delayed(const Duration(milliseconds: 500));
-        }
+      final accessToken = result['accessToken'] as String;
+      final expiresAtStr = result['expiresAt'] as String?;
+      final customerData = result['customer'] as Map<String, dynamic>;
+      final phoneSkipped = result['phoneSkipped'] as bool? ?? false;
+
+      // Log if phone was skipped due to Shopify validation
+      if (phoneSkipped) {
+        debugPrint(
+          '[AuthService] ⚠️ Registration completed without phone number (Shopify rejected the phone format)',
+        );
       }
 
-      if (accessToken != null && accessToken.isNotEmpty) {
-        // Store the access token securely
-        await SecurityService.storeAccessToken(accessToken);
+      // Store the access token securely
+      await SecurityService.storeAccessToken(accessToken);
 
-        // Store token expiration date if available
-        final tokenWithExpDate = await _shopifyAuth.accessTokenWithExpDate;
-        if (tokenWithExpDate?.expiresAt != null) {
-          await SecurityService.storeTokenExpirationDate(
-            tokenWithExpDate!.expiresAt!,
-          );
-        } else {
-          // Set default expiration to 24 hours if not provided
+      // Store token expiration date
+      if (expiresAtStr != null) {
+        try {
+          final expiresAt = DateTime.parse(expiresAtStr);
+          await SecurityService.storeTokenExpirationDate(expiresAt);
+        } catch (e) {
+          debugPrint('Error parsing expiration date: $e');
+          // Set default expiration to 24 hours if parsing fails
           final defaultExpiration = DateTime.now().add(
             const Duration(hours: 24),
           );
           await SecurityService.storeTokenExpirationDate(defaultExpiration);
         }
+      } else {
+        // Set default expiration to 24 hours if not provided
+        final defaultExpiration = DateTime.now().add(const Duration(hours: 24));
+        await SecurityService.storeTokenExpirationDate(defaultExpiration);
       }
 
-      // Store user data securely (refresh to get latest fields)
-      final refreshed =
-          await _shopifyAuth.currentUser(forceRefresh: true) ?? user;
+      // Store user data securely
       final userData = <String, dynamic>{
-        'email': refreshed.email,
-        'firstName': refreshed.firstName ?? firstName,
-        'lastName': refreshed.lastName ?? lastName,
-        'phone': refreshed.phone ?? phone,
-        'id': refreshed.id,
+        'email': customerData['email'] ?? email,
+        'firstName': customerData['firstName'] ?? firstName,
+        'lastName': customerData['lastName'] ?? lastName,
+        'phone': customerData['phone'] ?? phone,
+        'id': customerData['id'],
       };
       await SecurityService.syncUserDataWithShopify(userData);
 
       // Generate a new session ID for this registration
       await SecurityService.generateSessionId();
 
+      // Create ShopifyUser from JSON
+      final user = ShopifyUser.fromJson(customerData);
       return user;
     } catch (e) {
-      throw AuthException.fromShopifyError(e);
+      if (e is AuthException) rethrow;
+      debugPrint('Registration error: $e');
+      throw AuthException('Registration failed: ${e.toString()}');
     }
   }
 
@@ -190,12 +228,27 @@ class ShopifyAuthService {
   }
 
   /// Get the current user
-  /// Set forceRefresh to true to bypass cache
+  /// Set forceRefresh to true to bypass cache or use GraphQL
   Future<ShopifyUser?> currentUser({bool forceRefresh = false}) async {
     try {
+      // First try to get from stored token using GraphQL
+      final storedToken = await SecurityService.getAccessToken();
+      if (storedToken != null && storedToken.isNotEmpty) {
+        try {
+          final customerData = await GraphQLAuthService.getCustomer(
+            accessToken: storedToken,
+          );
+          return ShopifyUser.fromJson(customerData);
+        } catch (e) {
+          debugPrint('GraphQL get customer error: $e');
+          // Fall back to SDK method
+        }
+      }
+
+      // Fallback to SDK method
       return await _shopifyAuth.currentUser(forceRefresh: forceRefresh);
     } catch (e) {
-      debugPrint('Shopify get current user error: $e');
+      debugPrint('Get current user error: $e');
       return null;
     }
   }
@@ -210,9 +263,18 @@ class ShopifyAuthService {
     bool? acceptsMarketing,
   }) async {
     try {
-      final normalizedPhone = (phone == null || phone.trim().isEmpty)
-          ? null
-          : ValidationUtils.normalizeKuwaitPhone(phone);
+      // Validate and normalize phone - only send if it's valid
+      String? normalizedPhone;
+      if (phone != null && phone.trim().isNotEmpty) {
+        normalizedPhone = ValidationUtils.normalizeKuwaitPhone(phone);
+        // If normalization fails (returns empty string), don't send phone at all
+        if (normalizedPhone.isEmpty) {
+          throw AuthException(
+            'Invalid phone number format. Must be 8 digits starting with 5, 6, or 9',
+          );
+        }
+      }
+
       // Retrieve the current customer access token (required by Shopify)
       String? customerAccessToken = await SecurityService.getAccessToken();
       customerAccessToken ??= await _shopifyAuth.currentCustomerAccessToken;
@@ -332,6 +394,18 @@ class ShopifyAuthService {
       if (token == null || token.isEmpty) {
         throw AuthException('Missing customer access token');
       }
+
+      // Validate and normalize phone if provided
+      String? validatedPhone;
+      if (phone != null && phone.trim().isNotEmpty) {
+        validatedPhone = ValidationUtils.normalizeKuwaitPhone(phone);
+        if (validatedPhone.isEmpty) {
+          throw AuthException(
+            'Invalid phone number format. Must be 8 digits starting with 5, 6, or 9',
+          );
+        }
+      }
+
       final customer = ShopifyCustomer.instance;
       return await customer.customerAddressCreate(
         address1: address1,
@@ -341,7 +415,7 @@ class ShopifyAuthService {
         country: country,
         firstName: firstName,
         lastName: lastName,
-        phone: phone,
+        phone: validatedPhone,
         province: province,
         zip: zip,
         customerAccessToken: token,
@@ -373,6 +447,18 @@ class ShopifyAuthService {
       if (token == null || token.isEmpty) {
         throw AuthException('Missing customer access token');
       }
+
+      // Validate and normalize phone if provided
+      String? validatedPhone;
+      if (phone != null && phone.trim().isNotEmpty) {
+        validatedPhone = ValidationUtils.normalizeKuwaitPhone(phone);
+        if (validatedPhone.isEmpty) {
+          throw AuthException(
+            'Invalid phone number format. Must be 8 digits starting with 5, 6, or 9',
+          );
+        }
+      }
+
       final customer = ShopifyCustomer.instance;
       await customer.customerAddressUpdate(
         customerAccessToken: token,
@@ -384,7 +470,7 @@ class ShopifyAuthService {
         country: country,
         firstName: firstName,
         lastName: lastName,
-        phone: phone,
+        phone: validatedPhone,
         province: province,
         zip: zip,
       );
@@ -463,23 +549,19 @@ class ShopifyAuthService {
         return false;
       }
 
-      // Verify with Shopify service
-      final user = await currentUser();
-      final currentToken = await currentCustomerAccessToken;
-
-      // Double-check token validity
-      if (currentToken == null || currentToken.isEmpty) {
+      // Verify with GraphQL first
+      try {
+        final customerData = await GraphQLAuthService.getCustomer(
+          accessToken: storedToken,
+        );
+        // If we can get customer data, authentication is valid
+        return customerData['id'] != null;
+      } catch (e) {
+        debugPrint('GraphQL authentication check failed: $e');
+        // Clear auth data if GraphQL check fails
         await SecurityService.clearAllAuthData();
         return false;
       }
-
-      // Verify token format
-      if (!SecurityService.isValidTokenFormat(currentToken)) {
-        await SecurityService.clearAllAuthData();
-        return false;
-      }
-
-      return user != null;
     } catch (e) {
       debugPrint('Authentication check error: $e');
       // Clear potentially corrupted auth data
