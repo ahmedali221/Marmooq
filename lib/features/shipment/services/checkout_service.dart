@@ -1,7 +1,6 @@
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:marmooq/features/shipment/models/checkout_models.dart';
 import 'package:marmooq/features/shipment/repository/shipment_repository.dart';
-import 'package:marmooq/core/utils/validation_utils.dart';
 
 class CheckoutService {
   final ShipmentRepository _shipmentRepository = ShipmentRepository();
@@ -92,33 +91,23 @@ class CheckoutService {
     addIfNotEmpty('checkout[shipping_address][country]', country);
     addIfNotEmpty('checkout[shipping_address][zip]', zip);
 
-    // Normalize Kuwait phone to +965XXXXXXXX pattern before sending
-    final String phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
-    final String fullKuwaitPhone = phoneDigits.isEmpty
-        ? ''
-        : '+965' + phoneDigits;
-    final String normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
-      fullKuwaitPhone,
-    );
+    // Use the phone directly if it's already in correct format, otherwise use demo fallback
+    final String finalPhone = phone.startsWith('+965') && phone.length == 13
+        ? phone // Already in correct format: +965XXXXXXXX
+        : '+96555544789'; // Demo phone fallback
 
-    print('[DEBUG] Phone normalization:');
+    print('[DEBUG] Phone processing:');
     print('[DEBUG] Original phone: $phone');
-    print('[DEBUG] Phone digits: $phoneDigits');
-    print('[DEBUG] Full Kuwait phone: $fullKuwaitPhone');
-    print('[DEBUG] Normalized phone: $normalizedPhone');
+    print('[DEBUG] Final phone to use: $finalPhone');
 
-    addIfNotEmpty('checkout[shipping_address][phone]', normalizedPhone);
+    addIfNotEmpty('checkout[shipping_address][phone]', finalPhone);
+
+    // Also add phone as a general checkout parameter
+    addIfNotEmpty('checkout[phone]', finalPhone);
 
     // Additional Shopify checkout parameters for better prefill
-    addIfNotEmpty('checkout[shipping_address][company]', '');
     addIfNotEmpty('checkout[shipping_address][country_code]', 'KW');
     addIfNotEmpty('checkout[shipping_address][province_code]', 'KU');
-
-    // Set default shipping method to free delivery
-    addIfNotEmpty('checkout[shipping_rate][id]', '');
-
-    // Set default payment method to cash on delivery
-    addIfNotEmpty('checkout[payment_gateway]', 'cash_on_delivery');
 
     final newUri = uri.replace(queryParameters: params);
 
@@ -127,22 +116,11 @@ class CheckoutService {
     params.forEach((key, value) {
       if (key.contains('phone') ||
           key.contains('email') ||
-          key.contains('name')) {
+          key.contains('name') ||
+          key.contains('address')) {
         print('[DEBUG] $key: $value');
       }
     });
-
-    // Additional debug logging for phone parameter specifically
-    print(
-      '[DEBUG] Phone parameter in URL: ${params['checkout[shipping_address][phone]']}',
-    );
-    print('[DEBUG] Email parameter in URL: ${params['checkout[email]']}');
-    print(
-      '[DEBUG] First name parameter in URL: ${params['checkout[shipping_address][first_name]']}',
-    );
-    print(
-      '[DEBUG] Last name parameter in URL: ${params['checkout[shipping_address][last_name]']}',
-    );
 
     return newUri.toString();
   }

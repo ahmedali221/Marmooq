@@ -163,29 +163,40 @@ class ValidationUtils {
   ///
   /// Returns formatted phone or empty string if invalid
   static String normalizeKuwaitPhone(String phone) {
+    print('[ValidationUtils] normalizeKuwaitPhone input: $phone');
+
     if (phone.isEmpty) {
+      print('[ValidationUtils] Phone is empty, returning empty string');
       return '';
     }
 
     // Remove all non-digit characters to get clean digits
     final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    print('[ValidationUtils] Digits only: $digitsOnly');
 
     // Case 1: Already has 965 prefix → Extract and validate 8 digits
     if (digitsOnly.length == 11 && digitsOnly.startsWith('965')) {
       final kuwaitNumber = digitsOnly.substring(3); // Get last 8 digits
+      print('[ValidationUtils] Kuwait number (11 digits case): $kuwaitNumber');
       if (RegExp(r'^[569]\d{7}$').hasMatch(kuwaitNumber)) {
-        return '+965$kuwaitNumber'; // +965XXXXXXXX
+        final result = '+965$kuwaitNumber';
+        print('[ValidationUtils] Returning: $result');
+        return result; // +965XXXXXXXX
       }
+      print('[ValidationUtils] Invalid 11-digit format');
       return '';
     }
 
     // Case 2: Just 8 digits → Validate and add +965 prefix
     if (digitsOnly.length == 8 &&
         RegExp(r'^[569]\d{7}$').hasMatch(digitsOnly)) {
-      return '+965$digitsOnly'; // +965XXXXXXXX
+      final result = '+965$digitsOnly';
+      print('[ValidationUtils] Returning (8 digits case): $result');
+      return result; // +965XXXXXXXX
     }
 
     // Invalid format
+    print('[ValidationUtils] Invalid format, returning empty string');
     return '';
   }
 }
