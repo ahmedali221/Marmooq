@@ -204,10 +204,19 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     try {
       print('[DEBUG] Starting checkout creation process...');
 
-      // Format phone number with +965 prefix
+      // Format phone number with +965 prefix, or use demo if empty/null
       String formattedPhone = _phoneController.text.trim();
-      if (!formattedPhone.startsWith('+965')) {
-        formattedPhone = '+965$formattedPhone';
+
+      if (formattedPhone.isEmpty) {
+        // Phone is null or empty, use demo number
+        formattedPhone = '+96555544789';
+        print('[DEBUG] Phone is empty, using demo number: $formattedPhone');
+      } else {
+        // Phone exists, format it
+        if (!formattedPhone.startsWith('+965')) {
+          formattedPhone = '+965$formattedPhone';
+        }
+        print('[DEBUG] Phone formatted: $formattedPhone');
       }
 
       // First, update customer phone number in their profile

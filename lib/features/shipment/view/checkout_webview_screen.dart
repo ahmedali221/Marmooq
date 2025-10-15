@@ -383,12 +383,21 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           }
         }
         
-        // Also verify the email field has the correct value (not phone)
-        const emailField = document.querySelector('input[placeholder*="بريد" i]');
-        if (emailField && emailField.value.includes('@')) {
-          console.log('Email field correctly contains email:', emailField.value);
-        } else if (emailField) {
-          console.log('WARNING: Email field contains non-email value:', emailField.value);
+        // Also fill the actual email field if it exists and is empty
+        const emailField = document.querySelector('input[type="email"], input[placeholder*="بريد" i], input[name*="email"]:not([id="email"])');
+        if (emailField && emailField.id !== 'email') { // Don't touch the phone field with id="email"
+          if (!emailField.value || !emailField.value.includes('@')) {
+            console.log('Filling email field...');
+            // Get email from URL parameters
+            const emailFromUrl = urlParams.get('checkout[email]') || 'customer@example.com';
+            emailField.value = emailFromUrl;
+            emailField.dispatchEvent(new Event('input', {bubbles: true}));
+            emailField.dispatchEvent(new Event('change', {bubbles: true}));
+            emailField.dispatchEvent(new Event('blur', {bubbles: true}));
+            console.log('Email field filled with:', emailFromUrl);
+          } else {
+            console.log('Email field already contains valid email:', emailField.value);
+          }
         }
         
         await wait(2000);
@@ -499,13 +508,15 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           requiredFields.forEach(field => {
             if (!field.value.trim()) {
               console.log('Filling required field:', field.name || field.id);
-              if (field.type === 'text' || field.type === 'tel') {
+              if (field.type === 'text' || field.type === 'tel' || field.type === 'email') {
                 // Special handling for phone field with id="email"
                 if (field.id === 'email' || field.name.includes('phone') || field.placeholder.includes('رقم')) {
                   field.value = phoneNumber;
                   console.log('Filled phone field (id=email) with:', phoneNumber);
-                } else if (field.name.includes('email') || field.placeholder.includes('بريد')) {
-                  field.value = 'customer@example.com';
+                } else if (field.name.includes('email') || field.placeholder.includes('بريد') || field.type === 'email') {
+                  const emailFromUrl = urlParams.get('checkout[email]') || 'customer@example.com';
+                  field.value = emailFromUrl;
+                  console.log('Filled email field with:', emailFromUrl);
                 } else {
                   field.value = 'Default Value';
                 }

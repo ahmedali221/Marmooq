@@ -92,12 +92,14 @@ class CheckoutService {
     addIfNotEmpty('checkout[shipping_address][zip]', zip);
 
     // Use the phone directly if it's already in correct format, otherwise use demo fallback
-    final String finalPhone = phone.startsWith('+965') && phone.length == 13
+    final String finalPhone =
+        (phone.isNotEmpty && phone.startsWith('+965') && phone.length == 13)
         ? phone // Already in correct format: +965XXXXXXXX
-        : '+96555544789'; // Demo phone fallback
+        : '+96555544789'; // Demo phone fallback (used when phone is null, empty, or invalid)
 
     print('[DEBUG] Phone processing:');
     print('[DEBUG] Original phone: $phone');
+    print('[DEBUG] Is phone null or empty: ${phone.isEmpty}');
     print('[DEBUG] Final phone to use: $finalPhone');
 
     addIfNotEmpty('checkout[shipping_address][phone]', finalPhone);
