@@ -49,11 +49,22 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
       }
     });
 
-    // Only set a stuck timer when NOT running in silent mode. In silent mode
-    // we avoid revealing the WebView or any UI to the user.
-    if (!widget.silentMode) {
-      _stuckTimer = Timer(const Duration(minutes: 1), () {
-        if (!_checkoutCompleted && mounted) {
+    // Set a stuck timer - on iOS be more aggressive (30 seconds)
+    final stuckDuration = Platform.isIOS
+        ? const Duration(seconds: 30)
+        : const Duration(minutes: 1);
+
+    _stuckTimer = Timer(stuckDuration, () {
+      if (!_checkoutCompleted && mounted) {
+        if (widget.silentMode) {
+          // In silent mode on iOS, if stuck for 30 seconds, show the WebView
+          print(
+            '[iOS] Checkout appears stuck after ${stuckDuration.inSeconds}s, showing WebView',
+          );
+          setState(() {
+            _showWebView = true;
+          });
+        } else {
           setState(() {
             _showWebView = true;
           });
@@ -61,8 +72,8 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
             'Checkout appears stuck, showing WebView for manual completion',
           );
         }
-      });
-    }
+      }
+    });
   }
 
   void _updateLoadingMessage(String message) {
@@ -148,12 +159,21 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
             // If running invisibly, try to auto-confirm the order flow
             if (widget.silentMode) {
               _attemptAutoConfirm();
-              // Try again after a delay
-              Future.delayed(const Duration(seconds: 5), () {
-                if (!_checkoutCompleted && mounted) {
-                  _attemptAutoConfirm();
-                }
-              });
+              // Try again after delays - more aggressive on iOS
+              final retryDelays = Platform.isIOS
+                  ? [3, 6, 10, 15] // iOS: retry every 3, 6, 10, 15 seconds
+                  : [5, 10]; // Android: retry every 5, 10 seconds
+
+              for (final delay in retryDelays) {
+                Future.delayed(Duration(seconds: delay), () {
+                  if (!_checkoutCompleted && mounted) {
+                    print(
+                      '[Retry] Attempting auto-confirm after ${delay}s delay',
+                    );
+                    _attemptAutoConfirm();
+                  }
+                });
+              }
             }
           },
           onWebResourceError: (WebResourceError error) {
@@ -171,13 +191,20 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
     _controller.loadRequest(Uri.parse(widget.checkoutUrl));
   }
 
+  bool _isRunningAutoConfirm = false;
+
   // Attempt to auto-complete the checkout without showing UI.
   // This script tries common Shopify checkout flows:
   // - selects COD if present
   // - clicks primary action buttons across steps
   // - waits between actions to allow navigation
   Future<void> _attemptAutoConfirm() async {
-    if (_startedAutoFlow || _checkoutCompleted) return;
+    if (_checkoutCompleted || _isRunningAutoConfirm) return;
+    _isRunningAutoConfirm = true;
+
+    print(
+      '[AutoConfirm] Starting auto-confirm process (attempt #${_startedAutoFlow ? 'retry' : '1'})',
+    );
     _startedAutoFlow = true;
 
     _updateLoadingMessage('جاري ملء معلومات الشحن...');
@@ -466,30 +493,116 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           window.CheckoutListener.postMessage('step:4');
         }
         
-        // Step 4: Click continue/complete buttons
+        // Step 4: Click continue/complete buttons with enhanced detection
         console.log('Looking for continue buttons...');
+        
+        // Try multiple button finding strategies
+        let continueButton = null;
+        
+        // Strategy 1: Try the SPECIFIC button ID first (checkout-pay-button)
+        continueButton = document.getElementById('checkout-pay-button');
+        if (continueButton && !continueButton.disabled) {
+          console.log('Found checkout-pay-button by ID');
+        } else {
+          // Also try with querySelector in case it needs the # prefix
+          continueButton = document.querySelector('#checkout-pay-button');
+          if (continueButton && !continueButton.disabled) {
+            console.log('Found checkout-pay-button with querySelector');
+          } else {
+            continueButton = null; // Reset if not found or disabled
+            console.log('checkout-pay-button not found or disabled, trying other selectors...');
+            
+            // Strategy 2: Common Shopify selectors
         const continueSelectors = [
-          '#checkout-pay-button',
-          'button#checkout-pay-button',
-          'button[name="button"]',
+              'button#checkout-pay-button', // Try again with button prefix
           'button[type="submit"]',
-          'button[data-continue-button]',
-          'button.primary',
-          'button[class*="continue"]',
-          'button[class*="submit"]',
+              '#continue_button',
+              'button[name="button"]',
+              'button[data-trekkie-id="submit_button"]',
+              'button.button--full-width',
+              'button[aria-label*="Continue" i]',
+              'button[aria-label*="Pay" i]',
           'input[type="submit"]'
         ];
         
-        let continueClicked = false;
         for (const selector of continueSelectors) {
-          if (clickIf(selector)) {
-            console.log('Continue button clicked with selector:', selector);
-            continueClicked = true;
+            continueButton = document.querySelector(selector);
+            if (continueButton && !continueButton.disabled) {
+              console.log('Found continue button with selector:', selector);
             break;
+            }
           }
         }
         
-        if (continueClicked) await wait(3000);
+        // Strategy 3: Find any submit button if the above failed
+        if (!continueButton) {
+          const allButtons = document.querySelectorAll('button, input[type="submit"]');
+          for (const btn of allButtons) {
+            if (btn.offsetParent !== null && !btn.disabled) {
+              const text = btn.textContent.toLowerCase();
+              const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+              if (text.includes('continue') || text.includes('pay') || 
+                  text.includes('complete') || text.includes('submit') ||
+                  ariaLabel.includes('continue') || ariaLabel.includes('pay') ||
+                  btn.type === 'submit') {
+                continueButton = btn;
+                console.log('Found button by text/aria:', text || ariaLabel);
+                break;
+              }
+            }
+          }
+        }
+        
+        // Strategy 4: Click the first visible submit button as last resort
+        if (!continueButton) {
+          const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"]');
+          for (const btn of submitButtons) {
+            if (btn.offsetParent !== null && !btn.disabled) {
+              continueButton = btn;
+              console.log('Using first visible submit button as fallback');
+              break;
+            }
+          }
+        }
+        
+        let continueClicked = false;
+        if (continueButton) {
+          // Check if button is disabled - if so, wait and try again
+          if (continueButton.disabled) {
+            console.log('Button found but disabled, waiting for it to become enabled...');
+            let waitAttempts = 0;
+            while (continueButton.disabled && waitAttempts < 10) {
+              await wait(500);
+              waitAttempts++;
+              console.log(`Waiting for button to enable (attempt ${waitAttempts}/10)...`);
+            }
+          }
+          
+          if (!continueButton.disabled) {
+            console.log('Clicking continue button:', continueButton.id || continueButton.className);
+            continueButton.click();
+            continueClicked = true;
+            await wait(3000);
+          } else {
+            console.log('WARNING: Button is still disabled after waiting');
+          }
+        } else {
+          console.log('WARNING: No continue button found');
+          // Debug: List all buttons
+          const allButtons = document.querySelectorAll('button');
+          console.log('All buttons on page:', allButtons.length);
+          allButtons.forEach((btn, i) => {
+            console.log(`Button ${i + 1}:`, {
+              text: btn.textContent.trim().substring(0, 50),
+              type: btn.type,
+              disabled: btn.disabled,
+              className: btn.className,
+              id: btn.id,
+              visible: btn.offsetParent !== null
+            });
+          });
+        }
+        
         if (window.CheckoutListener && window.CheckoutListener.postMessage) {
           window.CheckoutListener.postMessage('step:5');
         }
@@ -589,9 +702,15 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
 
     try {
       await _controller.runJavaScriptReturningResult(script);
+      print('[AutoConfirm] Script completed successfully');
     } catch (e) {
-      print('Auto-confirm script error: $e');
+      print('[AutoConfirm] Script error: $e');
       _updateLoadingMessage('جاري معالجة الطلب...');
+    } finally {
+      // Reset the flag so we can retry if needed
+      await Future.delayed(const Duration(seconds: 2));
+      _isRunningAutoConfirm = false;
+      print('[AutoConfirm] Auto-confirm process ended, ready for retry');
     }
   }
 
