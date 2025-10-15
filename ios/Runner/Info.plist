@@ -75,17 +75,26 @@
 					<key>NSIncludesSubdomains</key>
 					<true/>
 				</dict>
-				<key>shopify.com</key>
-				<dict>
-					<key>NSExceptionAllowsInsecureHTTPLoads</key>
-					<true/>
-					<key>NSExceptionMinimumTLSVersion</key>
-					<string>TLSv1.0</string>
-					<key>NSIncludesSubdomains</key>
-					<true/>
-				</dict>
+			<key>shopify.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>offeraatkw.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
 			</dict>
 		</dict>
+	</dict>
 		<key>UIRequiredDeviceCapabilities</key>
 		<array>
 			<string>armv7</string>

@@ -6,6 +6,7 @@ import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
 import 'package:marmooq/features/cart/view_model/cart_events.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
+import 'dart:io';
 
 class CheckoutWebViewScreen extends StatefulWidget {
   final String checkoutUrl;
@@ -74,9 +75,16 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
 
   void _initializeWebView() {
     print('Initializing WebViewController');
+    print('Platform: ${Platform.operatingSystem}');
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
+      ..setUserAgent(
+        Platform.isIOS
+            ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+            : null,
+      )
       ..addJavaScriptChannel(
         'CheckoutListener',
         onMessageReceived: (JavaScriptMessage message) {
@@ -150,6 +158,10 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           },
           onWebResourceError: (WebResourceError error) {
             print('Web resource error: ${error.description}');
+            print('Error type: ${error.errorType}');
+            print('Error code: ${error.errorCode}');
+            print('Platform: ${Platform.operatingSystem}');
+
             _handleNonCriticalError(error);
           },
         ),
@@ -490,11 +502,31 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           const errorElements = document.querySelectorAll('[class*="error"], [class*="invalid"], .field-error, .validation-error');
           if (errorElements.length > 0) {
             console.log('Form validation errors detected:', errorElements.length);
+            
+            // Check for Shopify server error
+            let hasShopifyServerError = false;
             errorElements.forEach((el, index) => {
-              console.log(`Error ${index + 1}:`, el.textContent.trim());
+              const errorText = el.textContent.trim();
+              console.log(`Error ${index + 1}:`, errorText);
+              
+              // Detect Shopify server error
+              if (errorText.includes('There was a problem with our checkout') || 
+                  errorText.includes('Refresh this page') ||
+                  errorText.includes('try again in a few minutes')) {
+                hasShopifyServerError = true;
+                console.log('DETECTED: Shopify server error - will auto-refresh in 3 seconds');
+              }
             });
             
-            // Try to clear any error states
+            // If Shopify server error, refresh the page
+            if (hasShopifyServerError) {
+              console.log('Auto-refreshing page due to Shopify server error...');
+              await wait(3000);
+              window.location.reload();
+              return; // Exit the function after reload
+            }
+            
+            // Try to clear any error states (for regular validation errors)
             errorElements.forEach(el => {
               el.classList.remove('error', 'invalid', 'field-error', 'validation-error');
             });
