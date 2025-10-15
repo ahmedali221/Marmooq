@@ -4,10 +4,10 @@
 
 ### ✅ Changes Applied:
 
-1. **Added `offeraatkw.com` domain exception to iOS Info.plist**
+1. **iOS now allows ALL websites (NSAllowsArbitraryLoads = true)**
    - Location: `ios/Runner/Info.plist`
-   - Allows your Shopify store domain to work on iOS
-   - Configured with NSAppTransportSecurity exceptions
+   - Removed domain-specific restrictions
+   - iOS can now access any HTTP/HTTPS website including Shopify
 
 2. **Added auto-refresh for Shopify server errors**
    - Location: `lib/features/shipment/view/checkout_webview_screen.dart`
@@ -26,6 +26,12 @@
 5. **Phone number fallback to demo**
    - If phone is null/empty → uses `+96555544789`
    - Applied in 3 places for consistency
+
+6. **Cart creation error handling with automatic retry**
+   - Location: `lib/features/shipment/repository/shipment_repository.dart`
+   - If cart creation fails with customer token → automatically retries without token
+   - Better error messages showing exact failure reason
+   - Prevents "failed to create checkout during cart create" error
 
 ---
 
@@ -109,7 +115,7 @@ To see logs from iPhone:
 **Solution:** The app now auto-refreshes after 3 seconds. This is a Shopify server issue, not an app issue.
 
 ### Issue 2: WebView not loading
-**Solution:** Check that `offeraatkw.com` is in Info.plist (already done)
+**Solution:** iOS now allows all websites via `NSAllowsArbitraryLoads=true`
 
 ### Issue 3: Phone field not filled
 **Solution:** Check logs for "Phone formatted:" - if null, demo number `+96555544789` is used
@@ -128,10 +134,11 @@ flutter build ios
 
 ## 📋 **Files Modified:**
 
-1. `ios/Runner/Info.plist` - Added offeraatkw.com domain exception
+1. `ios/Runner/Info.plist` - **Allows ALL websites** (NSAllowsArbitraryLoads=true)
 2. `lib/features/shipment/view/checkout_webview_screen.dart` - Auto-refresh, iOS user agent, better logging
 3. `lib/features/shipment/view/shipmentPage.dart` - Phone null handling
 4. `lib/features/shipment/services/checkout_service.dart` - Phone validation & fallback
+5. `lib/features/shipment/repository/shipment_repository.dart` - **Cart creation retry fallback**
 
 ---
 
@@ -158,14 +165,16 @@ flutter build ios
 
 ## 🆘 **If Still Not Working on iPhone:**
 
-1. Check iOS console logs for specific errors
-2. Verify Info.plist has all three domains:
-   - localhost
-   - myshopify.com
-   - shopify.com
-   - **offeraatkw.com** ← NEW
+1. Check iOS console logs for specific errors:
+   - Look for `[ERROR] Cart creation failed:`
+   - Look for `[DEBUG] Retrying cart creation without customer access token...`
+2. Verify Info.plist has `NSAllowsArbitraryLoads=true`
 3. Try on iPhone Safari browser first (not app) to verify Shopify store works
 4. Check Shopify admin → Settings → Checkout for any region restrictions
+5. If cart creation fails:
+   - Check logs for exact Shopify error message
+   - Verify customer access token is valid
+   - Check that line items have valid merchandise IDs
 
 ---
 

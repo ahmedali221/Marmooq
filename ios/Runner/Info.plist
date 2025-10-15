@@ -47,53 +47,14 @@
 		<true/>
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
-		<key>NSAppTransportSecurity</key>
-		<dict>
-			<key>NSAllowsArbitraryLoads</key>
-			<true/>
-			<key>NSAllowsArbitraryLoadsInWebContent</key>
-			<true/>
-			<key>NSAllowsLocalNetworking</key>
-			<true/>
-			<key>NSExceptionDomains</key>
-			<dict>
-				<key>localhost</key>
-				<dict>
-					<key>NSExceptionAllowsInsecureHTTPLoads</key>
-					<true/>
-					<key>NSExceptionMinimumTLSVersion</key>
-					<string>TLSv1.0</string>
-					<key>NSIncludesSubdomains</key>
-					<true/>
-				</dict>
-				<key>myshopify.com</key>
-				<dict>
-					<key>NSExceptionAllowsInsecureHTTPLoads</key>
-					<true/>
-					<key>NSExceptionMinimumTLSVersion</key>
-					<string>TLSv1.0</string>
-					<key>NSIncludesSubdomains</key>
-					<true/>
-				</dict>
-			<key>shopify.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.0</string>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-			<key>offeraatkw.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.0</string>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
 	</dict>
 		<key>UIRequiredDeviceCapabilities</key>
 		<array>

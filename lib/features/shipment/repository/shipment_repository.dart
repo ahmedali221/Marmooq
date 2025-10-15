@@ -101,8 +101,37 @@ class ShipmentRepository {
       );
 
       print('[DEBUG] Creating cart with Shopify...');
-      final newCart = await shopifyCart.createCart(cartInput);
-      if (newCart.id.isEmpty) {
+
+      Cart? newCart;
+      try {
+        newCart = await shopifyCart.createCart(cartInput);
+      } catch (cartError) {
+        print('[ERROR] Cart creation failed: $cartError');
+        print('[ERROR] Cart error details: ${cartError.toString()}');
+
+        // Try creating cart without customer access token as fallback
+        print(
+          '[DEBUG] Retrying cart creation without customer access token...',
+        );
+        try {
+          final fallbackCartInput = CartInput(
+            lines: lineItems,
+            buyerIdentity: CartBuyerIdentityInput(
+              email: email,
+              // Omit customer access token
+            ),
+          );
+          newCart = await shopifyCart.createCart(fallbackCartInput);
+          print('[DEBUG] Cart created successfully without customer token');
+        } catch (fallbackError) {
+          print('[ERROR] Fallback cart creation also failed: $fallbackError');
+          throw Exception(
+            'Failed to create cart: ${cartError.toString()}. Fallback also failed: ${fallbackError.toString()}',
+          );
+        }
+      }
+
+      if (newCart == null || newCart.id.isEmpty) {
         throw Exception(
           'Failed to create new cart: Shopify returned cart without ID',
         );
