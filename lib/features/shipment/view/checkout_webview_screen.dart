@@ -208,18 +208,25 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         // Wait for page to be fully loaded
         await wait(3000);
         
+        // Extract URL parameters for form data
+        const urlParams = new URLSearchParams(window.location.search);
+        console.log('URL Parameters:', Object.fromEntries(urlParams.entries()));
+        
         // Step 1: Fill shipping information fields
         console.log('Filling shipping information...');
         
-        // Fill email field
-        fillIf('input[name="checkout[email]"]', 'ahmed@ahme.com');
-        fillIf('input[type="email"]', 'ahmed@ahme.com');
+        // Fill email field - extract from URL parameters
+        const emailFromUrl = urlParams.get('checkout[email]') || 'ahmed@ahme.com';
+        fillIf('input[name="checkout[email]"]', emailFromUrl);
+        fillIf('input[type="email"]:not([id="email"])', emailFromUrl); // Exclude phone field with id="email"
         
-        // Fill name fields
-        fillIf('input[name="checkout[shipping_address][first_name]"]', 'ahmed');
-        fillIf('input[name="checkout[shipping_address][last_name]"]', 'ali');
-        fillIf('input[placeholder*="الاسم"]', 'ahmed ali');
-        fillIf('input[placeholder*="Name"]', 'ahmed ali');
+        // Fill name fields - extract from URL parameters
+        const firstNameFromUrl = urlParams.get('checkout[shipping_address][first_name]') || 'ahmed';
+        const lastNameFromUrl = urlParams.get('checkout[shipping_address][last_name]') || 'ali';
+        fillIf('input[name="checkout[shipping_address][first_name]"]', firstNameFromUrl);
+        fillIf('input[name="checkout[shipping_address][last_name]"]', lastNameFromUrl);
+        fillIf('input[placeholder*="الاسم"]', firstNameFromUrl + ' ' + lastNameFromUrl);
+        fillIf('input[placeholder*="Name"]', firstNameFromUrl + ' ' + lastNameFromUrl);
         
         // Fill address fields
         fillIf('input[name="checkout[shipping_address][address1]"]', 'kuwait');
@@ -236,9 +243,22 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         fillIf('input[placeholder*="منزل"]', '00000');
         fillIf('input[placeholder*="Zip"]', '00000');
         
-        // Fill phone
-        fillIf('input[name="checkout[shipping_address][phone]"]', '+96555574123');
-        fillIf('input[type="tel"]', '+96555574123');
+        // Fill phone - specifically target the field with id="email" which is actually the phone field
+        const phoneFromUrl = urlParams.get('checkout[shipping_address][phone]') || '+96555574123';
+        console.log('Phone from URL:', phoneFromUrl);
+        
+        // Try to fill the phone field with id="email" first
+        const phoneFieldWithEmailId = document.querySelector('input[id="email"]');
+        if (phoneFieldWithEmailId) {
+          phoneFieldWithEmailId.value = phoneFromUrl;
+          phoneFieldWithEmailId.dispatchEvent(new Event('input', {bubbles: true}));
+          phoneFieldWithEmailId.dispatchEvent(new Event('change', {bubbles: true}));
+          console.log('Phone filled in field with id="email":', phoneFromUrl);
+        }
+        
+        // Also try other phone field selectors as backup
+        fillIf('input[name="checkout[shipping_address][phone]"]', phoneFromUrl);
+        fillIf('input[type="tel"]', phoneFromUrl);
         
         await wait(2000);
         if (window.CheckoutListener && window.CheckoutListener.postMessage) {

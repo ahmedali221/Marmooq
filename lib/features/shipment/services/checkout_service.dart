@@ -12,17 +12,46 @@ class CheckoutService {
     required String cartId,
     required String customerAccessToken,
     required List<CartLineInput> lineItems,
+    required String firstName,
+    required String lastName,
+    required String phone,
   }) async {
     try {
+      print('[CheckoutService] Starting checkout creation...');
+      print('[CheckoutService] Email: $email');
+      print('[CheckoutService] Cart ID: $cartId');
+      print(
+        '[CheckoutService] Access Token Present: ${customerAccessToken.isNotEmpty}',
+      );
+      print('[CheckoutService] Line Items: ${lineItems.length}');
+
+      // Pre-validation
+      if (email.isEmpty) {
+        throw Exception('Email is required for checkout');
+      }
+
+      if (customerAccessToken.isEmpty) {
+        throw Exception('Customer access token is required for checkout');
+      }
+
+      if (lineItems.isEmpty) {
+        throw Exception('Cart is empty - cannot create checkout');
+      }
+
       final checkoutResult = await _shipmentRepository.createCheckout(
         email: email,
         cartId: cartId,
         customerAccessToken: customerAccessToken,
         lineItems: lineItems,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
       );
 
+      print('[CheckoutService] Checkout result: $checkoutResult');
       return CheckoutData.fromMap(checkoutResult);
     } catch (e) {
+      print('[CheckoutService] Error creating checkout: $e');
       throw Exception('Failed to create checkout: $e');
     }
   }
@@ -85,6 +114,17 @@ class CheckoutService {
     addIfNotEmpty('checkout[payment_gateway]', 'cash_on_delivery');
 
     final newUri = uri.replace(queryParameters: params);
+
+    // Debug logging for URL parameters
+    print('[DEBUG] Generated checkout URL parameters:');
+    params.forEach((key, value) {
+      if (key.contains('phone') ||
+          key.contains('email') ||
+          key.contains('name')) {
+        print('[DEBUG] $key: $value');
+      }
+    });
+
     return newUri.toString();
   }
 

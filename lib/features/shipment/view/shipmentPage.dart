@@ -10,6 +10,7 @@ import 'package:marmooq/features/shipment/models/checkout_models.dart';
 import 'package:marmooq/features/cart/repository/cart_repository.dart';
 import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
 import 'package:marmooq/features/cart/view_model/cart_events.dart';
+import 'package:marmooq/core/utils/debug_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:marmooq/core/utils/validation_utils.dart';
 import 'package:marmooq/core/widgets/standard_app_bar.dart';
@@ -175,14 +176,23 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     // Map simplified form data to original structure
     _mapFormData();
 
+    // Enhanced validation with debugging
+    DebugUtils.validateShopifyConfig();
+    DebugUtils.validateCartData(
+      email: widget.email,
+      customerAccessToken: widget.customerAccessToken,
+      lineItems: _lineItems,
+    );
+
     if (widget.customerAccessToken.isEmpty) {
       final error = 'رمز الوصول للعميل فارغ';
-
+      print('[ERROR] Customer access token is empty');
       _showErrorSnackBar(error);
       return;
     }
 
     if (!_hasCartItems || _lineItems.isEmpty) {
+      print('[ERROR] Cart is empty or has no items');
       _showErrorSnackBar('السلة فارغة، يرجى إضافة منتجات');
       return;
     }
@@ -192,21 +202,26 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     });
 
     try {
+      print('[DEBUG] Starting checkout creation process...');
+
+      // Format phone number with +965 prefix
+      String formattedPhone = _phoneController.text.trim();
+      if (!formattedPhone.startsWith('+965')) {
+        formattedPhone = '+965$formattedPhone';
+      }
+
       final checkout = await _checkoutService.createCheckout(
         email: widget.email,
         cartId: widget.cartId, // Passed but unused
         customerAccessToken: widget.customerAccessToken,
         lineItems: _lineItems,
+        firstName: _firstNameController.text,
+        lastName: _lastNameController.text,
+        phone: formattedPhone,
       );
 
       final webUrl = checkout.webUrl;
       if (webUrl.isNotEmpty) {
-        // Format phone number with +965 prefix
-        String formattedPhone = _phoneController.text.trim();
-        if (!formattedPhone.startsWith('+965')) {
-          formattedPhone = '+965$formattedPhone';
-        }
-
         // Build prefilled checkout URL with shipping details
         final prefilledUrl = _checkoutService.buildPrefilledCheckoutUrl(
           baseCheckoutUrl: webUrl,
@@ -281,7 +296,25 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         throw Exception('لم يتم الحصول على رابط الدفع');
       }
     } catch (e) {
-      _showErrorSnackBar('خطأ في إتمام الطلب: $e');
+      print('[ERROR] Checkout creation failed: $e');
+      print('[ERROR] Error type: ${e.runtimeType}');
+
+      // Provide more specific error messages
+      String errorMessage = 'خطأ في إتمام الطلب';
+      if (e.toString().contains('No items in cart')) {
+        errorMessage = 'السلة فارغة، يرجى إضافة منتجات';
+      } else if (e.toString().contains('Invalid merchandise ID')) {
+        errorMessage = 'خطأ في المنتجات، يرجى تحديث السلة';
+      } else if (e.toString().contains('Customer access token')) {
+        errorMessage = 'خطأ في المصادقة، يرجى تسجيل الدخول مرة أخرى';
+      } else if (e.toString().contains('Network') ||
+          e.toString().contains('connection')) {
+        errorMessage = 'خطأ في الاتصال، يرجى المحاولة مرة أخرى';
+      } else if (e.toString().contains('Shopify')) {
+        errorMessage = 'خطأ في الخدمة، يرجى المحاولة لاحقاً';
+      }
+
+      _showErrorSnackBar('$errorMessage: $e');
     } finally {
       setState(() {
         _isLoading = false;
