@@ -115,32 +115,14 @@ class CheckoutService {
     required String address,
   }) async {
     try {
-      // Create a new cart with buyer identity and COD attributes
-      final cartInput = CartInput(
-        lines: [], // We'll add items from the existing cart
-        buyerIdentity: CartBuyerIdentityInput(email: email, phone: phone),
-        attributes: [
-          AttributeInput(key: 'payment_method', value: 'COD'),
-          AttributeInput(key: 'delivery_address', value: address),
-          AttributeInput(key: 'customer_name', value: '$firstName $lastName'),
-        ],
-      );
-
-      // Create new cart for COD order
-      final newCart = await ShopifyCart.instance.createCart(cartInput);
-
-      if (newCart.id.isEmpty) {
-        throw Exception('Failed to create COD cart');
-      }
-
-      // Get the original cart to copy line items
+      // Get the original cart to validate it exists and has items
       final originalCart = await ShopifyCart.instance.getCartById(cartId);
 
       if (originalCart?.lines.isEmpty ?? true) {
         throw Exception('Original cart is empty');
       }
 
-      // Convert line items to add to new cart
+      // Convert line items to validate they exist
       final lineItems = originalCart!.lines
           .where((line) => line.merchandise?.id != null)
           .map(
@@ -153,6 +135,26 @@ class CheckoutService {
 
       if (lineItems.isEmpty) {
         throw Exception('No valid line items found');
+      }
+
+      // Create a simple cart with COD attributes (no buyerIdentity to avoid iOS issues)
+      final cartInput = CartInput(
+        lines: [], // Start with empty lines
+        attributes: [
+          AttributeInput(key: 'payment_method', value: 'COD'),
+          AttributeInput(key: 'delivery_address', value: address),
+          AttributeInput(key: 'customer_name', value: '$firstName $lastName'),
+          AttributeInput(key: 'customer_email', value: email),
+          AttributeInput(key: 'customer_phone', value: phone),
+        ],
+        note: 'COD Order - Customer: $firstName $lastName, Phone: $phone',
+      );
+
+      // Create new cart for COD order
+      final newCart = await ShopifyCart.instance.createCart(cartInput);
+
+      if (newCart.id.isEmpty) {
+        throw Exception('Failed to create COD cart');
       }
 
       // Add line items to the new COD cart
