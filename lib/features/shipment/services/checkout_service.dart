@@ -100,6 +100,13 @@ class CheckoutService {
     final String normalizedPhone = ValidationUtils.normalizeKuwaitPhone(
       fullKuwaitPhone,
     );
+
+    print('[DEBUG] Phone normalization:');
+    print('[DEBUG] Original phone: $phone');
+    print('[DEBUG] Phone digits: $phoneDigits');
+    print('[DEBUG] Full Kuwait phone: $fullKuwaitPhone');
+    print('[DEBUG] Normalized phone: $normalizedPhone');
+
     addIfNotEmpty('checkout[shipping_address][phone]', normalizedPhone);
 
     // Additional Shopify checkout parameters for better prefill
@@ -124,6 +131,18 @@ class CheckoutService {
         print('[DEBUG] $key: $value');
       }
     });
+
+    // Additional debug logging for phone parameter specifically
+    print(
+      '[DEBUG] Phone parameter in URL: ${params['checkout[shipping_address][phone]']}',
+    );
+    print('[DEBUG] Email parameter in URL: ${params['checkout[email]']}');
+    print(
+      '[DEBUG] First name parameter in URL: ${params['checkout[shipping_address][first_name]']}',
+    );
+    print(
+      '[DEBUG] Last name parameter in URL: ${params['checkout[shipping_address][last_name]']}',
+    );
 
     return newUri.toString();
   }

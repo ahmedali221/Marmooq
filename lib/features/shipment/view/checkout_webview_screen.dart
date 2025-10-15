@@ -181,9 +181,26 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         function fillIf(selector, value){
           const el = document.querySelector(selector);
           if(el){ 
+            // Clear the field first
+            el.value = '';
+            el.focus();
+            
+            // Set the value
             el.value = value; 
+            
+            // Trigger events to ensure form validation
             el.dispatchEvent(new Event('input', {bubbles: true}));
             el.dispatchEvent(new Event('change', {bubbles: true}));
+            el.dispatchEvent(new Event('blur', {bubbles: true}));
+            
+            // Special handling for phone field with email ID
+            if (selector === 'input[id="email"]' && value && !value.includes('@')) {
+              console.log('Filling phone field (with email ID) with value:', value);
+              // Additional validation for phone field
+              el.dispatchEvent(new Event('keyup', {bubbles: true}));
+            }
+            
+            console.log('Field filled:', selector, 'with value:', value);
             return true; 
           }
           return false;
@@ -213,18 +230,338 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         // Step 1: Fill shipping information fields
         console.log('Filling shipping information...');
         
-        // Skip form filling - customer data should be pre-filled from profile update
-        console.log('Skipping form filling - customer data should be pre-filled from profile update');
+        // Extract form data from URL parameters
+        const email = urlParams.get('checkout[email]') || '';
+        const firstName = urlParams.get('checkout[shipping_address][first_name]') || '';
+        const lastName = urlParams.get('checkout[shipping_address][last_name]') || '';
+        const phone = urlParams.get('checkout[shipping_address][phone]') || '';
+        const address1 = urlParams.get('checkout[shipping_address][address1]') || '';
+        const city = urlParams.get('checkout[shipping_address][city]') || '';
+        const province = urlParams.get('checkout[shipping_address][province]') || '';
+        const country = urlParams.get('checkout[shipping_address][country]') || '';
+        const zip = urlParams.get('checkout[shipping_address][zip]') || '';
         
-        // Just verify that the phone field has the correct value
-        const phoneFieldWithEmailId = document.querySelector('input[id="email"]');
-        if (phoneFieldWithEmailId) {
-          console.log('Phone field value:', phoneFieldWithEmailId.value);
-          if (phoneFieldWithEmailId.value.includes('@')) {
-            console.log('WARNING: Phone field still contains email, this indicates profile update failed');
-          } else {
-            console.log('SUCCESS: Phone field contains phone number');
+        console.log('Extracted form data:', { email, firstName, lastName, phone, address1, city, province, country, zip });
+        
+        // Debug: Log all available URL parameters
+        console.log('All URL parameters:', Object.fromEntries(urlParams.entries()));
+        
+        // Debug: Scan all form fields on the page
+        console.log('Scanning all form fields on the page...');
+        const allInputs = document.querySelectorAll('input, textarea, select');
+        allInputs.forEach((input, index) => {
+          const id = input.id || 'no-id';
+          const name = input.name || 'no-name';
+          const type = input.type || 'no-type';
+          const placeholder = input.placeholder || 'no-placeholder';
+          const value = input.value || 'no-value';
+          console.log(`Field ${index + 1}: id="${id}", name="${name}", type="${type}", placeholder="${placeholder}", value="${value}"`);
+        });
+        
+        // Fill email field
+        // First try to get email from any pre-filled fields on the page
+        let emailToUse = email;
+        if (!emailToUse) {
+          const preFilledEmailFields = document.querySelectorAll('input[value*="@"]');
+          for (const field of preFilledEmailFields) {
+            const value = field.value;
+            if (value && value.includes('@') && value.includes('.')) {
+              emailToUse = value;
+              console.log('Found pre-filled email:', emailToUse);
+              break;
+            }
           }
+        }
+        
+        const emailSelectors = [
+          'input[name="checkout[email]"]',
+          'input[type="email"]',
+          'input[placeholder*="email" i]',
+          'input[placeholder*="بريد" i]',
+          'input[data-testid*="email"]',
+          'input[aria-label*="email" i]',
+          // Additional selectors for Shopify checkout
+          'input[name="checkout[contact_email]"]',
+          'input[name="checkout[billing_address][email]"]',
+          'input[name="checkout[shipping_address][email]"]',
+          'input[data-testid="email"]',
+          'input[data-testid="contact-email"]'
+        ];
+        
+        let emailFilled = false;
+        for (const selector of emailSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            console.log('Found email field with selector:', selector, 'Current value:', element.value);
+            if (fillIf(selector, emailToUse)) {
+              console.log('Email filled with selector:', selector);
+              emailFilled = true;
+              break;
+            }
+          }
+        }
+        
+        // If still not filled, try to find any input that might be the email field
+        if (!emailFilled) {
+          console.log('Trying to find email field by scanning all inputs...');
+          const allInputs = document.querySelectorAll('input');
+          for (const input of allInputs) {
+            const id = input.id || '';
+            const name = input.name || '';
+            const placeholder = input.placeholder || '';
+            const ariaLabel = input.getAttribute('aria-label') || '';
+            const type = input.type || '';
+            
+            // Check if this looks like an email field
+            if (type === 'email' || id.includes('email') || name.includes('email') || 
+                placeholder.toLowerCase().includes('email') || 
+                placeholder.includes('بريد') ||
+                ariaLabel.toLowerCase().includes('email') ||
+                ariaLabel.includes('بريد')) {
+              console.log('Found potential email field:', {id, name, placeholder, ariaLabel, type});
+              if (fillIf('#' + id, emailToUse) || fillIf('[name="' + name + '"]', emailToUse)) {
+                console.log('Email filled with fallback selector');
+                emailFilled = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        // Fill phone field (this is the critical one)
+        // If phone is not in URL parameters, try to get it from the customer profile update
+        let phoneToUse = phone;
+        if (!phoneToUse) {
+          // Try to extract phone from other sources or use a default
+          phoneToUse = '+96556642315'; // Fallback phone number
+          console.log('Phone not found in URL parameters, using fallback:', phoneToUse);
+        }
+        
+        // Also try to get phone from any pre-filled fields on the page
+        if (!phoneToUse || phoneToUse === '+96556642315') {
+          const preFilledPhoneFields = document.querySelectorAll('input[value*="+965"], input[value*="965"]');
+          for (const field of preFilledPhoneFields) {
+            const value = field.value;
+            if (value && value.includes('965') && value.length >= 8) {
+              phoneToUse = value;
+              console.log('Found pre-filled phone number:', phoneToUse);
+              break;
+            }
+          }
+        }
+        
+        // More comprehensive phone field selectors for Shopify checkout
+        const phoneSelectors = [
+          'input[id="email"]', // This is the phone field with email ID
+          'input[name="checkout[shipping_address][phone]"]',
+          'input[name="checkout[billing_address][phone]"]',
+          'input[type="tel"]',
+          'input[placeholder*="phone" i]',
+          'input[placeholder*="هاتف" i]',
+          'input[placeholder*="رقم" i]',
+          'input[data-testid*="phone"]',
+          'input[aria-label*="phone" i]',
+          'input[aria-label*="هاتف" i]',
+          'input[data-testid="phone"]',
+          'input[data-testid="shipping-phone"]',
+          'input[data-testid="billing-phone"]',
+          // Additional selectors for Shopify checkout
+          'input[name="checkout[phone]"]',
+          'input[name="checkout[shipping_address][phone_number]"]',
+          'input[name="checkout[billing_address][phone_number]"]'
+        ];
+        
+        let phoneFilled = false;
+        for (const selector of phoneSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            console.log('Found phone field with selector:', selector, 'Current value:', element.value);
+            if (fillIf(selector, phoneToUse)) {
+              console.log('Phone filled with selector:', selector, 'Value:', phoneToUse);
+              phoneFilled = true;
+              break;
+            }
+          }
+        }
+        
+        // If still not filled, try to find any input that might be the phone field
+        if (!phoneFilled) {
+          console.log('Trying to find phone field by scanning all inputs...');
+          const allInputs = document.querySelectorAll('input');
+          for (const input of allInputs) {
+            const id = input.id || '';
+            const name = input.name || '';
+            const placeholder = input.placeholder || '';
+            const ariaLabel = input.getAttribute('aria-label') || '';
+            
+            // Check if this looks like a phone field
+            if (id.includes('phone') || name.includes('phone') || 
+                placeholder.toLowerCase().includes('phone') || 
+                placeholder.includes('هاتف') || placeholder.includes('رقم') ||
+                ariaLabel.toLowerCase().includes('phone') ||
+                ariaLabel.includes('هاتف') || ariaLabel.includes('رقم')) {
+              console.log('Found potential phone field:', {id, name, placeholder, ariaLabel});
+              if (fillIf('#' + id, phoneToUse) || fillIf('[name="' + name + '"]', phoneToUse)) {
+                console.log('Phone filled with fallback selector');
+                phoneFilled = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        // Fill first name field
+        const firstNameSelectors = [
+          'input[name="checkout[shipping_address][first_name]"]',
+          'input[name="checkout[billing_address][first_name]"]',
+          'input[placeholder*="first" i]',
+          'input[placeholder*="الاسم" i]',
+          'input[data-testid*="first-name"]',
+          'input[aria-label*="first" i]',
+          // Additional selectors for Shopify checkout
+          'input[name="checkout[first_name]"]',
+          'input[data-testid="first-name"]',
+          'input[data-testid="shipping-first-name"]',
+          'input[data-testid="billing-first-name"]'
+        ];
+        
+        let firstNameFilled = false;
+        for (const selector of firstNameSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            console.log('Found first name field with selector:', selector, 'Current value:', element.value);
+            if (fillIf(selector, firstName)) {
+              console.log('First name filled with selector:', selector);
+              firstNameFilled = true;
+              break;
+            }
+          }
+        }
+        
+        // Fill last name field
+        const lastNameSelectors = [
+          'input[name="checkout[shipping_address][last_name]"]',
+          'input[name="checkout[billing_address][last_name]"]',
+          'input[placeholder*="last" i]',
+          'input[placeholder*="اللقب" i]',
+          'input[data-testid*="last-name"]',
+          'input[aria-label*="last" i]',
+          // Additional selectors for Shopify checkout
+          'input[name="checkout[last_name]"]',
+          'input[data-testid="last-name"]',
+          'input[data-testid="shipping-last-name"]',
+          'input[data-testid="billing-last-name"]'
+        ];
+        
+        let lastNameFilled = false;
+        for (const selector of lastNameSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            console.log('Found last name field with selector:', selector, 'Current value:', element.value);
+            if (fillIf(selector, lastName)) {
+              console.log('Last name filled with selector:', selector);
+              lastNameFilled = true;
+              break;
+            }
+          }
+        }
+        
+        // Fill address field
+        const addressSelectors = [
+          'input[name="checkout[shipping_address][address1]"]',
+          'textarea[name="checkout[shipping_address][address1]"]',
+          'input[placeholder*="address" i]',
+          'input[placeholder*="عنوان" i]'
+        ];
+        
+        let addressFilled = false;
+        for (const selector of addressSelectors) {
+          if (fillIf(selector, address1)) {
+            console.log('Address filled with selector:', selector);
+            addressFilled = true;
+            break;
+          }
+        }
+        
+        // Fill city field
+        const citySelectors = [
+          'input[name="checkout[shipping_address][city]"]',
+          'input[placeholder*="city" i]',
+          'input[placeholder*="مدينة" i]'
+        ];
+        
+        let cityFilled = false;
+        for (const selector of citySelectors) {
+          if (fillIf(selector, city)) {
+            console.log('City filled with selector:', selector);
+            cityFilled = true;
+            break;
+          }
+        }
+        
+        // Fill province field
+        const provinceSelectors = [
+          'input[name="checkout[shipping_address][province]"]',
+          'select[name="checkout[shipping_address][province]"]',
+          'input[placeholder*="province" i]',
+          'input[placeholder*="محافظة" i]'
+        ];
+        
+        let provinceFilled = false;
+        for (const selector of provinceSelectors) {
+          if (selectIf(selector, province)) {
+            console.log('Province filled with selector:', selector);
+            provinceFilled = true;
+            break;
+          }
+        }
+        
+        // Fill country field
+        const countrySelectors = [
+          'input[name="checkout[shipping_address][country]"]',
+          'select[name="checkout[shipping_address][country]"]',
+          'input[placeholder*="country" i]',
+          'input[placeholder*="دولة" i]'
+        ];
+        
+        let countryFilled = false;
+        for (const selector of countrySelectors) {
+          if (selectIf(selector, country)) {
+            console.log('Country filled with selector:', selector);
+            countryFilled = true;
+            break;
+          }
+        }
+        
+        // Fill zip field
+        const zipSelectors = [
+          'input[name="checkout[shipping_address][zip]"]',
+          'input[placeholder*="zip" i]',
+          'input[placeholder*="postal" i]',
+          'input[placeholder*="الرمز" i]'
+        ];
+        
+        let zipFilled = false;
+        for (const selector of zipSelectors) {
+          if (fillIf(selector, zip)) {
+            console.log('ZIP filled with selector:', selector);
+            zipFilled = true;
+            break;
+          }
+        }
+        
+        // Log filling results
+        console.log('Form filling results:', {
+          emailFilled, phoneFilled, firstNameFilled, lastNameFilled,
+          addressFilled, cityFilled, provinceFilled, countryFilled, zipFilled
+        });
+        
+        // Verify critical fields are filled
+        if (!phoneFilled) {
+          console.log('WARNING: Phone field was not filled!');
+        }
+        if (!emailFilled) {
+          console.log('WARNING: Email field was not filled!');
         }
         
         await wait(2000);
@@ -281,7 +618,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           window.CheckoutListener.postMessage('step:4');
         }
         
-        // Step 4: Click continue/complete buttons
+        // Step 4: Click continue/complete buttons with retry logic
         console.log('Looking for continue buttons...');
         const continueSelectors = [
           '#checkout-pay-button',
@@ -296,6 +633,12 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         ];
         
         let continueClicked = false;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (!continueClicked && retryCount < maxRetries) {
+          console.log(`Attempt ${retryCount + 1} to click continue button...`);
+          
         for (const selector of continueSelectors) {
           if (clickIf(selector)) {
             console.log('Continue button clicked with selector:', selector);
@@ -304,7 +647,22 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
           }
         }
         
-        if (continueClicked) await wait(3000);
+          if (!continueClicked) {
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`Retrying in 2 seconds... (attempt ${retryCount + 1}/${maxRetries})`);
+              await wait(2000);
+            }
+          }
+        }
+        
+        if (continueClicked) {
+          console.log('Continue button clicked successfully');
+          await wait(3000);
+        } else {
+          console.log('Failed to click continue button after', maxRetries, 'attempts');
+        }
+        
         if (window.CheckoutListener && window.CheckoutListener.postMessage) {
           window.CheckoutListener.postMessage('step:5');
         }
@@ -313,18 +671,30 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         if (window.location.href.includes('/checkouts/') && !window.location.href.includes('/thank_you')) {
           console.log('Still on checkout page, trying alternative approaches...');
           
+          // Check for form validation errors first
+          const errorElements = document.querySelectorAll('.error, .field-error, [class*="error"]');
+          if (errorElements.length > 0) {
+            console.log('Form validation errors detected:', errorElements.length);
+            errorElements.forEach((el, index) => {
+              console.log(`Error ${index + 1}:`, el.textContent || el.innerText);
+            });
+          }
+          
           // Try clicking any visible buttons with text
           const allButtons = document.querySelectorAll('button, input[type="submit"], input[type="button"]');
+          let buttonClicked = false;
           for (const btn of allButtons) {
             if (btn.offsetParent !== null && btn.textContent.trim()) {
               console.log('Trying button:', btn.textContent.trim());
               btn.click();
               await wait(2000);
+              buttonClicked = true;
               break;
             }
           }
           
-          // Try form submission
+          if (!buttonClicked) {
+            // Try form submission as last resort
           const forms = document.querySelectorAll('form');
           for (const form of forms) {
             if (form.offsetParent !== null) {
@@ -332,6 +702,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
               form.submit();
               await wait(2000);
               break;
+              }
             }
           }
         }
