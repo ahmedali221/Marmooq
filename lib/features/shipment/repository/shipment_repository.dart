@@ -5,7 +5,6 @@ class ShipmentRepository {
     try {
       final shopifyCustom = ShopifyCustom.instance;
 
-      // GraphQL query to fetch the product by variant ID
       const variantQuery = r'''
         query getProductByVariant($id: ID!) {
           node(id: $id) {
@@ -32,21 +31,14 @@ class ShipmentRepository {
       );
 
       final node = result?['node'];
-      if (node == null || node['__typename'] != 'ProductVariant') {
-        return false;
-      }
+      if (node == null || node['__typename'] != 'ProductVariant') return false;
 
       final product = node['product'];
-      if (product == null) {
-        return false;
-      }
+      if (product == null) return false;
 
-      // Check if the variant exists in the product's variants
       final variants = product['variants']['edges'] as List<dynamic>?;
-      final variantExists =
-          variants?.any((edge) => edge['node']['id'] == merchandiseId) ?? false;
-
-      return variantExists;
+      return variants?.any((edge) => edge['node']['id'] == merchandiseId) ??
+          false;
     } catch (e) {
       return false;
     }
@@ -54,7 +46,7 @@ class ShipmentRepository {
 
   Future<Map<String, dynamic>> createCheckout({
     required String email,
-    required String cartId, // Kept for compatibility, but unused
+    required String cartId,
     required String customerAccessToken,
     required List<CartLineInput> lineItems,
     required String firstName,
@@ -62,34 +54,20 @@ class ShipmentRepository {
     required String phone,
   }) async {
     try {
-      // Enhanced validation and debugging
-      print('[DEBUG] Starting checkout creation with:');
-      print('[DEBUG] Email: $email');
-      print('[DEBUG] First Name: $firstName');
-      print('[DEBUG] Last Name: $lastName');
-      print('[DEBUG] Phone: $phone');
-      print(
-        '[DEBUG] Customer Access Token: ${customerAccessToken.isNotEmpty ? 'Present' : 'Empty'}',
-      );
-      print('[DEBUG] Line Items Count: ${lineItems.length}');
-
-      // Validate line items
-      if (lineItems.isEmpty) {
+      if (lineItems.isEmpty)
         throw Exception('Cannot create checkout: No items in cart');
-      }
 
       // Validate merchandise IDs
       for (final item in lineItems) {
         if (item.merchandiseId.isEmpty) {
           throw Exception('Invalid merchandise ID found in cart items');
         }
-        print('[DEBUG] Line Item: ${item.merchandiseId} x${item.quantity}');
       }
 
       final shopifyCart = ShopifyCart.instance;
       final shopifyCustom = ShopifyCustom.instance;
 
-      // Create a new cart with the provided line items and buyer identity
+      // Create cart with line items and buyer identity
       final cartInput = CartInput(
         lines: lineItems,
         buyerIdentity: CartBuyerIdentityInput(
@@ -100,34 +78,19 @@ class ShipmentRepository {
         ),
       );
 
-      print('[DEBUG] Creating cart with Shopify...');
-
       Cart? newCart;
       try {
         newCart = await shopifyCart.createCart(cartInput);
       } catch (cartError) {
-        print('[ERROR] Cart creation failed: $cartError');
-        print('[ERROR] Cart error details: ${cartError.toString()}');
-
         // Try creating cart without customer access token as fallback
-        print(
-          '[DEBUG] Retrying cart creation without customer access token...',
-        );
         try {
           final fallbackCartInput = CartInput(
             lines: lineItems,
-            buyerIdentity: CartBuyerIdentityInput(
-              email: email,
-              // Omit customer access token
-            ),
+            buyerIdentity: CartBuyerIdentityInput(email: email),
           );
           newCart = await shopifyCart.createCart(fallbackCartInput);
-          print('[DEBUG] Cart created successfully without customer token');
         } catch (fallbackError) {
-          print('[ERROR] Fallback cart creation also failed: $fallbackError');
-          throw Exception(
-            'Failed to create cart: ${cartError.toString()}. Fallback also failed: ${fallbackError.toString()}',
-          );
+          throw Exception('Failed to create cart: ${cartError.toString()}');
         }
       }
 
@@ -137,9 +100,7 @@ class ShipmentRepository {
         );
       }
 
-      print('[DEBUG] Cart created successfully with ID: ${newCart.id}');
-
-      // Fetch cart with checkoutUrl and cost.totalAmount using a custom query
+      // Fetch cart with checkoutUrl and total amount
       const cartQuery = r'''
         query getCart($id: ID!) {
           cart(id: $id) {
@@ -169,13 +130,10 @@ class ShipmentRepository {
         }
       ''';
 
-      print('[DEBUG] Fetching cart details with GraphQL...');
       final cartResult = await shopifyCustom.customQuery(
         gqlQuery: cartQuery,
         variables: {'id': newCart.id},
       );
-
-      print('[DEBUG] GraphQL Response: $cartResult');
 
       final cartData = cartResult?['cart'];
       if (cartData == null) {
@@ -186,25 +144,18 @@ class ShipmentRepository {
       final totalAmount = cartData['cost']?['totalAmount']?['amount']
           ?.toString();
 
-      print('[DEBUG] Checkout URL: $checkoutUrl');
-      print('[DEBUG] Total Amount: $totalAmount');
-
       if (checkoutUrl == null || totalAmount == null) {
         throw Exception(
-          'Cart query failed: Missing checkoutUrl or totalAmount. '
-          'Checkout URL: $checkoutUrl, Total Amount: $totalAmount',
+          'Cart query failed: Missing checkoutUrl or totalAmount',
         );
       }
 
-      print('[DEBUG] Checkout created successfully!');
       return {
         'id': cartData['id'],
         'webUrl': checkoutUrl,
         'totalPrice': totalAmount,
       };
     } catch (e) {
-      print('[ERROR] Checkout creation failed: $e');
-      print('[ERROR] Stack trace: ${StackTrace.current}');
       throw Exception('Failed to create checkout: $e');
     }
   }
@@ -215,12 +166,9 @@ class ShipmentRepository {
     required String phone,
   }) async {
     try {
-      print('[DEBUG] Updating customer phone number...');
-      print('[DEBUG] Phone: $phone');
-
       final shopifyCustom = ShopifyCustom.instance;
 
-      // First, get the customer ID using the access token
+      // Get customer ID
       const customerQuery = r'''
         query getCustomer($customerAccessToken: String!) {
           customer(customerAccessToken: $customerAccessToken) {
@@ -236,19 +184,10 @@ class ShipmentRepository {
       );
 
       final customer = customerResult?['customer'];
-      if (customer == null) {
-        print('[ERROR] Could not fetch customer data');
-        return false;
-      }
+      if (customer == null) return false;
 
       final customerId = customer['id'] as String?;
-      if (customerId == null) {
-        print('[ERROR] Customer ID not found');
-        return false;
-      }
-
-      print('[DEBUG] Customer ID: $customerId');
-      print('[DEBUG] Current phone: ${customer['phone']}');
+      if (customerId == null) return false;
 
       // Update customer phone number
       const updateMutation = r'''
@@ -275,29 +214,13 @@ class ShipmentRepository {
       );
 
       final customerUpdate = updateResult?['customerUpdate'];
-      if (customerUpdate == null) {
-        print('[ERROR] Customer update failed: No response');
-        return false;
-      }
+      if (customerUpdate == null) return false;
 
       final userErrors = customerUpdate['userErrors'] as List<dynamic>?;
-      if (userErrors != null && userErrors.isNotEmpty) {
-        print('[ERROR] Customer update errors: $userErrors');
-        return false;
-      }
+      if (userErrors != null && userErrors.isNotEmpty) return false;
 
-      final updatedCustomer = customerUpdate['customer'];
-      if (updatedCustomer == null) {
-        print('[ERROR] Customer update failed: No customer data returned');
-        return false;
-      }
-
-      print(
-        '[DEBUG] Customer phone updated successfully: ${updatedCustomer['phone']}',
-      );
-      return true;
+      return customerUpdate['customer'] != null;
     } catch (e) {
-      print('[ERROR] Failed to update customer phone: $e');
       return false;
     }
   }
@@ -323,9 +246,7 @@ class ShipmentRepository {
       );
 
       final node = result?['node'];
-      if (node == null || node['__typename'] != 'Checkout') {
-        return false;
-      }
+      if (node == null || node['__typename'] != 'Checkout') return false;
 
       return node['completedAt'] != null;
     } catch (e) {

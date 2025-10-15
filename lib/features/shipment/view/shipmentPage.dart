@@ -5,12 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:marmooq/core/constants/app_colors.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:marmooq/features/shipment/services/checkout_service.dart';
-import 'package:marmooq/features/shipment/view/checkout_webview_screen.dart';
-import 'package:marmooq/features/shipment/models/checkout_models.dart';
 import 'package:marmooq/features/cart/repository/cart_repository.dart';
 import 'package:marmooq/features/cart/view_model/cart_bloc.dart';
 import 'package:marmooq/features/cart/view_model/cart_events.dart';
-import 'package:marmooq/core/utils/debug_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:marmooq/core/utils/validation_utils.dart';
 import 'package:marmooq/core/widgets/standard_app_bar.dart';
@@ -19,7 +16,7 @@ import 'package:marmooq/core/services/shopify_auth_service.dart';
 
 class ShippingDetailsScreen extends StatefulWidget {
   final String customerAccessToken;
-  final String cartId; // Kept for compatibility, but unused
+  final String cartId;
   final String email;
 
   const ShippingDetailsScreen({
@@ -38,31 +35,27 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
   bool _isLoading = false;
   bool _hasCartItems = false;
   List<CartLineInput> _lineItems = [];
-  String _selectedCountry = 'Kuwait';
 
   final CheckoutService _checkoutService = CheckoutService();
 
-  // Simplified form controllers
+  // Simplified form controllers - only what we actually need
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-
-  // Keep original controllers for data mapping
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _address1Controller = TextEditingController();
-  final TextEditingController _address2Controller = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _provinceController = TextEditingController();
-  final TextEditingController _countryController = TextEditingController();
-  final TextEditingController _zipController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchCartLineItems();
     _loadUserData();
-    _countryController.text = _selectedCountry;
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -81,7 +74,6 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         // Set phone number (remove +965 prefix if present for display)
         if (user.phone != null && user.phone!.isNotEmpty) {
           String phone = user.phone!;
-          // Remove +965 prefix if present
           if (phone.startsWith('+965')) {
             phone = phone.substring(4);
           }
@@ -89,38 +81,23 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         }
       }
     } catch (e) {
-      // Silently fail - user can manually enter data
       debugPrint('Failed to load user data: $e');
     }
-  }
-
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _address1Controller.dispose();
-    _address2Controller.dispose();
-    _cityController.dispose();
-    _provinceController.dispose();
-    _countryController.dispose();
-    _zipController.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchCartLineItems() async {
     try {
       final cleanCartId = widget.cartId.split('?').first;
       final cart = await ShopifyCart.instance.getCartById(cleanCartId);
+
       if (cart == null) {
         _showErrorSnackBar('فشل جلب السلة: السلة غير موجودة');
         return;
       }
+
       setState(() {
-        _hasCartItems = (cart.lines).isNotEmpty;
-        _lineItems = (cart.lines)
+        _hasCartItems = cart.lines.isNotEmpty;
+        _lineItems = cart.lines
             .map(
               (line) => CartLineInput(
                 merchandiseId: line.merchandise!.id,
@@ -129,6 +106,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
             )
             .toList();
       });
+
       // Validate merchandise IDs
       final isValid = await _checkoutService.validateCartItems(_lineItems);
       if (!isValid) {
@@ -139,6 +117,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         });
         return;
       }
+
       if (!_hasCartItems) {
         _showErrorSnackBar('السلة فارغة، يرجى إضافة منتجات');
       }
@@ -147,206 +126,73 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
     }
   }
 
-  void _mapFormData() {
+  Map<String, String> _getFormData() {
     // Split full name into first and last name
     final nameParts = _fullNameController.text.trim().split(' ');
-    if (nameParts.isNotEmpty) {
-      _firstNameController.text = nameParts.first;
-      if (nameParts.length > 1) {
-        _lastNameController.text = nameParts.sublist(1).join(' ');
-      } else {
-        _lastNameController.text = '';
-      }
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+    // Format phone number
+    String phone = _phoneController.text.trim();
+    if (phone.isNotEmpty && !phone.startsWith('+965')) {
+      phone = '+965$phone';
+    } else if (phone.isEmpty) {
+      phone = '+96555544789'; // Demo fallback
     }
 
-    // Map address to address1 and set defaults for other fields
-    _address1Controller.text = _addressController.text.trim();
-    _address2Controller.text = '';
-    _cityController.text = 'Kuwait City';
-    _provinceController.text = 'Kuwait';
-    _countryController.text = 'Kuwait';
-    _zipController.text = '00000';
+    return {
+      'firstName': firstName,
+      'lastName': lastName,
+      'phone': phone,
+      'address1': _addressController.text.trim(),
+      'address2': '',
+      'city': 'Kuwait City',
+      'province': 'Kuwait',
+      'country': 'Kuwait',
+      'zip': '00000',
+    };
   }
 
   Future<void> _handleCompleteOrder() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_hasCartItems) {
+      _showErrorSnackBar('السلة فارغة');
       return;
     }
 
-    // Map simplified form data to original structure
-    _mapFormData();
-
-    // Enhanced validation with debugging
-    DebugUtils.validateShopifyConfig();
-    DebugUtils.validateCartData(
-      email: widget.email,
-      customerAccessToken: widget.customerAccessToken,
-      lineItems: _lineItems,
-    );
-
-    if (widget.customerAccessToken.isEmpty) {
-      final error = 'رمز الوصول للعميل فارغ';
-      print('[ERROR] Customer access token is empty');
-      _showErrorSnackBar(error);
-      return;
-    }
-
-    if (!_hasCartItems || _lineItems.isEmpty) {
-      print('[ERROR] Cart is empty or has no items');
-      _showErrorSnackBar('السلة فارغة، يرجى إضافة منتجات');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      print('[DEBUG] Starting checkout creation process...');
+      final formData = _getFormData();
 
-      // Format phone number with +965 prefix, or use demo if empty/null
-      String formattedPhone = _phoneController.text.trim();
-
-      if (formattedPhone.isEmpty) {
-        // Phone is null or empty, use demo number
-        formattedPhone = '+96555544789';
-        print('[DEBUG] Phone is empty, using demo number: $formattedPhone');
-      } else {
-        // Phone exists, format it
-        if (!formattedPhone.startsWith('+965')) {
-          formattedPhone = '+965$formattedPhone';
-        }
-        print('[DEBUG] Phone formatted: $formattedPhone');
-      }
-
-      // First, update customer phone number in their profile
-      print('[DEBUG] Updating customer phone number before checkout...');
-      final phoneUpdated = await _checkoutService.updateCustomerPhone(
-        customerAccessToken: widget.customerAccessToken,
-        phone: formattedPhone,
-      );
-
-      if (phoneUpdated) {
-        print('[DEBUG] Customer phone updated successfully');
-      } else {
-        print(
-          '[DEBUG] Customer phone update failed, but continuing with checkout...',
-        );
-        // Use demo phone as fallback if customer update failed
-        formattedPhone = '+96555544789';
-        print('[DEBUG] Using demo phone number as fallback: $formattedPhone');
-      }
-
-      // Now create the checkout
-      final checkout = await _checkoutService.createCheckout(
+      // 1. SILENT COD CHECKOUT
+      final orderId = await _checkoutService.completeCODCheckout(
+        cartId: widget.cartId,
         email: widget.email,
-        cartId: widget.cartId, // Passed but unused
-        customerAccessToken: widget.customerAccessToken,
-        lineItems: _lineItems,
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        phone: formattedPhone,
+        phone: formData['phone']!,
+        firstName: formData['firstName']!,
+        lastName: formData['lastName']!,
+        address: formData['address1']!,
       );
 
-      final webUrl = checkout.webUrl;
-      if (webUrl.isNotEmpty) {
-        // Build prefilled checkout URL with shipping details
-        final prefilledUrl = _checkoutService.buildPrefilledCheckoutUrl(
-          baseCheckoutUrl: webUrl,
-          email: widget.email,
-          firstName: _firstNameController.text,
-          lastName: _lastNameController.text,
-          address1: _address1Controller.text,
-          address2: _address2Controller.text,
-          city: _cityController.text,
-          province: _provinceController.text,
-          country: _countryController.text,
-          zip: _zipController.text,
-          phone: formattedPhone,
-        );
+      // 2. Clear Cart
+      final cartRepository = CartRepository();
+      await cartRepository.clearCartAndCreateNew();
+      context.read<CartBloc>().add(const CartClearedEvent());
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'يتم توجيهك إلى صفحة الدفع...',
-              textDirection: TextDirection.rtl,
-            ),
-            backgroundColor: Colors.teal,
-          ),
-        );
-
-        // Push a non-opaque, no-animation route so the WebView runs in the
-        // background and the user never sees the checkout screens.
-        final route = PageRouteBuilder(
-          opaque: false,
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              CheckoutWebViewScreen(
-                checkoutUrl: prefilledUrl,
-                checkoutId: checkout.id,
-                totalPrice: checkout.totalPrice,
-                silentMode: true,
-              ),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        );
-
-        final result = await Navigator.of(context).push(route);
-
-        // Handle webview result
-        if (result is CheckoutResult && result.success) {
-          // Clear the cart after successful order
-          try {
-            final cartRepository = CartRepository();
-            // Clear current cart and create a new empty one for future use
-            await cartRepository.clearCartAndCreateNew();
-            // Emit cart cleared event to update all listeners (including products view)
-            if (mounted) {
-              context.read<CartBloc>().add(const CartClearedEvent());
-            }
-          } catch (e) {
-            // Don't block navigation if cart clearing fails
-          }
-
-          // Navigate to order confirmation page
-          if (mounted) {
-            context.go(
-              '/order-confirmation',
-              extra: {
-                'message': 'تم إتمام الطلب بنجاح! شكراً لك على التسوق.',
-                'checkoutId': checkout.id,
-                'webUrl': webUrl,
-                'totalPrice': checkout.totalPrice,
-              },
-            );
-          }
-        }
-      } else {
-        throw Exception('لم يتم الحصول على رابط الدفع');
-      }
+      // 3. SUCCESS - Go to confirmation
+      context.go(
+        '/order-confirmation',
+        extra: {
+          'message': 'تم تأكيد طلبك #$orderId - الدفع عند الاستلام!',
+          'orderId': orderId,
+          'totalPrice': 'KWD', // Get from cart
+        },
+      );
     } catch (e) {
-      print('[ERROR] Checkout creation failed: $e');
-      print('[ERROR] Error type: ${e.runtimeType}');
-
-      // Provide more specific error messages
-      String errorMessage = 'خطأ في إتمام الطلب';
-      if (e.toString().contains('No items in cart')) {
-        errorMessage = 'السلة فارغة، يرجى إضافة منتجات';
-      } else if (e.toString().contains('Invalid merchandise ID')) {
-        errorMessage = 'خطأ في المنتجات، يرجى تحديث السلة';
-      } else if (e.toString().contains('Customer access token')) {
-        errorMessage = 'خطأ في المصادقة، يرجى تسجيل الدخول مرة أخرى';
-      } else if (e.toString().contains('Network') ||
-          e.toString().contains('connection')) {
-        errorMessage = 'خطأ في الاتصال، يرجى المحاولة مرة أخرى';
-      } else if (e.toString().contains('Shopify')) {
-        errorMessage = 'خطأ في الخدمة، يرجى المحاولة لاحقاً';
-      }
-
-      _showErrorSnackBar('$errorMessage: $e');
+      _showErrorSnackBar('خطأ: ${e.toString()}');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -376,42 +222,7 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         body: Container(
           decoration: const BoxDecoration(color: AppColors.brandLight),
           child: _isLoading
-              ? Center(
-                  child: Container(
-                    padding: ResponsiveUtils.getResponsivePadding(context),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(
-                        ResponsiveUtils.getResponsiveBorderRadius(
-                          context,
-                          mobile: 20,
-                        ),
-                      ),
-                    ),
-                    child: const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator.adaptive(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.brand,
-                          ),
-                          strokeWidth: 3,
-                        ),
-                        SizedBox(height: 24),
-                        Text(
-                          'جاري معالجة طلبك...',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.brand,
-                          ),
-                          textDirection: TextDirection.rtl,
-                        ),
-                      ],
-                    ),
-                  ),
-                )
+              ? _buildLoadingWidget()
               : SingleChildScrollView(
                   padding: ResponsiveUtils.getResponsivePadding(context),
                   child: Form(
@@ -424,421 +235,352 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
                             mobile: 20,
                           ),
                         ),
-                        Container(
-                          padding: ResponsiveUtils.getResponsivePadding(
-                            context,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              ResponsiveUtils.getResponsiveBorderRadius(
-                                context,
-                                mobile: 16,
-                              ),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: ResponsiveUtils.getResponsivePadding(
-                                  context,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.brand,
-                                  borderRadius: BorderRadius.circular(
-                                    ResponsiveUtils.getResponsiveBorderRadius(
-                                      context,
-                                      mobile: 12,
-                                    ),
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      FeatherIcons.shield,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      'يرجى ادخال معلوماتك لإكمال الطلب',
-                                      style: TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                      textDirection: TextDirection.rtl,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 24,
-                                ),
-                              ),
-                              // Simplified shipping form fields
-                              _buildTextField(
-                                controller: _fullNameController,
-                                label: 'الاسم الكامل',
-                                hint: 'اكتب الاسم الكامل',
-                                validator: (v) => v == null || v.trim().isEmpty
-                                    ? 'مطلوب'
-                                    : null,
-                                textInputAction: TextInputAction.next,
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 12,
-                                ),
-                              ),
-                              _buildTextField(
-                                controller: _phoneController,
-                                label: 'رقم الهاتف',
-                                hint: '',
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                maxLength: 8,
-                                prefixText: '+965 ',
-                                validator: (v) {
-                                  final digits = (v ?? '').replaceAll(
-                                    RegExp(r'\D'),
-                                    '',
-                                  );
-                                  if (digits.isEmpty) {
-                                    return 'يرجى إدخال رقم الهاتف';
-                                  }
-                                  if (digits.length != 8) {
-                                    return 'رقم الهاتف يجب أن يتكون من 8 أرقام';
-                                  }
-                                  // Validate just the 8 digits (without +965 prefix)
-                                  if (!ValidationUtils.isValidKuwaitPhone(
-                                    digits,
-                                  )) {
-                                    return 'يرجى إدخال رقم كويتي صالح (يبدأ بـ 5 أو 6 أو 9)';
-                                  }
-                                  return null;
-                                },
-                                textInputAction: TextInputAction.next,
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 12,
-                                ),
-                              ),
-                              _buildTextField(
-                                controller: _addressController,
-                                label: 'العنوان الكامل',
-                                hint:
-                                    'اكتب العنوان الكامل (الشارع، الحي، المنطقة)',
-                                validator: (v) => v == null || v.trim().isEmpty
-                                    ? 'مطلوب'
-                                    : null,
-                                textInputAction: TextInputAction.done,
-                                maxLines: 3,
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 24,
-                                ),
-                              ),
-                              Container(
-                                padding: ResponsiveUtils.getResponsivePadding(
-                                  context,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.brandLight,
-                                  borderRadius: BorderRadius.circular(
-                                    ResponsiveUtils.getResponsiveBorderRadius(
-                                      context,
-                                      mobile: 12,
-                                    ),
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.brandMuted,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      FeatherIcons.info,
-                                      color: AppColors.brand,
-                                      size: 24,
-                                    ),
-                                    SizedBox(
-                                      width:
-                                          ResponsiveUtils.getResponsiveSpacing(
-                                            context,
-                                            mobile: 12,
-                                          ),
-                                    ),
-                                    const Expanded(
-                                      child: Text(
-                                        'اضغط للانتقال إلى صفحة الدفع الآمنة',
-                                        style: TextStyle(
-                                          fontFamily: 'Tajawal',
-                                          fontSize: 16,
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        textDirection: TextDirection.rtl,
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 32,
-                                ),
-                              ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      AppColors.brand,
-                                      AppColors.brandDark,
-                                    ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    ResponsiveUtils.getResponsiveBorderRadius(
-                                      context,
-                                      mobile: 16,
-                                    ),
-                                  ),
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: _isLoading || !_hasCartItems
-                                      ? null
-                                      : _handleCompleteOrder,
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: Size.fromHeight(
-                                      ResponsiveUtils.getResponsiveHeight(
-                                        context,
-                                        mobile: 60,
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        ResponsiveUtils.getResponsiveBorderRadius(
-                                          context,
-                                          mobile: 16,
-                                        ),
-                                      ),
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      vertical:
-                                          ResponsiveUtils.getResponsiveSpacing(
-                                            context,
-                                            mobile: 16,
-                                          ),
-                                    ),
-                                  ),
-                                  child: _isLoading
-                                      ? const CircularProgressIndicator.adaptive(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                          strokeWidth: 2,
-                                        )
-                                      : Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              FeatherIcons.creditCard,
-                                              color: Colors.white,
-                                              size:
-                                                  ResponsiveUtils.getResponsiveIconSize(
-                                                    context,
-                                                    mobile: 24,
-                                                  ),
-                                            ),
-                                            SizedBox(
-                                              width:
-                                                  ResponsiveUtils.getResponsiveSpacing(
-                                                    context,
-                                                    mobile: 12,
-                                                  ),
-                                            ),
-                                            const Text(
-                                              'الانتقال إلى الدفع',
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                fontFamily: 'Tajawal',
-                                                color: Colors.white,
-                                              ),
-                                              textDirection: TextDirection.rtl,
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildFormContainer(),
                         SizedBox(
                           height: ResponsiveUtils.getResponsiveSpacing(
                             context,
                             mobile: 24,
                           ),
                         ),
-                        Container(
-                          padding: ResponsiveUtils.getResponsivePadding(
-                            context,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              ResponsiveUtils.getResponsiveBorderRadius(
-                                context,
-                                mobile: 16,
-                              ),
-                            ),
-                            border: Border.all(
-                              color: AppColors.brandMuted,
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(
-                                      ResponsiveUtils.getResponsiveSpacing(
-                                        context,
-                                        mobile: 8,
-                                      ),
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.brandLight,
-                                      borderRadius: BorderRadius.circular(
-                                        ResponsiveUtils.getResponsiveBorderRadius(
-                                          context,
-                                          mobile: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      FeatherIcons.shield,
-                                      color: AppColors.brand,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: ResponsiveUtils.getResponsiveSpacing(
-                                      context,
-                                      mobile: 12,
-                                    ),
-                                  ),
-                                  const Expanded(
-                                    child: Text(
-                                      'معلومات الدفع الآمن',
-                                      style: TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                      ),
-                                      textDirection: TextDirection.rtl,
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 16,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle_outline,
-                                    color: AppColors.brand,
-                                    size: 20,
-                                  ),
-                                  SizedBox(
-                                    width: ResponsiveUtils.getResponsiveSpacing(
-                                      context,
-                                      mobile: 12,
-                                    ),
-                                  ),
-                                  const Expanded(
-                                    child: Text(
-                                      'سيتم توجيهك إلى صفحة دفع آمنة لإتمام عملية الشراء',
-                                      style: TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 14,
-                                        color: Colors.black87,
-                                      ),
-                                      textDirection: TextDirection.rtl,
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(
-                                height: ResponsiveUtils.getResponsiveSpacing(
-                                  context,
-                                  mobile: 8,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle_outline,
-                                    color: AppColors.brand,
-                                    size: 20,
-                                  ),
-                                  SizedBox(
-                                    width: ResponsiveUtils.getResponsiveSpacing(
-                                      context,
-                                      mobile: 12,
-                                    ),
-                                  ),
-                                  const Expanded(
-                                    child: Text(
-                                      'جميع المعاملات مشفرة ومؤمنة بالكامل',
-                                      style: TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 14,
-                                        color: Colors.black87,
-                                      ),
-                                      textDirection: TextDirection.rtl,
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildSecurityInfo(),
                       ],
                     ),
                   ),
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Center(
+      child: Container(
+        padding: ResponsiveUtils.getResponsivePadding(context),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 20),
+          ),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator.adaptive(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.brand),
+              strokeWidth: 3,
+            ),
+            SizedBox(height: 24),
+            Text(
+              'جاري معالجة طلبك...',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.brand,
+              ),
+              textDirection: TextDirection.rtl,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormContainer() {
+    return Container(
+      padding: ResponsiveUtils.getResponsivePadding(context),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildHeader(),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
+          ),
+          _buildFormFields(),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 32),
+          ),
+          _buildSubmitButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: ResponsiveUtils.getResponsivePadding(context),
+      decoration: BoxDecoration(
+        color: AppColors.brand,
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+        ),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(FeatherIcons.shield, color: Colors.white, size: 24),
+          SizedBox(width: 12),
+          Text(
+            'يرجى ادخال معلوماتك لإكمال الطلب',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+            textDirection: TextDirection.rtl,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Column(
+      children: [
+        _buildTextField(
+          controller: _fullNameController,
+          label: 'الاسم الكامل',
+          hint: 'اكتب الاسم الكامل',
+          validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+          textInputAction: TextInputAction.next,
+        ),
+        SizedBox(
+          height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+        ),
+        _buildTextField(
+          controller: _phoneController,
+          label: 'رقم الهاتف',
+          hint: '',
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          maxLength: 8,
+          prefixText: '+965 ',
+          validator: (v) {
+            final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
+            if (digits.isEmpty) return 'يرجى إدخال رقم الهاتف';
+            if (digits.length != 8) return 'رقم الهاتف يجب أن يتكون من 8 أرقام';
+            if (!ValidationUtils.isValidKuwaitPhone(digits)) {
+              return 'يرجى إدخال رقم كويتي صالح (يبدأ بـ 5 أو 6 أو 9)';
+            }
+            return null;
+          },
+          textInputAction: TextInputAction.next,
+        ),
+        SizedBox(
+          height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+        ),
+        _buildTextField(
+          controller: _addressController,
+          label: 'العنوان الكامل',
+          hint: 'اكتب العنوان الكامل (الشارع، الحي، المنطقة)',
+          validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+          textInputAction: TextInputAction.done,
+          maxLines: 3,
+        ),
+        SizedBox(
+          height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 24),
+        ),
+        _buildInfoBox(),
+      ],
+    );
+  }
+
+  Widget _buildInfoBox() {
+    return Container(
+      padding: ResponsiveUtils.getResponsivePadding(context),
+      decoration: BoxDecoration(
+        color: AppColors.brandLight,
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 12),
+        ),
+        border: Border.all(color: AppColors.brandMuted, width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(FeatherIcons.info, color: AppColors.brand, size: 24),
+          SizedBox(
+            width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+          ),
+          const Expanded(
+            child: Text(
+              'اضغط للانتقال إلى صفحة الدفع الآمنة',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 16,
+                color: Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.brand, AppColors.brandDark],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+        ),
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading || !_hasCartItems ? null : _handleCompleteOrder,
+        style: ElevatedButton.styleFrom(
+          minimumSize: Size.fromHeight(
+            ResponsiveUtils.getResponsiveHeight(context, mobile: 60),
+          ),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+          ),
+        ),
+        child: _isLoading
+            ? const CircularProgressIndicator.adaptive(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 2,
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    FeatherIcons.creditCard,
+                    color: Colors.white,
+                    size: ResponsiveUtils.getResponsiveIconSize(
+                      context,
+                      mobile: 24,
+                    ),
+                  ),
+                  SizedBox(
+                    width: ResponsiveUtils.getResponsiveSpacing(
+                      context,
+                      mobile: 12,
+                    ),
+                  ),
+                  const Text(
+                    'الانتقال إلى الدفع',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Tajawal',
+                      color: Colors.white,
+                    ),
+                    textDirection: TextDirection.rtl,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildSecurityInfo() {
+    return Container(
+      padding: ResponsiveUtils.getResponsivePadding(context),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          ResponsiveUtils.getResponsiveBorderRadius(context, mobile: 16),
+        ),
+        border: Border.all(color: AppColors.brandMuted, width: 1),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(
+                  ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.brandLight,
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.getResponsiveBorderRadius(
+                      context,
+                      mobile: 12,
+                    ),
+                  ),
+                ),
+                child: Icon(
+                  FeatherIcons.shield,
+                  color: AppColors.brand,
+                  size: 20,
+                ),
+              ),
+              SizedBox(
+                width: ResponsiveUtils.getResponsiveSpacing(
+                  context,
+                  mobile: 12,
+                ),
+              ),
+              const Expanded(
+                child: Text(
+                  'معلومات الدفع الآمن',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 16),
+          ),
+          _buildSecurityItem(
+            'سيتم توجيهك إلى صفحة دفع آمنة لإتمام عملية الشراء',
+          ),
+          SizedBox(
+            height: ResponsiveUtils.getResponsiveSpacing(context, mobile: 8),
+          ),
+          _buildSecurityItem('جميع المعاملات مشفرة ومؤمنة بالكامل'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityItem(String text) {
+    return Row(
+      children: [
+        Icon(Icons.check_circle_outline, color: AppColors.brand, size: 20),
+        SizedBox(
+          width: ResponsiveUtils.getResponsiveSpacing(context, mobile: 12),
+        ),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+            textDirection: TextDirection.rtl,
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
     );
   }
 

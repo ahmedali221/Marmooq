@@ -1,4 +1,5 @@
 import 'package:shopify_flutter/shopify_flutter.dart';
+import 'package:shopify_flutter/models/src/cart/inputs/attribute_input/attribute_input.dart';
 import 'package:marmooq/features/shipment/models/checkout_models.dart';
 import 'package:marmooq/features/shipment/repository/shipment_repository.dart';
 
@@ -16,26 +17,12 @@ class CheckoutService {
     required String phone,
   }) async {
     try {
-      print('[CheckoutService] Starting checkout creation...');
-      print('[CheckoutService] Email: $email');
-      print('[CheckoutService] Cart ID: $cartId');
-      print(
-        '[CheckoutService] Access Token Present: ${customerAccessToken.isNotEmpty}',
-      );
-      print('[CheckoutService] Line Items: ${lineItems.length}');
-
-      // Pre-validation
-      if (email.isEmpty) {
-        throw Exception('Email is required for checkout');
-      }
-
-      if (customerAccessToken.isEmpty) {
-        throw Exception('Customer access token is required for checkout');
-      }
-
-      if (lineItems.isEmpty) {
+      // Basic validation
+      if (email.isEmpty) throw Exception('Email is required for checkout');
+      if (customerAccessToken.isEmpty)
+        throw Exception('Customer access token is required');
+      if (lineItems.isEmpty)
         throw Exception('Cart is empty - cannot create checkout');
-      }
 
       final checkoutResult = await _shipmentRepository.createCheckout(
         email: email,
@@ -47,10 +34,8 @@ class CheckoutService {
         phone: phone,
       );
 
-      print('[CheckoutService] Checkout result: $checkoutResult');
       return CheckoutData.fromMap(checkoutResult);
     } catch (e) {
-      print('[CheckoutService] Error creating checkout: $e');
       throw Exception('Failed to create checkout: $e');
     }
   }
@@ -91,39 +76,18 @@ class CheckoutService {
     addIfNotEmpty('checkout[shipping_address][country]', country);
     addIfNotEmpty('checkout[shipping_address][zip]', zip);
 
-    // Use the phone directly if it's already in correct format, otherwise use demo fallback
+    // Format phone number properly
     final String finalPhone =
         (phone.isNotEmpty && phone.startsWith('+965') && phone.length == 13)
-        ? phone // Already in correct format: +965XXXXXXXX
-        : '+96555544789'; // Demo phone fallback (used when phone is null, empty, or invalid)
-
-    print('[DEBUG] Phone processing:');
-    print('[DEBUG] Original phone: $phone');
-    print('[DEBUG] Is phone null or empty: ${phone.isEmpty}');
-    print('[DEBUG] Final phone to use: $finalPhone');
+        ? phone
+        : '+96555544789'; // Demo phone fallback
 
     addIfNotEmpty('checkout[shipping_address][phone]', finalPhone);
-
-    // Also add phone as a general checkout parameter
     addIfNotEmpty('checkout[phone]', finalPhone);
-
-    // Additional Shopify checkout parameters for better prefill
     addIfNotEmpty('checkout[shipping_address][country_code]', 'KW');
     addIfNotEmpty('checkout[shipping_address][province_code]', 'KU');
 
     final newUri = uri.replace(queryParameters: params);
-
-    // Debug logging for URL parameters
-    print('[DEBUG] Generated checkout URL parameters:');
-    params.forEach((key, value) {
-      if (key.contains('phone') ||
-          key.contains('email') ||
-          key.contains('name') ||
-          key.contains('address')) {
-        print('[DEBUG] $key: $value');
-      }
-    });
-
     return newUri.toString();
   }
 
@@ -134,13 +98,86 @@ class CheckoutService {
         final isValid = await _shipmentRepository.validateMerchandiseId(
           item.merchandiseId,
         );
-        if (!isValid) {
-          return false;
-        }
+        if (!isValid) return false;
       }
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  Future<String> completeCODCheckout({
+    required String cartId,
+    required String email,
+    required String phone,
+    required String firstName,
+    required String lastName,
+    required String address,
+  }) async {
+    try {
+      // Create a new cart with buyer identity and COD attributes
+      final cartInput = CartInput(
+        lines: [], // We'll add items from the existing cart
+        buyerIdentity: CartBuyerIdentityInput(email: email, phone: phone),
+        attributes: [
+          AttributeInput(key: 'payment_method', value: 'COD'),
+          AttributeInput(key: 'delivery_address', value: address),
+          AttributeInput(key: 'customer_name', value: '$firstName $lastName'),
+        ],
+      );
+
+      // Create new cart for COD order
+      final newCart = await ShopifyCart.instance.createCart(cartInput);
+
+      if (newCart.id.isEmpty) {
+        throw Exception('Failed to create COD cart');
+      }
+
+      // Get the original cart to copy line items
+      final originalCart = await ShopifyCart.instance.getCartById(cartId);
+
+      if (originalCart?.lines.isEmpty ?? true) {
+        throw Exception('Original cart is empty');
+      }
+
+      // Convert line items to add to new cart
+      final lineItems = originalCart!.lines
+          .where((line) => line.merchandise?.id != null)
+          .map(
+            (line) => CartLineInput(
+              merchandiseId: line.merchandise!.id,
+              quantity: line.quantity ?? 1,
+            ),
+          )
+          .toList();
+
+      if (lineItems.isEmpty) {
+        throw Exception('No valid line items found');
+      }
+
+      // Add line items to the new COD cart
+      final lineUpdateInputs = lineItems
+          .map(
+            (item) => CartLineUpdateInput(
+              merchandiseId: item.merchandiseId,
+              quantity: item.quantity,
+            ),
+          )
+          .toList();
+
+      await ShopifyCart.instance.addLineItemsToCart(
+        cartId: newCart.id,
+        cartLineInputs: lineUpdateInputs,
+      );
+
+      // For COD, we simulate order completion by returning a mock order ID
+      // In a real implementation, you would integrate with your payment processor
+      // and use the checkout URL from the repository if needed
+      final orderId = 'COD-${DateTime.now().millisecondsSinceEpoch}';
+
+      return orderId;
+    } catch (e) {
+      throw Exception('فشل في تأكيد الطلب: $e');
     }
   }
 
@@ -150,23 +187,11 @@ class CheckoutService {
     required String phone,
   }) async {
     try {
-      print('[CheckoutService] Updating customer phone number...');
-      print('[CheckoutService] Phone: $phone');
-
-      final success = await _shipmentRepository.updateCustomerPhone(
+      return await _shipmentRepository.updateCustomerPhone(
         customerAccessToken: customerAccessToken,
         phone: phone,
       );
-
-      if (success) {
-        print('[CheckoutService] Customer phone updated successfully');
-      } else {
-        print('[CheckoutService] Failed to update customer phone');
-      }
-
-      return success;
     } catch (e) {
-      print('[CheckoutService] Error updating customer phone: $e');
       return false;
     }
   }
