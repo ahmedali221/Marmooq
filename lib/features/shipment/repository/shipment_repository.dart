@@ -180,6 +180,99 @@ class ShipmentRepository {
     }
   }
 
+  /// Updates customer phone number before checkout
+  Future<bool> updateCustomerPhone({
+    required String customerAccessToken,
+    required String phone,
+  }) async {
+    try {
+      print('[DEBUG] Updating customer phone number...');
+      print('[DEBUG] Phone: $phone');
+
+      final shopifyCustom = ShopifyCustom.instance;
+
+      // First, get the customer ID using the access token
+      const customerQuery = r'''
+        query getCustomer($customerAccessToken: String!) {
+          customer(customerAccessToken: $customerAccessToken) {
+            id
+            phone
+          }
+        }
+      ''';
+
+      final customerResult = await shopifyCustom.customQuery(
+        gqlQuery: customerQuery,
+        variables: {'customerAccessToken': customerAccessToken},
+      );
+
+      final customer = customerResult?['customer'];
+      if (customer == null) {
+        print('[ERROR] Could not fetch customer data');
+        return false;
+      }
+
+      final customerId = customer['id'] as String?;
+      if (customerId == null) {
+        print('[ERROR] Customer ID not found');
+        return false;
+      }
+
+      print('[DEBUG] Customer ID: $customerId');
+      print('[DEBUG] Current phone: ${customer['phone']}');
+
+      // Update customer phone number
+      const updateMutation = r'''
+        mutation customerUpdate($customerAccessToken: String!, $customer: CustomerUpdateInput!) {
+          customerUpdate(customerAccessToken: $customerAccessToken, customer: $customer) {
+            customer {
+              id
+              phone
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      ''';
+
+      final updateResult = await shopifyCustom.customQuery(
+        gqlQuery: updateMutation,
+        variables: {
+          'customerAccessToken': customerAccessToken,
+          'customer': {'phone': phone},
+        },
+      );
+
+      final customerUpdate = updateResult?['customerUpdate'];
+      if (customerUpdate == null) {
+        print('[ERROR] Customer update failed: No response');
+        return false;
+      }
+
+      final userErrors = customerUpdate['userErrors'] as List<dynamic>?;
+      if (userErrors != null && userErrors.isNotEmpty) {
+        print('[ERROR] Customer update errors: $userErrors');
+        return false;
+      }
+
+      final updatedCustomer = customerUpdate['customer'];
+      if (updatedCustomer == null) {
+        print('[ERROR] Customer update failed: No customer data returned');
+        return false;
+      }
+
+      print(
+        '[DEBUG] Customer phone updated successfully: ${updatedCustomer['phone']}',
+      );
+      return true;
+    } catch (e) {
+      print('[ERROR] Failed to update customer phone: $e');
+      return false;
+    }
+  }
+
   Future<bool> isCheckoutCompleted(String checkoutId) async {
     try {
       final shopifyCustom = ShopifyCustom.instance;

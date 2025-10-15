@@ -35,7 +35,6 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
   bool _showWebView = false; // Fallback to show WebView if stuck
   Timer? _stuckTimer;
   String _loadingMessage = 'جاري تحميل صفحة الدفع...';
-  int _loadingStep = 0;
 
   @override
   void initState() {
@@ -65,11 +64,10 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
     }
   }
 
-  void _updateLoadingMessage(String message, {int? step}) {
+  void _updateLoadingMessage(String message) {
     if (mounted && !_checkoutCompleted) {
       setState(() {
         _loadingMessage = message;
-        if (step != null) _loadingStep = step;
       });
     }
   }
@@ -104,7 +102,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
                 'جاري التحقق من الطلب...',
               ];
               if (step < messages.length) {
-                _updateLoadingMessage(messages[step], step: step);
+                _updateLoadingMessage(messages[step]);
               }
             }
           } catch (e) {
@@ -170,7 +168,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
     if (_startedAutoFlow || _checkoutCompleted) return;
     _startedAutoFlow = true;
 
-    _updateLoadingMessage('جاري ملء معلومات الشحن...', step: 1);
+    _updateLoadingMessage('جاري ملء معلومات الشحن...');
 
     const String script = r'''
       (async function(){
@@ -215,50 +213,19 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
         // Step 1: Fill shipping information fields
         console.log('Filling shipping information...');
         
-        // Fill email field - extract from URL parameters
-        const emailFromUrl = urlParams.get('checkout[email]') || 'ahmed@ahme.com';
-        fillIf('input[name="checkout[email]"]', emailFromUrl);
-        fillIf('input[type="email"]:not([id="email"])', emailFromUrl); // Exclude phone field with id="email"
+        // Skip form filling - customer data should be pre-filled from profile update
+        console.log('Skipping form filling - customer data should be pre-filled from profile update');
         
-        // Fill name fields - extract from URL parameters
-        const firstNameFromUrl = urlParams.get('checkout[shipping_address][first_name]') || 'ahmed';
-        const lastNameFromUrl = urlParams.get('checkout[shipping_address][last_name]') || 'ali';
-        fillIf('input[name="checkout[shipping_address][first_name]"]', firstNameFromUrl);
-        fillIf('input[name="checkout[shipping_address][last_name]"]', lastNameFromUrl);
-        fillIf('input[placeholder*="الاسم"]', firstNameFromUrl + ' ' + lastNameFromUrl);
-        fillIf('input[placeholder*="Name"]', firstNameFromUrl + ' ' + lastNameFromUrl);
-        
-        // Fill address fields
-        fillIf('input[name="checkout[shipping_address][address1]"]', 'kuwait');
-        fillIf('input[placeholder*="العنوان"]', 'kuwait');
-        fillIf('input[placeholder*="Address"]', 'kuwait');
-        
-        // Fill city
-        fillIf('input[name="checkout[shipping_address][city]"]', 'Kuwait City');
-        fillIf('input[placeholder*="القطعة"]', 'Kuwait City');
-        fillIf('input[placeholder*="City"]', 'Kuwait City');
-        
-        // Fill zip code
-        fillIf('input[name="checkout[shipping_address][zip]"]', '00000');
-        fillIf('input[placeholder*="منزل"]', '00000');
-        fillIf('input[placeholder*="Zip"]', '00000');
-        
-        // Fill phone - specifically target the field with id="email" which is actually the phone field
-        const phoneFromUrl = urlParams.get('checkout[shipping_address][phone]') || '+96555574123';
-        console.log('Phone from URL:', phoneFromUrl);
-        
-        // Try to fill the phone field with id="email" first
+        // Just verify that the phone field has the correct value
         const phoneFieldWithEmailId = document.querySelector('input[id="email"]');
         if (phoneFieldWithEmailId) {
-          phoneFieldWithEmailId.value = phoneFromUrl;
-          phoneFieldWithEmailId.dispatchEvent(new Event('input', {bubbles: true}));
-          phoneFieldWithEmailId.dispatchEvent(new Event('change', {bubbles: true}));
-          console.log('Phone filled in field with id="email":', phoneFromUrl);
+          console.log('Phone field value:', phoneFieldWithEmailId.value);
+          if (phoneFieldWithEmailId.value.includes('@')) {
+            console.log('WARNING: Phone field still contains email, this indicates profile update failed');
+          } else {
+            console.log('SUCCESS: Phone field contains phone number');
+          }
         }
-        
-        // Also try other phone field selectors as backup
-        fillIf('input[name="checkout[shipping_address][phone]"]', phoneFromUrl);
-        fillIf('input[type="tel"]', phoneFromUrl);
         
         await wait(2000);
         if (window.CheckoutListener && window.CheckoutListener.postMessage) {
@@ -377,7 +344,7 @@ class _CheckoutWebViewScreenState extends State<CheckoutWebViewScreen> {
       await _controller.runJavaScriptReturningResult(script);
     } catch (e) {
       print('Auto-confirm script error: $e');
-      _updateLoadingMessage('جاري معالجة الطلب...', step: 5);
+      _updateLoadingMessage('جاري معالجة الطلب...');
     }
   }
 

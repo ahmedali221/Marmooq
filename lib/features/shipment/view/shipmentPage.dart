@@ -210,6 +210,22 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
         formattedPhone = '+965$formattedPhone';
       }
 
+      // First, update customer phone number in their profile
+      print('[DEBUG] Updating customer phone number before checkout...');
+      final phoneUpdated = await _checkoutService.updateCustomerPhone(
+        customerAccessToken: widget.customerAccessToken,
+        phone: formattedPhone,
+      );
+
+      if (phoneUpdated) {
+        print('[DEBUG] Customer phone updated successfully');
+      } else {
+        print(
+          '[DEBUG] Customer phone update failed, but continuing with checkout...',
+        );
+      }
+
+      // Now create the checkout
       final checkout = await _checkoutService.createCheckout(
         email: widget.email,
         cartId: widget.cartId, // Passed but unused

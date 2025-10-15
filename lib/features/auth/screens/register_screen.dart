@@ -399,7 +399,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           decoration: InputDecoration(
-                            labelText: 'رقم الهاتف (اختياري)',
+                            labelText: 'رقم الهاتف ',
                             hintText: '8 أرقام تبدأ بـ 5 أو 6 أو 9',
                             prefixIcon: const Icon(FeatherIcons.phone),
                             border: const OutlineInputBorder(),

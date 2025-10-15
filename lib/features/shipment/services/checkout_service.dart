@@ -145,6 +145,33 @@ class CheckoutService {
     }
   }
 
+  /// Updates customer phone number before checkout
+  Future<bool> updateCustomerPhone({
+    required String customerAccessToken,
+    required String phone,
+  }) async {
+    try {
+      print('[CheckoutService] Updating customer phone number...');
+      print('[CheckoutService] Phone: $phone');
+
+      final success = await _shipmentRepository.updateCustomerPhone(
+        customerAccessToken: customerAccessToken,
+        phone: phone,
+      );
+
+      if (success) {
+        print('[CheckoutService] Customer phone updated successfully');
+      } else {
+        print('[CheckoutService] Failed to update customer phone');
+      }
+
+      return success;
+    } catch (e) {
+      print('[CheckoutService] Error updating customer phone: $e');
+      return false;
+    }
+  }
+
   /// Checks if a checkout is completed
   Future<bool> isCheckoutCompleted(String checkoutId) async {
     return await _shipmentRepository.isCheckoutCompleted(checkoutId);
