@@ -159,36 +159,37 @@ class _ShippingDetailsScreenState extends State<ShippingDetailsScreen> {
       _showErrorSnackBar('السلة فارغة');
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
       final formData = _getFormData();
-
-      // 1. SILENT COD CHECKOUT
-      final orderId = await _checkoutService.completeCODCheckout(
+      final result = await _checkoutService.completeCODCheckout(
+        lineItems: _lineItems,
         cartId: widget.cartId,
         email: widget.email,
         phone: formData['phone']!,
         firstName: formData['firstName']!,
         lastName: formData['lastName']!,
-        address: formData['address1']!,
+        address1: formData['address1']!,
+        customerAccessToken: widget.customerAccessToken,
       );
-
-      // 2. Clear Cart
-      final cartRepository = CartRepository();
-      await cartRepository.clearCartAndCreateNew();
-      context.read<CartBloc>().add(const CartClearedEvent());
-
-      // 3. SUCCESS - Go to confirmation
-      context.go(
-        '/order-confirmation',
-        extra: {
-          'message': 'تم تأكيد طلبك #$orderId - الدفع عند الاستلام!',
-          'orderId': orderId,
-          'totalPrice': 'KWD', // Get from cart
-        },
-      );
+      if (result.success) {
+        final cartRepository = CartRepository();
+        await cartRepository.clearCartAndCreateNew();
+        context.read<CartBloc>().add(const CartClearedEvent());
+        if (result.autoRedirect ?? false) {
+          context.go(
+            '/order-confirmation',
+            extra: {
+              'message':
+                  'تم إتمام طلبك ${result.checkoutId} بنجاح! الدفع عند الاستلام',
+              'checkoutId': result.checkoutId,
+              'totalPrice': result.totalPrice,
+            },
+          );
+        }
+      } else {
+        _showErrorSnackBar(result.error ?? 'خطأ غير متوقع');
+      }
     } catch (e) {
       _showErrorSnackBar('خطأ: ${e.toString()}');
     } finally {
