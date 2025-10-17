@@ -72,10 +72,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!_acceptedTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يرجى الموافقة على الشروط والأحكام للمتابعة'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: const Text('يرجى الموافقة على الشروط والأحكام للمتابعة'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -99,10 +99,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // Verify phone normalization succeeded
         if (normalizedPhone.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('خطأ في تنسيق رقم الهاتف. يرجى التحقق من الرقم'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: const Text(
+                'خطأ في تنسيق رقم الهاتف. يرجى التحقق من الرقم',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 3),
             ),
           );
           return;
@@ -134,14 +136,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red, size: 28),
-                SizedBox(width: 8),
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 28,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'خطأ في التسجيل',
                   style: TextStyle(
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.error,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

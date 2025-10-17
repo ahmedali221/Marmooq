@@ -61,7 +61,9 @@ class ProfileScreen extends StatelessWidget {
                     AuthDeleteAccount(userId: userId),
                   );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                ),
                 child: Text(
                   'تأكيد الحذف',
                   style: TextStyle(
