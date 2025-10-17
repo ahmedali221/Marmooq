@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shopify_flutter/shopify_flutter.dart';
 import 'package:marmooq/features/auth/bloc/auth_bloc.dart';
 import 'package:marmooq/features/auth/bloc/auth_state.dart';
-import 'package:marmooq/core/widgets/standard_app_bar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -136,13 +135,14 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: StandardAppBar(
+      appBar: AppBar(
         backgroundColor: Colors.white,
-        title: 'الملف الشخصي',
-        onLeadingPressed: null,
-        actions: [],
-        elevation: 0,
+        title: const Text(
+          'الملف الشخصي',
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
+        elevation: 0,
       ),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {

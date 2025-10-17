@@ -21,6 +21,7 @@ import 'package:marmooq/features/shipment/view/shipmentPage.dart';
 import 'package:marmooq/features/products/view/collection_details_view.dart';
 import 'package:marmooq/features/products/view/product_details_view.dart';
 import 'package:marmooq/features/products/model/product_model.dart' as local;
+import 'package:marmooq/features/orders/services/order_service.dart';
 // import 'package:marmooq/features/shipment/view_model/shipment_bloc.dart';
 
 import 'package:marmooq/splash_screen.dart';

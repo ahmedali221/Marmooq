@@ -19,6 +19,8 @@ class CheckoutService {
   }) async {
     try {
       print('🚀 Starting COD checkout process...');
+      print('🔗 CHECKOUT STARTED - Cart ID: $cartId');
+      print('🔗 CHECKOUT STARTED - Customer: $email');
 
       // Step 1: Validate cart items
       print('📋 Validating cart items...');
@@ -59,9 +61,25 @@ class CheckoutService {
 
       print('🎉 Order completed successfully: ${orderDetails['orderNumber']}');
 
+      // Log checkout and order URLs for testing
+      final orderId = orderDetails['orderId'] as String? ?? 'unknown';
+      final orderName = orderDetails['orderName'] as String? ?? 'unknown';
+
+      // Extract order ID from GID format (gid://shopify/DraftOrder/123456 -> 123456)
+      final cleanOrderId = orderId.replaceAll('gid://shopify/DraftOrder/', '');
+
+      final checkoutUrl =
+          'https://fagk1b-a1.myshopify.com/checkout/$cleanOrderId';
+      final orderUrl =
+          'https://fagk1b-a1.myshopify.com/admin/orders/$cleanOrderId';
+
+      print('🔗 CHECKOUT URL: $checkoutUrl');
+      print('🔗 ORDER URL: $orderUrl');
+      print('🔗 ORDER NAME: $orderName');
+      print('🔗 ORDER ID: $cleanOrderId');
+
       return CheckoutResult.success(
-        url:
-            'https://fagk1b-a1.myshopify.com/admin/orders/${orderDetails['orderId']}',
+        url: orderUrl,
         checkoutId: orderDetails['orderName'],
         totalPrice: orderDetails['totalPrice'],
         autoRedirect: true,
